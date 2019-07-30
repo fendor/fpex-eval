@@ -12,7 +12,7 @@ import           Control.Monad                  ( forM )
 import           System.Process                 ( readProcessWithExitCode )
 import           System.Directory               ( doesFileExist )
 import           System.FilePath                ( (</>) )
-import           System.Exit                    ( ExitCode(ExitSuccess) )
+import           System.Exit                    ( ExitCode(..) )
 
 defaultMain :: IO ()
 defaultMain = execParser fpexEvalOptions >>= print
@@ -23,15 +23,20 @@ evalStudent (TestSuite tests) student = do
         studentFile student >>= \case
             Nothing -> return (test, TestCaseNotSubmitted)
             Just fp -> do
+                -- TODO: generalise this
+                -- TODO: look at stderr to difference between compile error and not submitted
                 (exitCode, stdout, _) <- liftIO $ readProcessWithExitCode
-                    "ghci"
-                    [fp, "-e", T.unpack query]
+                    "timeout"
+                    ["3", "ghci", fp, "-e", T.unpack query]
                     []
-                if exitCode /= ExitSuccess
-                    then return (test, TestCaseCompilefail)
-                    else do
+                case exitCode of
+                    ExitFailure 1 -> return (test, TestCaseCompilefail)
+                    ExitFailure 124 -> return (test, TestCaseTimeout)
+                    ExitFailure _ -> return (test, TestCaseCompilefail)
+                    ExitSuccess -> do
                         let actualOutput = T.strip $ T.pack stdout
                         return (test, TestCaseRun $ TestRun actualOutput)
+
     return $ TestReport testResults
 
 studentFile :: Student -> IO (Maybe FilePath)
@@ -57,6 +62,7 @@ prettyTestReport _ = undefined
 gradedPoints :: TestCase -> TestCaseResult -> Int
 gradedPoints _ TestCaseCompilefail  = 0
 gradedPoints _ TestCaseNotSubmitted = 0
+gradedPoints _ TestCaseTimeout      = 0
 gradedPoints TestCase { expectedOutput, maxPoints } (TestCaseRun TestRun { actualOutput })
     = if expectedOutput == actualOutput then maxPoints else 0
 

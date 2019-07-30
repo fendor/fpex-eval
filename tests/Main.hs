@@ -120,6 +120,22 @@ submissionsSimple =
                            ]
         , points     = 0
         }
+    , Submission -- ^ This case receives a timeout
+        { student    = Student "1113330"
+        , testReport = TestReport $ zip
+                           testCasesSimple
+                           [ TestCaseRun $ TestRun "1"
+                           , TestCaseRun $ TestRun "1"
+                           , TestCaseTimeout
+                           , TestCaseTimeout
+                           , TestCaseTimeout
+                           , TestCaseTimeout
+                           , TestCaseRun $ TestRun "6"
+                           , TestCaseRun $ TestRun "1"
+                           , TestCaseRun $ TestRun "3628800"
+                           ]
+        , points     = 30
+        }
     ]
 
 spec :: Spec

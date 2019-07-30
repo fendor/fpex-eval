@@ -16,8 +16,10 @@ data TestCaseResult
     = TestCaseRun TestRun
     | TestCaseCompilefail
     | TestCaseNotSubmitted
+    | TestCaseTimeout
     deriving (Eq, Show)
 
+data Group
 
 newtype TestReport = TestReport
     { assignmentPoints :: [(TestCase, TestCaseResult)]
