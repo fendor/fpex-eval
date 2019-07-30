@@ -30,6 +30,7 @@ default-extensions:
 library:
   dependencies:
   - base
+  - optparse-applicative
   source-dirs: src
 
 executables:
