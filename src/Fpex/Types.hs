@@ -1,4 +1,9 @@
-module Report where
+module Fpex.Types where
+
+newtype Student = Student
+    { getId :: String
+    }
+    deriving (Ord, Eq, Show)
 
 newtype TestRun = TestRun
     { actualOutput :: String
@@ -10,10 +15,8 @@ data TestCaseResult
 
 gradedPoints :: TestCase -> TestCaseResult -> Int
 gradedPoints _ TestCaseCompilefail = 0
-gradedPoints TestCase {expectedOutput, maxPoints} (TestCaseRun TestRun {actualOutput}) =
-    if expectedOutput == actualOutput
-        then maxPoints
-        else 0
+gradedPoints TestCase { expectedOutput, maxPoints } (TestCaseRun TestRun { actualOutput })
+    = if expectedOutput == actualOutput then maxPoints else 0
 
 newtype TestReport = TestReport
     { assignmentPoints :: [(TestCase, TestCaseResult)]

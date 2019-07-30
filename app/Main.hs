@@ -1,4 +1,4 @@
-import FpexEvalMain
+import Fpex.EvalMain (defaultMain)
 
 main :: IO ()
-main = fpexMain
+main = defaultMain
