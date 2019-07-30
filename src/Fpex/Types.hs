@@ -1,18 +1,22 @@
 module Fpex.Types where
 
+import Data.Text (Text)
+
 newtype Student = Student
-    { getId :: String
+    { matrNr :: Text
     }
     deriving (Ord, Eq, Show)
 
 newtype TestRun = TestRun
-    { actualOutput :: String
+    { actualOutput :: Text
     }
+    deriving (Eq, Show)
 
 data TestCaseResult
     = TestCaseRun TestRun
     | TestCaseCompilefail
     | TestCaseNotSubmitted
+    deriving (Eq, Show)
 
 gradedPoints :: TestCase -> TestCaseResult -> Int
 gradedPoints _ TestCaseCompilefail = 0
@@ -22,12 +26,12 @@ gradedPoints TestCase { expectedOutput, maxPoints } (TestCaseRun TestRun { actua
 
 newtype TestReport = TestReport
     { assignmentPoints :: [(TestCase, TestCaseResult)]
-    }
+    } deriving (Eq, Show)
 
-newtype TestSuite = TestSuite [TestCase]
+newtype TestSuite = TestSuite [TestCase] deriving (Eq, Show)
 
 data TestCase = TestCase
-    { query :: String
-    , expectedOutput :: String
+    { query :: Text
+    , expectedOutput :: Text
     , maxPoints :: Int
-    }
+    } deriving (Eq, Show)
