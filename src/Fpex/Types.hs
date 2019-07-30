@@ -1,6 +1,6 @@
 module Fpex.Types where
 
-import Data.Text (Text)
+import           Data.Text                      ( Text )
 
 newtype Student = Student
     { matrNr :: Text
@@ -18,11 +18,6 @@ data TestCaseResult
     | TestCaseNotSubmitted
     deriving (Eq, Show)
 
-gradedPoints :: TestCase -> TestCaseResult -> Int
-gradedPoints _ TestCaseCompilefail = 0
-gradedPoints _ TestCaseNotSubmitted = 0
-gradedPoints TestCase { expectedOutput, maxPoints } (TestCaseRun TestRun { actualOutput })
-    = if expectedOutput == actualOutput then maxPoints else 0
 
 newtype TestReport = TestReport
     { assignmentPoints :: [(TestCase, TestCaseResult)]

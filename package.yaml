@@ -57,6 +57,7 @@ tests:
     dependencies:
     - base
     - fpex-eval
+    - text
     - tasty
     - tasty-hspec
     ghc-options:
