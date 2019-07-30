@@ -12,9 +12,11 @@ newtype TestRun = TestRun
 data TestCaseResult
     = TestCaseRun TestRun
     | TestCaseCompilefail
+    | TestCaseNotSubmitted
 
 gradedPoints :: TestCase -> TestCaseResult -> Int
 gradedPoints _ TestCaseCompilefail = 0
+gradedPoints _ TestCaseNotSubmitted = 0
 gradedPoints TestCase { expectedOutput, maxPoints } (TestCaseRun TestRun { actualOutput })
     = if expectedOutput == actualOutput then maxPoints else 0
 

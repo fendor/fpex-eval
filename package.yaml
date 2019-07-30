@@ -32,6 +32,8 @@ library:
   - base
   - optparse-applicative
   - extra
+  - process
+  - text
   source-dirs: src
 
 executables:
