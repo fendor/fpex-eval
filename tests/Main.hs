@@ -104,6 +104,22 @@ submissionsSimple =
                            ]
         , points     = 0
         }
+    , Submission -- ^ No submission for that matriculation number
+        { student    = Student "1456000"
+        , testReport = TestReport $ zip
+                           testCasesSimple
+                           [ TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           , TestCaseNotSubmitted
+                           ]
+        , points     = 0
+        }
     ]
 
 spec :: Spec
