@@ -39,7 +39,7 @@ testCasesSimple =
 
 submissionsSimple :: [Submission]
 submissionsSimple =
-    [ Submission
+    [ Submission -- ^ Everything correct
         { student    = Student "1234567"
         , testReport = TestReport $ zip
                            testCasesSimple
@@ -55,7 +55,8 @@ submissionsSimple =
                            ]
         , points     = 50
         }
-    , Submission
+    , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
+        -- Also, no submission for the function "factorial"
         { student    = Student "1000000"
         , testReport = TestReport $ zip
                            testCasesSimple
@@ -71,7 +72,7 @@ submissionsSimple =
                            ]
         , points     = 15
         }
-    , Submission
+    , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
         { student    = Student "1711000"
         , testReport = TestReport $ zip
                            testCasesSimple
@@ -87,7 +88,7 @@ submissionsSimple =
                            ]
         , points     = 35
         }
-    , Submission
+    , Submission -- ^ Submission contains a typo. Thus, everything fails
         { student    = Student "1831000"
         , testReport = TestReport $ zip
                            testCasesSimple
@@ -113,7 +114,7 @@ spec =
         $ \submission ->
               describe
                       (  "submission of student"
-                      ++ T.unpack (matrNr $ student submission)
+                      <> T.unpack (matrNr $ student submission)
                       )
                   $ do
 
@@ -121,6 +122,7 @@ spec =
                             report <- evalStudent testSuiteSimple
                                                   (student submission)
                             report `shouldBe` testReport submission
+
                         it "points should be correct" $ do
                             report <- evalStudent testSuiteSimple
                                                   (student submission)
