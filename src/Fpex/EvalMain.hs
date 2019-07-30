@@ -30,7 +30,6 @@ evalStudent (TestSuite tests) student = do
                     ["3", "ghci", fp, "-e", T.unpack query]
                     []
                 case exitCode of
-                    ExitFailure 1 -> return (test, TestCaseCompilefail)
                     ExitFailure 124 -> return (test, TestCaseTimeout)
                     ExitFailure _ -> return (test, TestCaseCompilefail)
                     ExitSuccess -> do
