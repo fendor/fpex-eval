@@ -1,0 +1,59 @@
+name: fpex-eval
+version: '0.0.0'
+
+extra-source-files:
+- package.yaml
+- README.md
+- stack.yaml
+
+ghc-options: -Wall
+
+default-extensions:
+- DeriveGeneric
+- GeneralizedNewtypeDeriving
+- DerivingStrategies
+- NamedFieldPuns
+- OverloadedStrings
+- ScopedTypeVariables
+- RecordWildCards
+- LambdaCase
+- FlexibleContexts
+- FlexibleInstances
+- BangPatterns
+- TypeOperators
+- InstanceSigs
+- TypeFamilies
+- PatternGuards
+- TupleSections
+
+
+library:
+  dependencies:
+  - base
+  source-dirs: src
+
+executables:
+  fpex-eval:
+    source-dirs: app
+    main: Main.hs
+    dependencies:
+    - base
+    - fpex-eval
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
+
+tests:
+  fpex-eval-test:
+    source-dirs: tests
+    main: Main.hs
+    dependencies:
+    - base
+    - fpex-eval
+    - tasty
+    - tasty-hspec
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
