@@ -27,21 +27,23 @@ testSuiteSimple = TestSuite testCasesSimple
 fibTestGroup :: TestGroup TestCase
 fibTestGroup = TestGroup
   { label = "Fibonacci tests"
-  , group = [ TestCase "fib 0" "1" 5
-            , TestCase "fib 1" "1" 5
-            , TestCase "fib 2" "2" 5
-            , TestCase "fib 3" "3" 5
-            , TestCase "fib 4" "5" 5
-            , TestCase "fib 5" "8" 5
+  , pointsPerTest = 5
+  , group = [ TestCase "fib 0" "1"
+            , TestCase "fib 1" "1"
+            , TestCase "fib 2" "2"
+            , TestCase "fib 3" "3"
+            , TestCase "fib 4" "5"
+            , TestCase "fib 5" "8"
             ]
   }
 
 factorialTestGroup :: TestGroup TestCase
 factorialTestGroup = TestGroup
   { label = "Factorial tests"
-  , group = [ TestCase "factorial 3"  "6"       5
-            , TestCase "factorial 0"  "1"       5
-            , TestCase "factorial 10" "3628800" 10
+  , pointsPerTest = 10
+  , group = [ TestCase "factorial 3"  "6"
+            , TestCase "factorial 0"  "1"
+            , TestCase "factorial 10" "3628800"
             ]
   }
 
@@ -64,7 +66,7 @@ submissionsSimple =
                       , TestCaseRun $ TestRun "3628800"
                       ]
                     ]
-    , points      = 50
+    , points      = 60
     }
   , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
         -- Also, no submission for the function "factorial"
@@ -97,7 +99,7 @@ submissionsSimple =
                       , TestCaseRun $ TestRun "3628800"
                       ]
                     ]
-    , points      = 35
+    , points      = 45
     }
   , Submission -- ^ Submission contains a typo. Thus, everything fails
     { student     = Student "1831000"
@@ -145,7 +147,7 @@ submissionsSimple =
                       , TestCaseRun $ TestRun "3628800"
                       ]
                     ]
-    , points      = 30
+    , points      = 40
     }
   ]
 

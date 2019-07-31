@@ -21,6 +21,7 @@ data TestCaseResult
 
 data TestGroup a = TestGroup
     { label :: Text
+    , pointsPerTest :: Int
     , group :: [a]
     }
     deriving (Eq, Show)
@@ -34,5 +35,4 @@ newtype TestSuite = TestSuite [TestGroup TestCase] deriving (Eq, Show)
 data TestCase = TestCase
     { query :: Text
     , expectedOutput :: Text
-    , maxPoints :: Int
     } deriving (Eq, Show)

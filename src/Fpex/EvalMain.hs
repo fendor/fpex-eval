@@ -35,9 +35,9 @@ runTestGroup
     :: FilePath
     -> TestGroup TestCase
     -> IO (TestGroup (TestCase, TestCaseResult))
-runTestGroup fp TestGroup { label, group } = do
+runTestGroup fp testGroup@TestGroup { group } = do
     results <- forM group (runTest fp)
-    return $ TestGroup { label = label, group = zip group results }
+    return $ testGroup { group = zip group results }
 
 runTest :: FilePath -> TestCase -> IO TestCaseResult
 runTest fp TestCase { query } = do
@@ -74,13 +74,16 @@ grade testsuite student = do
 prettyTestReport :: TestReport -> T.Text
 prettyTestReport _ = undefined
 
-gradedPoints :: TestCase -> TestCaseResult -> Int
-gradedPoints _ TestCaseCompilefail  = 0
-gradedPoints _ TestCaseNotSubmitted = 0
-gradedPoints _ TestCaseTimeout      = 0
-gradedPoints TestCase { expectedOutput, maxPoints } (TestCaseRun TestRun { actualOutput })
-    = if expectedOutput == actualOutput then maxPoints else 0
+gradedPoints :: Int -> TestCase -> TestCaseResult -> Int
+gradedPoints _ _ TestCaseCompilefail  = 0
+gradedPoints _ _ TestCaseNotSubmitted = 0
+gradedPoints _ _ TestCaseTimeout      = 0
+gradedPoints points TestCase { expectedOutput } (TestCaseRun TestRun { actualOutput })
+    = if expectedOutput == actualOutput then points else 0
 
 receivedPoints :: TestReport -> Int
 receivedPoints (TestReport points) =
-    sum $ concatMap (map (uncurry gradedPoints) . group) points
+    sum $ concatMap
+        (\TestGroup {group, pointsPerTest} ->
+            map (uncurry (gradedPoints pointsPerTest)) group
+        ) points
