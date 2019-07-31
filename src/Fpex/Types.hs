@@ -19,13 +19,17 @@ data TestCaseResult
     | TestCaseTimeout
     deriving (Eq, Show)
 
-data Group
+data TestGroup a = TestGroup
+    { label :: Text
+    , group :: [a]
+    }
+    deriving (Eq, Show)
 
 newtype TestReport = TestReport
-    { assignmentPoints :: [(TestCase, TestCaseResult)]
+    { assignmentPoints :: [TestGroup (TestCase, TestCaseResult)]
     } deriving (Eq, Show)
 
-newtype TestSuite = TestSuite [TestCase] deriving (Eq, Show)
+newtype TestSuite = TestSuite [TestGroup TestCase] deriving (Eq, Show)
 
 data TestCase = TestCase
     { query :: Text
