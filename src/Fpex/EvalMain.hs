@@ -5,6 +5,7 @@ import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
 import           Control.Monad.IO.Class
 import           Fpex.EvalOptions
+import           Fpex.Pretty
 import           Fpex.Types
 import           Control.Monad.Extra            ( whenJust )
 import           Control.Monad                  ( forM )
@@ -70,20 +71,3 @@ grade testsuite student = do
     report  <- evalStudent testsuite student
     fileMay <- studentFile student
     whenJust fileMay $ \fp -> generateReport student report fp
-
-prettyTestReport :: TestReport -> T.Text
-prettyTestReport _ = undefined
-
-gradedPoints :: Int -> TestCase -> TestCaseResult -> Int
-gradedPoints _ _ TestCaseCompilefail  = 0
-gradedPoints _ _ TestCaseNotSubmitted = 0
-gradedPoints _ _ TestCaseTimeout      = 0
-gradedPoints points TestCase { expectedOutput } (TestCaseRun TestRun { actualOutput })
-    = if expectedOutput == actualOutput then points else 0
-
-receivedPoints :: TestReport -> Int
-receivedPoints (TestReport points) =
-    sum $ concatMap
-        (\TestGroup {group, pointsPerTest} ->
-            map (uncurry (gradedPoints pointsPerTest)) group
-        ) points
