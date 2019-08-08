@@ -1,0 +1,46 @@
+[{
+    "group": [{
+        "query": "fib 0",
+        "expectedOutput": "1"
+    }, {
+        "query": "fib 1",
+        "expectedOutput": "1"
+    }, {
+        "query": "fib 2",
+        "expectedOutput": "2"
+    }, {
+        "query": "fib 3",
+        "expectedOutput": "3"
+    }, {
+        "query": "fib 4",
+        "expectedOutput": "5"
+    }, {
+        "query": "fib 5",
+        "expectedOutput": "8"
+    }],
+    "penalty": {
+        "getPoints": 0
+    },
+    "pointsPerTest": {
+        "getPoints": 5
+    },
+    "label": "Fibonacci tests"
+}, {
+    "group": [{
+        "query": "factorial 3",
+        "expectedOutput": "6"
+    }, {
+        "query": "factorial 0",
+        "expectedOutput": "1"
+    }, {
+        "query": "factorial 10",
+        "expectedOutput": "3628800"
+    }],
+    "penalty": {
+        "getPoints": 0
+    },
+    "pointsPerTest": {
+        "getPoints": 10
+    },
+    "label": "Factorial tests"
+}]

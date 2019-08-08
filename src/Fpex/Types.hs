@@ -1,25 +1,29 @@
 module Fpex.Types where
 
-import           Data.Text                      ( Text )
+import           Data.Text                                ( Text )
+import           GHC.Generics                             ( Generic )
+import           Data.Aeson                               ( FromJSON
+                                                          , ToJSON
+                                                          )
 
 newtype OkTest = OkTest { getOkTest :: Int }
-    deriving (Show)
+    deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
 newtype FailedTest = FailedTest { getFailedTest :: Int }
-    deriving (Show)
+    deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
 newtype TimedOutTest = TimedOutTest { getTimedOutTest :: Int }
-    deriving (Show)
+    deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
 newtype NotSubmittedTest = NotSubmittedTest { getNotSubmittedTest :: Int }
-    deriving (Show)
+    deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
 newtype CompileFailTest = CompileFailTest { getCompileFailTest :: Int }
-    deriving (Show)
+    deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
 data TestSummary =
@@ -64,25 +68,29 @@ testCompileFail :: TestSummary
 testCompileFail = mempty { compileFailTest = 1 }
 
 newtype Points = Points { getPoints :: Int }
-    deriving (Show)
-    deriving newtype ( Eq, Num, Ord)
+    deriving (Show, Generic)
+    deriving newtype (Eq, Num, Ord)
+    deriving anyclass (FromJSON, ToJSON)
 
 newtype Student = Student
     { matrNr :: Text
     }
-    deriving (Ord, Eq, Show)
+    deriving (Ord, Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 newtype TestRun = TestRun
     { actualOutput :: Text
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data TestCaseResult
     = TestCaseRun TestRun
     | TestCaseCompilefail
     | TestCaseNotSubmitted
     | TestCaseTimeout
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data TestGroup a = TestGroup
     { label :: Text
@@ -90,15 +98,22 @@ data TestGroup a = TestGroup
     , penalty :: Points
     , group :: [a]
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 newtype TestReport = TestReport
     { assignmentPoints :: [TestGroup (TestCase, TestCaseResult)]
-    } deriving (Eq, Show)
+    }
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
-newtype TestSuite = TestSuite [TestGroup TestCase] deriving (Eq, Show)
+newtype TestSuite = TestSuite [TestGroup TestCase]
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data TestCase = TestCase
     { query :: Text
     , expectedOutput :: Text
-    } deriving (Eq, Show)
+    }
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)

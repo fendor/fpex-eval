@@ -12,6 +12,7 @@ default-extensions:
 - DeriveGeneric
 - GeneralizedNewtypeDeriving
 - DerivingStrategies
+- DeriveAnyClass
 - NamedFieldPuns
 - OverloadedStrings
 - ScopedTypeVariables
@@ -36,6 +37,7 @@ library:
   - text
   - directory
   - filepath
+  - aeson
   source-dirs: src
 
 executables:

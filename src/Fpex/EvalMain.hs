@@ -2,20 +2,31 @@ module Fpex.EvalMain where
 
 import           Options.Applicative
 import qualified Data.Text                     as T
+import qualified Data.Text.Lazy                as L
 import qualified Data.Text.IO                  as T
+import           Data.Aeson.Text                          ( encodeToLazyText )
+import           Data.Aeson                               ( decodeFileStrict' )
 import           Control.Monad.IO.Class
 import           Fpex.EvalOptions
 import           Fpex.Pretty
 import           Fpex.Types
-import           Control.Monad.Extra            ( whenJust )
-import           Control.Monad                  ( forM )
-import           System.Process                 ( readProcessWithExitCode )
-import           System.Directory               ( doesFileExist )
-import           System.FilePath                ( (</>) )
-import           System.Exit                    ( ExitCode(..) )
+import           Control.Monad.Extra                      ( whenJust )
+import           Control.Monad                            ( forM )
+import           System.Process                           ( readProcessWithExitCode
+                                                          )
+import           System.Directory                         ( doesFileExist )
+import           System.FilePath                          ( (</>) )
+import           System.Exit                              ( ExitCode(..) )
 
 defaultMain :: IO ()
-defaultMain = execParser fpexEvalOptions >>= print
+defaultMain = do
+    FpexEvalOptions {..} <- execParser fpexEvalOptions
+    case fpexEvalCommand of
+        CommandGrade{..} -> do
+            Just testSuite <- decodeFileStrict' testSuiteFile
+            testReport <- evalStudent testSuite (Student student)
+            putStrLn . L.unpack . encodeToLazyText $ testReport
+
 
 evalStudent :: TestSuite -> Student -> IO TestReport
 evalStudent (TestSuite testGroups) student = studentFile student >>= \case
