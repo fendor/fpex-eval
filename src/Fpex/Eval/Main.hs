@@ -18,14 +18,13 @@ import           System.FilePath                ( (</>) )
 import           System.Exit                    ( ExitCode(..) )
 
 defaultMain :: IO ()
-defaultMain = do
-    FpexEvalOptions {..} <- execParser fpexEvalOptions
-    case fpexEvalCommand of
-        CommandGrade {..} -> do
+defaultMain =
+    execParser options >>= \case
+        Eval CommandGrade {..} -> do
             Just testSuite <- decodeFileStrict' testSuiteFile
-            testReport     <- evalStudent testSuite (Student student)
+            testReport     <- evalStudent testSuite student
             putStrLn . L.unpack . encodeToLazyText $ testReport
-
+        User UserManagementCommand {..} -> return ()
 
 evalStudent :: TestSuite -> Student -> IO TestReport
 evalStudent (TestSuite testGroups) student = studentFile student >>= \case
