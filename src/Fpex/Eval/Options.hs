@@ -19,19 +19,34 @@ data EvalCommand = CommandGrade
 
 data UserManagementCommand = UserManagementCommand
     { username :: Username
-    , groupName :: T.Text
-    , groupPrefix :: T.Text
+    , userGroup :: Group
     }
     deriving (Show)
 
 options :: ParserInfo Options
 options =
-    let gradeParser =
-                Eval
-                    <$> (   CommandGrade
-                        <$> ((Student . T.pack) <$> option str (long "student"))
-                        <*> (option str (long "test-suite"))
+    let
+        gradeParser =
+            Eval
+                <$> (   CommandGrade
+                    <$> (Student . T.pack <$> option str (long "student"))
+                    <*> option str (long "test-suite")
+                    )
+        buildUserManagement user group prefix = UserManagementCommand
+            user
+            (Group { getGroup = group, getPrefix = prefix })
+        userParser =
+            User
+                <$> (   buildUserManagement
+                    <$> (Username . T.pack <$> option str (long "username"))
+                    <*> (T.pack <$> option str (long "group"))
+                    <*> (   fmap T.pack
+                        <$> optional (option str (long "home-prefix"))
                         )
-        userParser = undefined
-        parser     = hsubparser $ command "grade" (info gradeParser fullDesc)
-    in  info (parser <**> helper) fullDesc
+                    )
+        parser = hsubparser
+            (  command "grade" (info gradeParser fullDesc)
+            <> command "user"  (info userParser fullDesc)
+            )
+    in
+        info (parser <**> helper) fullDesc
