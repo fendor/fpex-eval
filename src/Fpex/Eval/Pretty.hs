@@ -1,10 +1,10 @@
-module Fpex.Pretty
+module Fpex.Eval.Pretty
     ( prettyTestReport
     )
 where
 
-import           Fpex.Types
-import           Fpex.Summary
+import           Fpex.Eval.Types
+import           Fpex.Eval.Summary
 import           Data.Coerce                    ( coerce )
 import qualified Data.Text                     as T
 

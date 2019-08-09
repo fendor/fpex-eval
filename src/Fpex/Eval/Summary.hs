@@ -1,6 +1,6 @@
-module Fpex.Summary (gradeReport, gradeTestGroup, scoreReport, scoreGroup) where
+module Fpex.Eval.Summary (gradeReport, gradeTestGroup, scoreReport, scoreGroup) where
 
-import Fpex.Types
+import           Fpex.Eval.Types
 import           Data.Coerce                  ( coerce )
 import           Data.List                      ( foldl' )
 

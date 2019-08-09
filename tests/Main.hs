@@ -5,9 +5,9 @@ import qualified Test.Tasty
 -- Hspec is one of the providers for Tasty. It provides a nice syntax for
 -- writing tests. Its website has more info: <https://hspec.github.io>.
 import           Test.Tasty.Hspec
-import           Fpex.EvalMain
-import           Fpex.Summary
-import           Fpex.Types
+import           Fpex.Eval.Main
+import           Fpex.Eval.Summary
+import           Fpex.Eval.Types
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 

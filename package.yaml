@@ -38,6 +38,9 @@ library:
   - directory
   - filepath
   - aeson
+  - smtp-mail
+  - mime-mail
+  - unix
   source-dirs: src
 
 executables:

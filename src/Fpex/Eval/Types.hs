@@ -1,4 +1,4 @@
-module Fpex.Types where
+module Fpex.Eval.Types where
 
 import           Data.Text                                ( Text )
 import           GHC.Generics                             ( Generic )

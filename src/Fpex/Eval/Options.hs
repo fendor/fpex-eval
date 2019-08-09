@@ -1,4 +1,4 @@
-module Fpex.EvalOptions where
+module Fpex.Eval.Options where
 
 import           Options.Applicative
 import           Data.Text                                ( Text )

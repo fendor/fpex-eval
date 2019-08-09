@@ -1,4 +1,4 @@
-module Fpex.EvalMain where
+module Fpex.Eval.Main where
 
 import           Options.Applicative
 import qualified Data.Text                     as T
@@ -7,9 +7,9 @@ import qualified Data.Text.IO                  as T
 import           Data.Aeson.Text                          ( encodeToLazyText )
 import           Data.Aeson                               ( decodeFileStrict' )
 import           Control.Monad.IO.Class
-import           Fpex.EvalOptions
-import           Fpex.Pretty
-import           Fpex.Types
+import           Fpex.Eval.Options
+import           Fpex.Eval.Pretty
+import           Fpex.Eval.Types
 import           Control.Monad.Extra                      ( whenJust )
 import           Control.Monad                            ( forM )
 import           System.Process                           ( readProcessWithExitCode
