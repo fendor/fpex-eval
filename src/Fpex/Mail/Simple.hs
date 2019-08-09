@@ -1,32 +1,37 @@
 module Fpex.Mail.Simple
-    ( sendSimpleMail
+    ( sendCustomMailToAll
     , simpleMail
+    , Mail(..)
     )
 where
 
-import qualified Data.Text                     as T
 import qualified Data.Text.Lazy                as LT
-import qualified Network.Mail.SMTP             as SMTP
-import qualified Network.Mail.Mime             as Mime
+import qualified Network.HaskellNet.SMTP       as SMTP
+import qualified Network.HaskellNet.Auth       as Auth
+import qualified Network.HaskellNet.SMTP.SSL   as SSL
+import           Network.Socket                 ( PortNumber )
 
+hostname :: String
 hostname = "mail.student.tuwien.ac.at"
 
-type From = SMTP.Address
-type To = SMTP.Address
-type Subject = T.Text
-type Content = T.Text
+port :: PortNumber
+port = 587
 
-simpleMail :: From -> To -> Subject -> Content -> Mime.Mail
-simpleMail from to subject content = SMTP.simpleMail
-    from
-    [to]
-    []
-    []
-    subject
-    [Mime.plainPart (LT.fromStrict content)]
+data Mail = Mail
+    { from :: String
+    , to :: String
+    , subject :: String
+    , content :: LT.Text
+    }
 
-sendSimpleMail :: From -> To -> Subject -> Content -> IO Mime.Mail
-sendSimpleMail from to subject content = do
-    let mail = simpleMail from to subject content
-    SMTP.sendMail hostname mail
-    return mail
+sendCustomMailToAll :: Auth.UserName -> Auth.Password -> [Mail] -> IO ()
+sendCustomMailToAll user password mails =
+    SSL.doSMTPSTARTTLSWithSettings
+            hostname
+            SSL.defaultSettingsSMTPSTARTTLS { SSL.sslPort = port }
+        $ \conn -> SMTP.authenticate Auth.PLAIN user password conn >>= \case
+              True  -> mapM_ (simpleMail conn) mails
+              False -> return ()
+
+simpleMail :: SMTP.SMTPConnection -> Mail -> IO ()
+simpleMail conn Mail {..} = SMTP.sendPlainTextMail to from subject content conn

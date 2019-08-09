@@ -38,7 +38,9 @@ library:
   - directory
   - filepath
   - aeson
-  - smtp-mail
+  - HaskellNet
+  - HaskellNet-SSL
+  - network
   - mime-mail
   - unix
   source-dirs: src
