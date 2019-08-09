@@ -1,4 +1,4 @@
-name: fpex-eval
+name: fpex
 version: '0.0.0'
 
 extra-source-files:
@@ -44,24 +44,24 @@ library:
   source-dirs: src
 
 executables:
-  fpex-eval:
+  fpex:
     source-dirs: app
     main: Main.hs
     dependencies:
     - base
-    - fpex-eval
+    - fpex
     ghc-options:
     - -rtsopts
     - -threaded
     - -with-rtsopts=-N
 
 tests:
-  fpex-eval-test:
+  fpex-test:
     source-dirs: tests
     main: Main.hs
     dependencies:
     - base
-    - fpex-eval
+    - fpex
     - text
     - tasty
     - tasty-hspec
