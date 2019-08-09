@@ -10,6 +10,8 @@ import           Control.Monad.IO.Class
 import           Fpex.Eval.Options
 import           Fpex.Eval.Pretty
 import           Fpex.Eval.Types
+import qualified Fpex.User.Simple              as User
+import qualified Fpex.User.Types               as User
 import           Control.Monad.Extra            ( whenJust )
 import           Control.Monad                  ( forM )
 import           System.Process                 ( readProcessWithExitCode )
@@ -18,13 +20,19 @@ import           System.FilePath                ( (</>) )
 import           System.Exit                    ( ExitCode(..) )
 
 defaultMain :: IO ()
-defaultMain =
-    execParser options >>= \case
-        Eval CommandGrade {..} -> do
-            Just testSuite <- decodeFileStrict' testSuiteFile
-            testReport     <- evalStudent testSuite student
-            putStrLn . L.unpack . encodeToLazyText $ testReport
-        User UserManagementCommand {..} -> return ()
+defaultMain = execParser options >>= \case
+    Eval CommandGrade {..} -> do
+        Just testSuite <- decodeFileStrict' testSuiteFile
+        testReport     <- evalStudent testSuite student
+        putStrLn . L.unpack . encodeToLazyText $ testReport
+
+    User UserManagementCommand {..} ->
+        
+        User.createUser username userGroup >>= \case
+            Left err -> print err
+
+            Right User.Password { getPassword = password } ->
+                T.putStrLn password
 
 evalStudent :: TestSuite -> Student -> IO TestReport
 evalStudent (TestSuite testGroups) student = studentFile student >>= \case
