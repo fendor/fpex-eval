@@ -13,7 +13,7 @@ import           System.Exit                    ( ExitCode(..) )
 -- If one of the commands fails, the user is deleted again and an error is returned.
 createUser :: Username -> UserGroup -> IO (Either UserError Password)
 createUser user group = do
-    -- TODO: Use mtl
+    -- TODO: Use polysemy
     pwd@Password { password } <- newRandomPassword
     let createUserCmd  = buildCreateUserCmd user group
     let setPasswordCmd = buildSetPasswordCmd user

@@ -6,8 +6,6 @@ import           Data.Aeson                               ( FromJSON
                                                           , ToJSON
                                                           )
 
-import Fpex.Course.Types
-
 newtype OkTest = OkTest { getOkTest :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
