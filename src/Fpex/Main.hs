@@ -20,16 +20,14 @@ defaultMain = do
     -- TODO: error effect
     Just course@Course{..} <- decodeFileStrict' optionCourseFile :: IO (Maybe Course)
     print course
+    let students = maybe courseStudents pure optionStudent
 
     case optionCommand of
         Grade CommandGrade {..} -> do
             Just testSuite <- decodeFileStrict' testSuiteFile
-            let students = case optionStudent of
-                   Just s -> [s]
-                   Nothing -> courseStudents
             forM_ students $ \student@Student{..} -> do
-                T.putStrLn $ "eval student " <> matrNr
-                testReport <- evalStudent testSuite student
+                T.putStrLn $ "grade student " <> matrNr
+                testReport <- Eval.evalStudent testSuite student
                 T.putStrLn $ prettyTestReport testReport
                 putStrLn ""
 

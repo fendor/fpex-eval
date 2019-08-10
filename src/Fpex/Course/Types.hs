@@ -12,9 +12,11 @@ import           System.FilePath
 
 data Course = Course
     { courseName :: Text
-    , courseHomeDir :: FilePath
+    -- | The root-directory of the course. Contains home-dirs of the users and the `admin` directory
+    , courseRootDir :: FilePath
     , courseStudents :: [Student]
     , courseGroups :: [Group]
+    , courseUserPrefix :: Text
     }
     deriving (Ord, Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
@@ -34,5 +36,12 @@ data Group = Group
     deriving anyclass (FromJSON, ToJSON)
 
 studentHomedir :: Course -> Student -> FilePath
-studentHomedir Course { courseName, courseHomeDir } Student { matrNr } =
-    courseHomeDir </> T.unpack (courseName <> matrNr)
+studentHomedir Course { courseName, courseRootDir } Student { matrNr } =
+    courseRootDir </> T.unpack (courseName <> matrNr)
+
+courseAdminDir :: Course -> FilePath
+courseAdminDir Course { courseRootDir } = courseRootDir </> "admin"
+
+studentDir :: Course -> Student -> FilePath
+studentDir Course {courseRootDir, courseUserPrefix} Student {matrNr} =
+    courseRootDir </> T.unpack (courseUserPrefix <> matrNr)

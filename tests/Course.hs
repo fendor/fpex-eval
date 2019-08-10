@@ -13,9 +13,10 @@ courseEmpty :: Course
 courseEmpty =
     Course
         { courseName = "courseEmpty"
-        , courseHomeDir = "testdata/courseEmpty"
+        , courseRootDir = "testdata/courseEmpty"
         , courseStudents = []
         , courseGroups = []
+        , courseUserPrefix = "x"
         }
 
 spec :: Spec
