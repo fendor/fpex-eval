@@ -43,6 +43,7 @@ library:
   - network
   - mime-mail
   - unix
+  - polysemy
   source-dirs: src
 
 executables:

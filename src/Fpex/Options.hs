@@ -3,7 +3,6 @@ module Fpex.Options where
 import           Options.Applicative
 import qualified Data.Text                     as T
 import           Fpex.User.Types
-import           Fpex.Eval.Types
 import           Fpex.Course.Types
 
 data Options = Options
