@@ -14,6 +14,7 @@ default-extensions:
 - DerivingStrategies
 - DeriveAnyClass
 - NamedFieldPuns
+- DataKinds
 - OverloadedStrings
 - ScopedTypeVariables
 - RecordWildCards
@@ -22,11 +23,15 @@ default-extensions:
 - FlexibleInstances
 - BangPatterns
 - TypeOperators
-- InstanceSigs
 - TypeFamilies
+- InstanceSigs
 - PatternGuards
+- PolyKinds
 - TupleSections
-
+- DataKinds
+- GADTs
+- RankNTypes
+- TypeApplications
 
 library:
   dependencies:
@@ -44,7 +49,9 @@ library:
   - mime-mail
   - unix
   - polysemy
+  - polysemy-plugin
   source-dirs: src
+  ghc-options: -O2 -flate-specialise -fspecialise-aggressively -fplugin=Polysemy.Plugin
 
 executables:
   fpex:

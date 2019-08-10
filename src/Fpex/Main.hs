@@ -1,22 +1,27 @@
 module Fpex.Main where
 
-import           Options.Applicative
-import qualified Data.Text.Lazy                as LT
+import           Data.Function                  ( (&) )
 import qualified Data.Text.IO                  as T
-import           Data.Aeson.Text                ( encodeToLazyText )
 import           Data.Aeson                     ( decodeFileStrict' )
 import           Control.Monad                  ( forM_ )
+
+import           Options.Applicative
+
+import           Polysemy                       ( runM )
+import           Polysemy.Error                 ( runError )
+import           Polysemy.IO                    ( embedToMonadIO )
 
 import           Fpex.Options
 import           Fpex.Course.Types
 import qualified Fpex.User.Simple              as User
 import qualified Fpex.User.Types               as User
-import           Fpex.Eval.Main                as Eval
+import qualified Fpex.User.Effect              as User
+import           Fpex.Eval.Main
 import           Fpex.Eval.Pretty              as Eval
 
 defaultMain :: IO ()
 defaultMain = do
-    Options { .. } <- execParser options
+    Options {..} <- execParser options
     -- TODO: error effect
     Just course@Course{..} <- decodeFileStrict' optionCourseFile :: IO (Maybe Course)
     print course
@@ -33,8 +38,12 @@ defaultMain = do
 
         User UserManagementCommand {..} ->
 
-            User.createUser username userGroup >>= \case
-                Left err -> print err
-
-                Right User.Password { password } ->
-                    T.putStrLn password
+            User.createNewUser username userGroup
+                &   User.runUserManagement
+                &   User.runPasswordGenerator
+                &   runError
+                &   embedToMonadIO
+                &   runM
+                >>= \case
+                        Left  err                        -> print err
+                        Right User.Password { password } -> T.putStrLn password
