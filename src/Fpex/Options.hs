@@ -1,14 +1,14 @@
-module Fpex.Eval.Options where
+module Fpex.Options where
 
 import           Options.Applicative
 import qualified Data.Text                     as T
 import           Fpex.User.Types
 import           Fpex.Eval.Types
+import           Fpex.Course.Types
 
 data Options
     = Eval EvalCommand
     | User UserManagementCommand
-
     deriving (Show)
 
 data EvalCommand = CommandGrade
@@ -19,7 +19,7 @@ data EvalCommand = CommandGrade
 
 data UserManagementCommand = UserManagementCommand
     { username :: Username
-    , userGroup :: Group
+    , userGroup :: UserGroup
     }
     deriving (Show)
 
@@ -34,7 +34,7 @@ options =
                     )
         buildUserManagement user group prefix = UserManagementCommand
             user
-            (Group { getGroup = group, getPrefix = prefix })
+            (UserGroup { group, prefix })
         userParser =
             User
                 <$> (   buildUserManagement

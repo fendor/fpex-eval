@@ -1,9 +1,6 @@
--- Tasty makes it easy to test your code. It is a test framework that can
--- combine many different types of tests into one suite. See its website for
--- help: <http://documentup.com/feuerbach/tasty>.
+module Main where
+
 import qualified Test.Tasty
--- Hspec is one of the providers for Tasty. It provides a nice syntax for
--- writing tests. Its website has more info: <https://hspec.github.io>.
 import           Test.Tasty.Hspec
 import           Fpex.Eval.Main
 import           Fpex.Eval.Summary
@@ -11,9 +8,16 @@ import           Fpex.Eval.Types
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 
+import           Fpex.Course.Types
+
+-- other tests
+import qualified Course
+
 main :: IO ()
 main = do
-  test <- testSpec "fpex-eval" spec
+  test <- testSpec "fpex-eval" $ do
+      spec
+      Course.spec
   Test.Tasty.defaultMain test
 
 data Submission = Submission

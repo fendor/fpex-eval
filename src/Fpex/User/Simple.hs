@@ -11,10 +11,10 @@ import           System.Exit                    ( ExitCode(..) )
 
 -- | Create a user with the given group and assign a random password to it.
 -- If one of the commands fails, the user is deleted again and an error is returned.
-createUser :: Username -> Group -> IO (Either UserError Password)
+createUser :: Username -> UserGroup -> IO (Either UserError Password)
 createUser user group = do
     -- TODO: Use mtl
-    pwd@Password { getPassword = password } <- newRandomPassword
+    pwd@Password { password } <- newRandomPassword
     let createUserCmd  = buildCreateUserCmd user group
     let setPasswordCmd = buildSetPasswordCmd user
     (exitCodeUserCmd, _, _) <- readCreateProcessWithExitCode createUserCmd ""
@@ -37,16 +37,16 @@ newRandomPassword :: IO Password
 newRandomPassword = return "secret"
 
 
-buildCreateUserCmd :: Username -> Group -> CreateProcess
-buildCreateUserCmd Username { getUsername = username } Group { getGroup = group, getPrefix = prefix }
+buildCreateUserCmd :: Username -> UserGroup -> CreateProcess
+buildCreateUserCmd Username { .. } UserGroup { .. }
     = proc "useradd"
         $  ["-m", T.unpack username, "-g", T.unpack group]
         ++ maybe [] (\p -> ["-b", T.unpack p]) prefix
 
 buildSetPasswordCmd :: Username -> CreateProcess
-buildSetPasswordCmd Username { getUsername = username } =
+buildSetPasswordCmd Username { username } =
     proc "passwd" [T.unpack username]
 
 buildDeleteUserCmd :: Username -> CreateProcess
-buildDeleteUserCmd Username { getUsername = username } =
+buildDeleteUserCmd Username { username } =
     proc "userdel" ["-r", T.unpack username]

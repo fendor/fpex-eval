@@ -67,6 +67,7 @@ tests:
     - text
     - tasty
     - tasty-hspec
+    - aeson
     ghc-options:
     - -rtsopts
     - -threaded

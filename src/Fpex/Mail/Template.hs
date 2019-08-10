@@ -8,7 +8,7 @@ userCreatedMail :: Password -> Mail -> Mail
 userCreatedMail password mail = mail { content = newUserTemplate password }
 
 newUserTemplate :: Password -> LT.Text
-newUserTemplate Password { getPassword = password } = LT.unlines
+newUserTemplate Password { password } = LT.unlines
     [ "Sehr geehrte(r) Teilnehmer(in)"
     , ""
     , "Sie sind zur LVA 185.A03 Funktionale Programmierung angemeldet."

@@ -6,6 +6,8 @@ import           Data.Aeson                               ( FromJSON
                                                           , ToJSON
                                                           )
 
+import Fpex.Course.Types
+
 newtype OkTest = OkTest { getOkTest :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
@@ -70,12 +72,6 @@ testCompileFail = mempty { compileFailTest = 1 }
 newtype Points = Points { getPoints :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
-    deriving anyclass (FromJSON, ToJSON)
-
-newtype Student = Student
-    { matrNr :: Text
-    }
-    deriving (Ord, Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
 newtype TestRun = TestRun
