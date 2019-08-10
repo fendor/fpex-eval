@@ -12,13 +12,12 @@ data Options = Options
     }
 
 data OptionCommand
-    = Eval EvalCommand
+    = Grade CommandGrade
     | User UserManagementCommand
     deriving (Show)
 
-data EvalCommand = CommandGrade
-    { student :: Student
-    , testSuiteFile :: FilePath
+data CommandGrade = CommandGrade
+    { testSuiteFile :: FilePath
     }
     deriving (Show)
 
@@ -32,10 +31,9 @@ options :: ParserInfo Options
 options =
     let
         gradeParser =
-            Eval
+            Grade
                 <$> (   CommandGrade
-                    <$> (Student . T.pack <$> option str (long "student"))
-                    <*> option str (long "test-suite")
+                    <$> option str (long "test-suite")
                     )
         buildUserManagement user group prefix = UserManagementCommand
             user
