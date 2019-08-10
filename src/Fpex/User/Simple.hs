@@ -7,46 +7,29 @@ import           System.Process                 ( CreateProcess
                                                 , readCreateProcessWithExitCode
                                                 )
 import           System.Exit                    ( ExitCode(..) )
-
+import           Polysemy
+import           Polysemy.Error
+import Fpex.User.Effect
 
 -- | Create a user with the given group and assign a random password to it.
 -- If one of the commands fails, the user is deleted again and an error is returned.
-createUser :: Username -> UserGroup -> IO (Either UserError Password)
-createUser user group = do
-    -- TODO: Use polysemy
-    pwd@Password { password } <- newRandomPassword
-    let createUserCmd  = buildCreateUserCmd user group
-    let setPasswordCmd = buildSetPasswordCmd user
-    (exitCodeUserCmd, _, _) <- readCreateProcessWithExitCode createUserCmd ""
+createNewUser
+    :: (Members '[UserManagement, PasswordGenerator, Error UserError] r)
+    => Username
+    -> UserGroup
+    -> Sem r Password
+createNewUser user group = do
+    password                <- generatePassword
+
+    (exitCodeUserCmd, _, _) <- createUser user group
     case exitCodeUserCmd of
-        ExitFailure _ -> return $ Left CreationFailed
-        ExitSuccess   -> do
-            (exitCodePasswordCmd, _, _) <- readCreateProcessWithExitCode
-                setPasswordCmd
-                (unlines $ map T.unpack [password, password])
-            case exitCodePasswordCmd of
-                ExitFailure _ -> do
-                    _ <- readCreateProcessWithExitCode
-                        (buildDeleteUserCmd user)
-                        ""
-                    return $ Left PasswordNotSet
-                ExitSuccess -> return $ Right pwd
+        ExitFailure _ -> throw CreationFailed
+        ExitSuccess   -> return ()
 
--- | Uses pwgen utility to generate a random password.
-newRandomPassword :: IO Password
-newRandomPassword = return "secret"
+    (exitCodePassword, _, _) <- setPassword user password
+    case exitCodePassword of
+        ExitFailure _ -> do
+            deleteUser user
+            throw PasswordNotSet
+        ExitSuccess -> return password
 
-
-buildCreateUserCmd :: Username -> UserGroup -> CreateProcess
-buildCreateUserCmd Username { .. } UserGroup { .. }
-    = proc "useradd"
-        $  ["-m", T.unpack username, "-g", T.unpack group]
-        ++ maybe [] (\p -> ["-b", T.unpack p]) prefix
-
-buildSetPasswordCmd :: Username -> CreateProcess
-buildSetPasswordCmd Username { username } =
-    proc "passwd" [T.unpack username]
-
-buildDeleteUserCmd :: Username -> CreateProcess
-buildDeleteUserCmd Username { username } =
-    proc "userdel" ["-r", T.unpack username]
