@@ -14,6 +14,7 @@ data Options = Options
 data OptionCommand
     = Grade CommandGrade
     | User UserManagementCommand
+    | Setup
     deriving (Show)
 
 data CommandGrade = CommandGrade
@@ -50,6 +51,7 @@ options =
         commandParser = hsubparser
             (  command "grade" (info gradeParser fullDesc)
             <> command "user"  (info userParser fullDesc)
+            <> command "setup" (info (pure Setup) fullDesc)
             )
 
         courseOption = option str (long "course")

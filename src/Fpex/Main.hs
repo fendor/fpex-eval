@@ -16,8 +16,9 @@ import           Fpex.Course.Types
 import qualified Fpex.User.Simple              as User
 import qualified Fpex.User.Types               as User
 import qualified Fpex.User.Effect              as User
-import           Fpex.Eval.Main
+import           Fpex.Eval.Main                as Eval
 import           Fpex.Eval.Pretty              as Eval
+import           Fpex.Course.DirSetup          as Course
 
 defaultMain :: IO ()
 defaultMain = do
@@ -47,3 +48,7 @@ defaultMain = do
                 >>= \case
                         Left  err                        -> print err
                         Right User.Password { password } -> T.putStrLn password
+
+
+        Setup ->
+            Course.dirSetup course
