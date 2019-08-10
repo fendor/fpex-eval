@@ -18,22 +18,26 @@ import qualified Fpex.User.Types               as User
 import qualified Fpex.User.Effect              as User
 import           Fpex.Eval.Main                as Eval
 import           Fpex.Eval.Pretty              as Eval
+import           Fpex.Eval.Effect              as Eval
 import           Fpex.Course.DirSetup          as Course
 
 defaultMain :: IO ()
 defaultMain = do
-    Options {..} <- execParser options
+    Options {..}            <- execParser options
     -- TODO: error effect
-    Just course@Course{..} <- decodeFileStrict' optionCourseFile :: IO (Maybe Course)
+    Just course@Course {..} <-
+        decodeFileStrict' optionCourseFile :: IO (Maybe Course)
     print course
     let students = maybe courseStudents pure optionStudent
 
     case optionCommand of
         Grade CommandGrade {..} -> do
             Just testSuite <- decodeFileStrict' testSuiteFile
-            forM_ students $ \student@Student{..} -> do
+            forM_ students $ \student@Student {..} -> do
                 T.putStrLn $ "grade student " <> matrNr
-                testReport <- Eval.evalStudent testSuite student
+                testReport <- runM $ Eval.runGrade $ Eval.evalStudent
+                    testSuite
+                    student
                 T.putStrLn $ prettyTestReport testReport
                 putStrLn ""
 
@@ -50,5 +54,4 @@ defaultMain = do
                         Right User.Password { password } -> T.putStrLn password
 
 
-        Setup ->
-            Course.dirSetup course
+        Setup -> Course.dirSetup course

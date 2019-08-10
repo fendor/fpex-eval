@@ -2,18 +2,23 @@ module Fpex.Eval.Main where
 
 import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
-import           Control.Monad.IO.Class
-import           Fpex.Eval.Pretty
-import           Fpex.Eval.Types
-import           Fpex.Course.Types
+
 import           Control.Monad.Extra            ( whenJust )
 import           Control.Monad                  ( forM )
-import           System.Process                 ( readProcessWithExitCode )
+
+import           Polysemy
+
 import           System.Directory               ( doesFileExist )
 import           System.FilePath                ( (</>) )
-import           System.Exit                    ( ExitCode(..) )
 
-evalStudent :: TestSuite -> Student -> IO TestReport
+import           Fpex.Eval.Pretty
+import           Fpex.Eval.Types
+import           Fpex.Eval.Effect
+import           Fpex.Course.Types
+
+
+evalStudent
+    :: Members '[Embed IO, Grade] r => TestSuite -> Student -> Sem r TestReport
 evalStudent (TestSuite testGroups) student = studentFile student >>= \case
     -- If no file can be found, mark anything as not submitted.
     Nothing -> return $ TestReport
@@ -29,40 +34,27 @@ evalStudent (TestSuite testGroups) student = studentFile student >>= \case
         return $ TestReport testResults
 
 runTestGroup
-    :: FilePath
+    :: Members '[Embed IO, Grade] r
+    => FilePath
     -> TestGroup TestCase
-    -> IO (TestGroup (TestCase, TestCaseResult))
+    -> Sem r (TestGroup (TestCase, TestCaseResult))
 runTestGroup fp testGroup@TestGroup { group } = do
-    results <- forM group (runTest fp)
+    results <- forM group (gradeTestCase fp)
     return $ testGroup { group = zip group results }
 
-runTest :: FilePath -> TestCase -> IO TestCaseResult
-runTest fp TestCase { query } = do
-    -- TODO: generalise this
-    -- TODO: look at stderr to differentiate between compile error and not submitted
-    (exitCode, stdout, _) <- liftIO $ readProcessWithExitCode
-        "timeout"
-        ["3", "ghci", fp, "-e", T.unpack query]
-        []
-    case exitCode of
-        ExitFailure 124 -> return TestCaseTimeout
-        ExitFailure _   -> return TestCaseCompilefail
-        ExitSuccess     -> do
-            let actualOutput = T.strip $ T.pack stdout
-            return . TestCaseRun $ TestRun actualOutput
-
-studentFile :: Student -> IO (Maybe FilePath)
+-- TODO: this needs to go into some config effect
+studentFile :: Member (Embed IO) r => Student -> Sem r (Maybe FilePath)
 studentFile Student { matrNr } = do
     let fp = "testdata" </> "student-" <> T.unpack matrNr <> ".hs"
-    doesFileExist fp >>= \case
+    embed (doesFileExist fp) >>= \case
         True  -> pure $ Just fp
         False -> pure Nothing
 
+generateReport
+    :: Member (Embed IO) r => Student -> TestReport -> FilePath -> Sem r ()
+generateReport _ report _ = embed . T.putStrLn $ prettyTestReport report
 
-generateReport :: Student -> TestReport -> FilePath -> IO ()
-generateReport _ report _ = T.putStrLn $ prettyTestReport report
-
-grade :: TestSuite -> Student -> IO ()
+grade :: Members '[Embed IO, Grade] r => TestSuite -> Student -> Sem r ()
 grade testsuite student = do
     report  <- evalStudent testsuite student
     fileMay <- studentFile student

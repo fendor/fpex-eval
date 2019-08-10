@@ -5,10 +5,12 @@ import           Test.Tasty.Hspec
 import           Fpex.Eval.Main
 import           Fpex.Eval.Summary
 import           Fpex.Eval.Types
+import           Fpex.Eval.Effect
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 
 import           Fpex.Course.Types
+import           Polysemy                       ( runM )
 
 -- other tests
 import qualified Course
@@ -16,8 +18,8 @@ import qualified Course
 main :: IO ()
 main = do
   test <- testSpec "fpex-eval" $ do
-      spec
-      Course.spec
+    spec
+    Course.spec
   Test.Tasty.defaultMain test
 
 data Submission = Submission
@@ -75,7 +77,7 @@ submissionsSimple =
                       ]
                     ]
     , testSummary = mempty { okTest = 9 }
-    , points = 60
+    , points      = 60
     }
   , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
         -- Also, no submission for the function "factorial"
@@ -93,7 +95,7 @@ submissionsSimple =
                       ]
                     ]
     , testSummary = mempty { okTest = 3, failedTest = 6, compileFailTest = 3 }
-    , points = 15
+    , points      = 15
     }
   , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
     { student     = Student "1711000"
@@ -110,7 +112,7 @@ submissionsSimple =
                       ]
                     ]
     , testSummary = mempty { okTest = 6, failedTest = 3, compileFailTest = 0 }
-    , points = 45
+    , points      = 45
     }
   , Submission -- ^ Submission contains a typo. Thus, everything fails
     { student     = Student "1831000"
@@ -127,7 +129,7 @@ submissionsSimple =
                       ]
                     ]
     , testSummary = mempty { failedTest = 9, compileFailTest = 9 }
-    , points = 0
+    , points      = 0
     }
   , Submission -- ^ No submission for that matriculation number
     { student     = Student "1456000"
@@ -144,7 +146,7 @@ submissionsSimple =
                       ]
                     ]
     , testSummary = mempty { failedTest = 9, notSubmittedTest = 9 }
-    , points = 0
+    , points      = 0
     }
   , Submission -- ^ This case receives a timeout
     { student     = Student "1113330"
@@ -161,7 +163,7 @@ submissionsSimple =
                       ]
                     ]
     , testSummary = mempty { okTest = 5, failedTest = 4, timedOutTest = 4 }
-    , points = 40
+    , points      = 40
     }
   ]
 
@@ -176,14 +178,14 @@ spec =
           $ do
 
               it "test evaluation should be correct" $ do
-                report <- evalStudent testSuiteSimple (student submission)
+                report <- runM $ runGrade $ evalStudent testSuiteSimple (student submission)
                 map (map snd . group) (assignmentPoints report)
                   `shouldBe` testResults submission
 
               it "report should be correct" $ do
-                report <- evalStudent testSuiteSimple (student submission)
+                report <- runM $ runGrade $ evalStudent testSuiteSimple (student submission)
                 gradeReport report `shouldBe` testSummary submission
 
               it "points should be correct" $ do
-                report <- evalStudent testSuiteSimple (student submission)
+                report <- runM $ runGrade $ evalStudent testSuiteSimple (student submission)
                 scoreReport report `shouldBe` points submission

@@ -76,7 +76,10 @@ tests:
     - tasty
     - tasty-hspec
     - aeson
+    - polysemy
+    - polysemy-plugin
     ghc-options:
     - -rtsopts
     - -threaded
     - -with-rtsopts=-N
+    - -fplugin=Polysemy.Plugin
