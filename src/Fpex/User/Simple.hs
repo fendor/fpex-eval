@@ -1,15 +1,10 @@
 module Fpex.User.Simple where
 
-import qualified Data.Text                     as T
 import           Fpex.User.Types
-import           System.Process                 ( CreateProcess
-                                                , proc
-                                                , readCreateProcessWithExitCode
-                                                )
 import           System.Exit                    ( ExitCode(..) )
 import           Polysemy
 import           Polysemy.Error
-import Fpex.User.Effect
+import           Fpex.User.Effect
 
 -- | Create a user with the given group and assign a random password to it.
 -- If one of the commands fails, the user is deleted again and an error is returned.

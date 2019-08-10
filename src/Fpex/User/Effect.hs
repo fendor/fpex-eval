@@ -1,4 +1,14 @@
-module Fpex.User.Effect where
+module Fpex.User.Effect
+    ( runUserManagement
+    , runPasswordGenerator
+    , UserManagement(..)
+    , PasswordGenerator(..)
+    , generatePassword
+    , setPassword
+    , createUser
+    , deleteUser
+    )
+where
 
 
 import qualified Data.Text                     as T

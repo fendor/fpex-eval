@@ -1,7 +1,7 @@
 module Fpex.Mail.Template where
 
 import qualified Data.Text.Lazy                as LT
-import           Fpex.Mail.Simple               ( Mail(..) )
+import           Fpex.Mail.Types                ( Mail(..) )
 import           Fpex.User.Types
 
 userCreatedMail :: Password -> Mail -> Mail
