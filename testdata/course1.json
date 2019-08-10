@@ -1,0 +1,6 @@
+{
+    "courseName": "course1",
+    "courseHomeDir": "testdata/course1",
+    "courseStudents": [{"matrNr": "1234567"}],
+    "courseGroups": []
+}

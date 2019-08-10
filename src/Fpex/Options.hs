@@ -6,7 +6,13 @@ import           Fpex.User.Types
 import           Fpex.Eval.Types
 import           Fpex.Course.Types
 
-data Options
+data Options = Options
+    { optionCommand :: OptionCommand
+    , optionCourseFile :: FilePath
+    , optionStudent :: Maybe Student
+    }
+
+data OptionCommand
     = Eval EvalCommand
     | User UserManagementCommand
     deriving (Show)
@@ -44,9 +50,13 @@ options =
                         <$> optional (option str (long "home-prefix"))
                         )
                     )
-        parser = hsubparser
+        commandParser = hsubparser
             (  command "grade" (info gradeParser fullDesc)
             <> command "user"  (info userParser fullDesc)
             )
+
+        courseOption = option str (long "course")
+        studentOption = optional $ Student . T.pack <$> option str (long "student")
+        parser = Options <$> commandParser <*> courseOption <*> studentOption
     in
-        info (parser <**> helper) fullDesc
+        info (helper <*> parser) fullDesc
