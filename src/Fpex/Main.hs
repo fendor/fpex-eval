@@ -20,10 +20,11 @@ import           Fpex.Eval.Main                as Eval
 import           Fpex.Eval.Pretty              as Eval
 import           Fpex.Course.DirSetup          as Setup
 import           Fpex.Collect                  as Collect
+import           Fpex.Eval.Effect              as Eval
 
 defaultMain :: IO ()
 defaultMain = do
-    Options {..} <- execParser options
+    Options {..}            <- execParser options
     -- TODO: error effect
     Just course@Course{..} <- decodeFileStrict' optionCourseFile
     print course
@@ -32,9 +33,11 @@ defaultMain = do
     case optionCommand of
         Grade CommandGrade {..} -> do
             Just testSuite <- decodeFileStrict' testSuiteFile
-            forM_ students $ \student@Student{..} -> do
+            forM_ students $ \student@Student {..} -> do
                 T.putStrLn $ "grade student " <> matrNr
-                testReport <- Eval.evalStudent testSuite student
+                testReport <- runM $ Eval.runGrade $ Eval.evalStudent
+                    testSuite
+                    student
                 T.putStrLn $ prettyTestReport testReport
                 putStrLn ""
 
