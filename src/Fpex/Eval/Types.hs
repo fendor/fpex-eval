@@ -8,7 +8,7 @@ import           Data.Aeson                               ( FromJSON
                                                           )
 import           System.FilePath
 
-import Fpex.Course.Types
+import           Fpex.Course.Types
 
 
 newtype OkTest = OkTest { getOkTest :: Int }
@@ -33,11 +33,11 @@ newtype CompileFailTest = CompileFailTest { getCompileFailTest :: Int }
 
 data TestSummary =
     TestSummary
-        { okTest :: OkTest
-        , failedTest :: FailedTest
-        , timedOutTest :: TimedOutTest
-        , notSubmittedTest :: NotSubmittedTest
-        , compileFailTest :: CompileFailTest
+        { okTest :: !OkTest
+        , failedTest :: !FailedTest
+        , timedOutTest :: !TimedOutTest
+        , notSubmittedTest :: !NotSubmittedTest
+        , compileFailTest :: !CompileFailTest
         } deriving (Show, Eq)
 
 instance Semigroup TestSummary where
@@ -92,10 +92,10 @@ data TestCaseResult
     deriving anyclass (FromJSON, ToJSON)
 
 data TestGroup a = TestGroup
-    { label :: Text
-    , pointsPerTest :: Points
-    , penalty :: Points
-    , group :: [a]
+    { label :: !Text
+    , pointsPerTest :: !Points
+    , penalty :: !Points
+    , group :: ![a]
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
@@ -107,15 +107,15 @@ newtype TestReport = TestReport
     deriving anyclass (FromJSON, ToJSON)
 
 data TestSuite = TestSuite
-    { assignmentName :: Text
-    , testSuiteGroups :: [TestGroup TestCase]
+    { assignmentName :: !Text
+    , testSuiteGroups :: ![TestGroup TestCase]
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
 data TestCase = TestCase
-    { query :: Text
-    , expectedOutput :: Text
+    { query :: !Text
+    , expectedOutput :: !Text
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)

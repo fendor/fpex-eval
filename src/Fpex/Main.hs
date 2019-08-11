@@ -27,7 +27,7 @@ defaultMain :: IO ()
 defaultMain = do
     Options {..}            <- execParser options
     -- TODO: error effect
-    Just course@Course{..} <- decodeFileStrict' optionCourseFile
+    Just course@Course {..} <- decodeFileStrict' optionCourseFile
     let students = maybe courseStudents pure optionStudent
 
     case optionCommand of
@@ -35,10 +35,11 @@ defaultMain = do
             Just testSuite <- decodeFileStrict' testSuiteFile
             forM_ students $ \student@Student { matrNr } -> do
                 T.putStrLn $ "grade student " <> matrNr
-                testReport <- runM $ Eval.runGrade $ Eval.evalStudent
-                    course
-                    testSuite
-                    student
+                testReport <-
+                    runM
+                    $ Eval.runGrade
+                    $ Eval.runStudentData
+                    $ Eval.evalStudent course testSuite student
                 -- TODO: move this into grade-function?
                 T.writeFile (Eval.reportCollectFile course testSuite student)
                     $ prettyTestReport testReport
@@ -56,8 +57,7 @@ defaultMain = do
                         Right User.Password { password } -> T.putStrLn password
 
 
-        Setup ->
-            Setup.dirSetup course
-        Collect CollectCommand {collectTestSuiteFile} -> do
+        Setup -> Setup.dirSetup course
+        Collect CollectCommand { collectTestSuiteFile } -> do
             Just testSuite <- decodeFileStrict' collectTestSuiteFile
             forM_ students $ Collect.collectAssignment course testSuite

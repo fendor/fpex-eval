@@ -49,18 +49,17 @@ fibTestGroup = TestGroup
 
 testCourse :: Course
 testCourse = Course
-    { courseName= "course1"
-    , courseRootDir= "testdata/course1"
-    , courseStudents=
-        [ Student "1234567"
-        , Student "1000000"
-        , Student "1113330"
-        , Student "1711000"
-        , Student "1831000"
-        ]
-    , courseGroups= []
-    , courseUserPrefix= "c1-"
-    }
+  { courseName       = "course1"
+  , courseRootDir    = "testdata/course1"
+  , courseStudents   = [ Student "1234567"
+                       , Student "1000000"
+                       , Student "1113330"
+                       , Student "1711000"
+                       , Student "1831000"
+                       ]
+  , courseGroups     = []
+  , courseUserPrefix = "c1-"
+  }
 
 factorialTestGroup :: TestGroup TestCase
 factorialTestGroup = TestGroup
@@ -193,14 +192,24 @@ spec =
             ("submission of student" <> T.unpack (matrNr $ student submission))
           $ do
               it "test evaluation should be correct" $ do
-                report <- runM $ runGrade $ evalStudent testCourse testSuiteSimple (student submission)
+                report <- runEvalStudent testCourse
+                                         testSuiteSimple
+                                         (student submission)
                 map (map snd . group) (assignmentPoints report)
                   `shouldBe` testResults submission
 
               it "report should be correct" $ do
-                report <- runM $ runGrade $ evalStudent testCourse testSuiteSimple (student submission)
+                report <- runEvalStudent testCourse
+                                         testSuiteSimple
+                                         (student submission)
                 gradeReport report `shouldBe` testSummary submission
 
               it "points should be correct" $ do
-                report <- runM $ runGrade $ evalStudent testCourse testSuiteSimple (student submission)
+                report <- runEvalStudent testCourse
+                                         testSuiteSimple
+                                         (student submission)
                 scoreReport report `shouldBe` points submission
+
+runEvalStudent :: Course -> TestSuite -> Student -> IO TestReport
+runEvalStudent course suite submission =
+  runM . runGrade . runStudentData $ evalStudent course suite submission
