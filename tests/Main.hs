@@ -6,6 +6,7 @@ import           Fpex.Eval.Main
 import           Fpex.Eval.Summary
 import           Fpex.Eval.Types
 import           Fpex.Eval.Effect
+import           Fpex.Course.Types
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 
@@ -45,6 +46,21 @@ fibTestGroup = TestGroup
                     , TestCase "fib 5" "8"
                     ]
   }
+
+testCourse :: Course
+testCourse = Course
+    { courseName= "course1"
+    , courseRootDir= "testdata/course1"
+    , courseStudents=
+        [ Student "1234567"
+        , Student "1000000"
+        , Student "1113330"
+        , Student "1711000"
+        , Student "1831000"
+        ]
+    , courseGroups= []
+    , courseUserPrefix= "c1-"
+    }
 
 factorialTestGroup :: TestGroup TestCase
 factorialTestGroup = TestGroup
@@ -176,16 +192,15 @@ spec =
         describe
             ("submission of student" <> T.unpack (matrNr $ student submission))
           $ do
-
               it "test evaluation should be correct" $ do
-                report <- runM $ runGrade $ evalStudent testSuiteSimple (student submission)
+                report <- runM $ runGrade $ evalStudent testCourse testSuiteSimple (student submission)
                 map (map snd . group) (assignmentPoints report)
                   `shouldBe` testResults submission
 
               it "report should be correct" $ do
-                report <- runM $ runGrade $ evalStudent testSuiteSimple (student submission)
+                report <- runM $ runGrade $ evalStudent testCourse testSuiteSimple (student submission)
                 gradeReport report `shouldBe` testSummary submission
 
               it "points should be correct" $ do
-                report <- runM $ runGrade $ evalStudent testSuiteSimple (student submission)
+                report <- runM $ runGrade $ evalStudent testCourse testSuiteSimple (student submission)
                 scoreReport report `shouldBe` points submission

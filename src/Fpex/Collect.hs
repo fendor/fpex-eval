@@ -10,13 +10,11 @@ import Fpex.Eval.Types
 
 -- | collect assignment of single student
 collectAssignment :: Course -> TestSuite -> Student -> IO ()
-collectAssignment course TestSuite {assignmentName} student@Student{matrNr} = do
+collectAssignment course testSuite student = do
 
-    let sourceFile = studentDir course student </> T.unpack assignmentName <.> "hs"
-    let targetDir = courseAdminDir course </> T.unpack assignmentName
-    let targetFile = targetDir </> T.unpack matrNr <.> "hs"
+    let sourceFile = studentSourceFile course testSuite student
+    let targetDir = assignmentCollectDir course testSuite
+    let targetFile = assignmentCollectFile course testSuite student
 
     createDirectoryIfMissing False $ targetDir
-
-
     whenM (doesFileExist sourceFile) $ copyFile sourceFile targetFile

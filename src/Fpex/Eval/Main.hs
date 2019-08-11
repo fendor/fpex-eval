@@ -18,20 +18,21 @@ import           Fpex.Course.Types
 
 
 evalStudent
-    :: Members '[Embed IO, Grade] r => TestSuite -> Student -> Sem r TestReport
-evalStudent (TestSuite { testSuiteGroups }) student = studentFile student >>= \case
-    -- If no file can be found, mark anything as not submitted.
-    Nothing -> return $ TestReport
-        (map
-            (\testGroup@TestGroup { group } ->
-                testGroup { group = zip group (repeat TestCaseNotSubmitted) }
+    :: Members '[Embed IO, Grade] r => Course -> TestSuite -> Student -> Sem r TestReport
+evalStudent course testSuite@TestSuite { testSuiteGroups } student =
+    studentFile course testSuite student >>= \case
+        -- If no file can be found, mark anything as not submitted.
+        Nothing -> return $ TestReport
+            (map
+                (\testGroup@TestGroup { group } ->
+                    testGroup { group = zip group (repeat TestCaseNotSubmitted) }
+                )
+                testSuiteGroups
             )
-            testSuiteGroups
-        )
-    -- run the test cases only if there is a submission.
-    Just fp -> do
-        testResults <- mapM (runTestGroup fp) testSuiteGroups
-        return $ TestReport testResults
+        -- run the test cases only if there is a submission.
+        Just fp -> do
+            testResults <- mapM (runTestGroup fp) testSuiteGroups
+            return $ TestReport testResults
 
 runTestGroup
     :: Members '[Embed IO, Grade] r
@@ -43,19 +44,19 @@ runTestGroup fp testGroup@TestGroup { group } = do
     return $ testGroup { group = zip group results }
 
 -- TODO: this needs to go into some config effect
-studentFile :: Member (Embed IO) r => Student -> Sem r (Maybe FilePath)
-studentFile Student { matrNr } = do
-    let fp = "testdata" </> "student-" <> T.unpack matrNr <> ".hs"
-    embed (doesFileExist fp) >>= \case
-        True  -> pure $ Just fp
+studentFile :: Member (Embed IO) r => Course -> TestSuite -> Student -> Sem r (Maybe FilePath)
+studentFile course testSuite student = do
+    let sourceFile = assignmentCollectFile course testSuite student
+    embed (doesFileExist sourceFile) >>= \case
+        True  -> pure $ Just sourceFile
         False -> pure Nothing
 
 generateReport
     :: Member (Embed IO) r => Student -> TestReport -> FilePath -> Sem r ()
 generateReport _ report _ = embed . T.putStrLn $ prettyTestReport report
 
-grade :: Members '[Embed IO, Grade] r => TestSuite -> Student -> Sem r ()
-grade testsuite student = do
-    report  <- evalStudent testsuite student
-    fileMay <- studentFile student
-    whenJust fileMay $ \fp -> generateReport student report fp
+grade :: Members '[Embed IO, Grade] r => Course -> TestSuite -> Student -> Sem r ()
+grade course testSuite student = do
+    report  <- evalStudent course testSuite student
+    fileMay <- studentFile course testSuite student
+    whenJust fileMay $ generateReport student report

@@ -1,10 +1,15 @@
 module Fpex.Eval.Types where
 
 import           Data.Text                                ( Text )
+import qualified Data.Text                               as T
 import           GHC.Generics                             ( Generic )
 import           Data.Aeson                               ( FromJSON
                                                           , ToJSON
                                                           )
+import           System.FilePath
+
+import Fpex.Course.Types
+
 
 newtype OkTest = OkTest { getOkTest :: Int }
     deriving (Show, Generic)
@@ -114,3 +119,19 @@ data TestCase = TestCase
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
+
+studentSourceFile :: Course -> TestSuite -> Student -> FilePath
+studentSourceFile course TestSuite {assignmentName} student =
+    studentDir course student </> T.unpack assignmentName <.> "hs"
+
+assignmentCollectDir :: Course -> TestSuite -> FilePath
+assignmentCollectDir course TestSuite {assignmentName} =
+    courseAdminDir course </> T.unpack assignmentName
+
+assignmentCollectFile :: Course -> TestSuite -> Student -> FilePath
+assignmentCollectFile course testSuite Student{matrNr} =
+    assignmentCollectDir course testSuite </> T.unpack matrNr <.> "hs"
+
+reportCollectFile :: Course -> TestSuite -> Student -> FilePath
+reportCollectFile course testSuite Student{matrNr} =
+    assignmentCollectDir course testSuite </> T.unpack matrNr <.> "hs_out1"

@@ -1,0 +1,25 @@
+Fibonacci tests
+Points per test case: 5; penalty per failed test case: 0; maximum: 30
+
+Test case: fib 0 == 1; test OK
+Test case: fib 1 == 1; test OK
+Test case: fib 2 == 2; test OK
+Test case: fib 3 == 3; test OK
+Test case: fib 4 == 5; test OK
+Test case: fib 5 == 8; test OK
+
+OK tests: 6; FAILED tests: 0
+Score: 30
+
+Factorial tests
+Points per test case: 10; penalty per failed test case: 0; maximum: 30
+
+Test case: factorial 3 == 6; test OK
+Test case: factorial 0 == 1; test OK
+Test case: factorial 10 == 3628800; test OK
+
+OK tests: 3; FAILED tests: 0
+Score: 30
+
+
+Total Score: 60

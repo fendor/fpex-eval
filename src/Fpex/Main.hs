@@ -17,29 +17,31 @@ import qualified Fpex.User.Simple              as User
 import qualified Fpex.User.Types               as User
 import qualified Fpex.User.Effect              as User
 import           Fpex.Eval.Main                as Eval
+import           Fpex.Eval.Types               as Eval
+import           Fpex.Eval.Effect              as Eval
 import           Fpex.Eval.Pretty              as Eval
 import           Fpex.Course.DirSetup          as Setup
 import           Fpex.Collect                  as Collect
-import           Fpex.Eval.Effect              as Eval
 
 defaultMain :: IO ()
 defaultMain = do
     Options {..}            <- execParser options
     -- TODO: error effect
     Just course@Course{..} <- decodeFileStrict' optionCourseFile
-    print course
     let students = maybe courseStudents pure optionStudent
 
     case optionCommand of
         Grade CommandGrade {..} -> do
             Just testSuite <- decodeFileStrict' testSuiteFile
-            forM_ students $ \student@Student {..} -> do
+            forM_ students $ \student@Student { matrNr } -> do
                 T.putStrLn $ "grade student " <> matrNr
                 testReport <- runM $ Eval.runGrade $ Eval.evalStudent
+                    course
                     testSuite
                     student
-                T.putStrLn $ prettyTestReport testReport
-                putStrLn ""
+                -- TODO: move this into grade-function?
+                T.writeFile (Eval.reportCollectFile course testSuite student)
+                    $ prettyTestReport testReport
 
         User UserManagementCommand {..} ->
 
