@@ -18,13 +18,14 @@ import qualified Fpex.User.Types               as User
 import qualified Fpex.User.Effect              as User
 import           Fpex.Eval.Main                as Eval
 import           Fpex.Eval.Pretty              as Eval
-import           Fpex.Course.DirSetup          as Course
+import           Fpex.Course.DirSetup          as Setup
+import           Fpex.Collect                  as Collect
 
 defaultMain :: IO ()
 defaultMain = do
     Options {..} <- execParser options
     -- TODO: error effect
-    Just course@Course{..} <- decodeFileStrict' optionCourseFile :: IO (Maybe Course)
+    Just course@Course{..} <- decodeFileStrict' optionCourseFile
     print course
     let students = maybe courseStudents pure optionStudent
 
@@ -51,4 +52,7 @@ defaultMain = do
 
 
         Setup ->
-            Course.dirSetup course
+            Setup.dirSetup course
+        Collect CollectCommand {collectTestSuiteFile} -> do
+            Just testSuite <- decodeFileStrict' collectTestSuiteFile
+            forM_ students $ Collect.collectAssignment course testSuite

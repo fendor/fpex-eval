@@ -15,6 +15,7 @@ data OptionCommand
     = Grade CommandGrade
     | User UserManagementCommand
     | Setup
+    | Collect CollectCommand
     deriving (Show)
 
 data CommandGrade = CommandGrade
@@ -25,6 +26,11 @@ data CommandGrade = CommandGrade
 data UserManagementCommand = UserManagementCommand
     { username :: Username
     , userGroup :: UserGroup
+    }
+    deriving (Show)
+
+data CollectCommand = CollectCommand
+    { collectTestSuiteFile :: FilePath
     }
     deriving (Show)
 
@@ -48,10 +54,15 @@ options =
                         <$> optional (option str (long "home-prefix"))
                         )
                     )
+
+        collectParser =
+            Collect <$> (CollectCommand <$> option str (long "test-suite"))
+
         commandParser = hsubparser
             (  command "grade" (info gradeParser fullDesc)
             <> command "user"  (info userParser fullDesc)
             <> command "setup" (info (pure Setup) fullDesc)
+            <> command "collect" (info collectParser fullDesc)
             )
 
         courseOption = option str (long "course")

@@ -101,7 +101,10 @@ newtype TestReport = TestReport
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
-newtype TestSuite = TestSuite [TestGroup TestCase]
+data TestSuite = TestSuite
+    { assignmentName :: Text
+    , testSuiteGroups :: [TestGroup TestCase]
+    }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 

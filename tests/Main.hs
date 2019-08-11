@@ -28,7 +28,7 @@ data Submission = Submission
     }
 
 testSuiteSimple :: TestSuite
-testSuiteSimple = TestSuite testCasesSimple
+testSuiteSimple = TestSuite "" testCasesSimple
 
 fibTestGroup :: TestGroup TestCase
 fibTestGroup = TestGroup

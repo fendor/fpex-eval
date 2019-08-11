@@ -14,18 +14,18 @@ import           System.FilePath                ( (</>) )
 import           System.Exit                    ( ExitCode(..) )
 
 evalStudent :: TestSuite -> Student -> IO TestReport
-evalStudent (TestSuite testGroups) student = studentFile student >>= \case
+evalStudent (TestSuite { testSuiteGroups }) student = studentFile student >>= \case
     -- If no file can be found, mark anything as not submitted.
     Nothing -> return $ TestReport
         (map
             (\testGroup@TestGroup { group } ->
                 testGroup { group = zip group (repeat TestCaseNotSubmitted) }
             )
-            testGroups
+            testSuiteGroups
         )
     -- run the test cases only if there is a submission.
     Just fp -> do
-        testResults <- mapM (runTestGroup fp) testGroups
+        testResults <- mapM (runTestGroup fp) testSuiteGroups
         return $ TestReport testResults
 
 runTestGroup
