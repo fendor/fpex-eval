@@ -16,6 +16,7 @@ data OptionCommand
     | User UserManagementCommand
     | Setup
     | Collect CollectCommand
+    | Publish PublishCommand
     deriving (Show)
 
 data CommandGrade = CommandGrade
@@ -31,6 +32,11 @@ data UserManagementCommand = UserManagementCommand
 
 data CollectCommand = CollectCommand
     { collectTestSuiteFile :: FilePath
+    }
+    deriving (Show)
+
+data PublishCommand = PublishCommand
+    { publishTestSuiteFile :: FilePath
     }
     deriving (Show)
 
@@ -57,12 +63,15 @@ options =
 
         collectParser =
             Collect <$> (CollectCommand <$> option str (long "test-suite"))
+        publishParser =
+            Publish <$> (PublishCommand <$> option str (long "test-suite"))
 
         commandParser = hsubparser
-            (  command "grade" (info gradeParser fullDesc)
+            ( command "setup" (info (pure Setup) fullDesc)
             <> command "user"  (info userParser fullDesc)
-            <> command "setup" (info (pure Setup) fullDesc)
             <> command "collect" (info collectParser fullDesc)
+            <> command "grade" (info gradeParser fullDesc)
+            <> command "publish" (info publishParser fullDesc)
             )
 
         courseOption = option str (long "course")

@@ -1,7 +1,7 @@
 module Fpex.Collect where
 
 import           System.Directory
-import           Control.Monad.Extra            ( whenM )
+import           Control.Monad.Extra                      ( whenM )
 
 import           Fpex.Course.Types
 import           Fpex.Eval.Types

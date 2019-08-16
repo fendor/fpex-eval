@@ -1,12 +1,12 @@
 module Fpex.Course.DirSetup where
 
-import System.Directory
-import Control.Monad (forM_)
+import           System.Directory
+import           Control.Monad                            ( forM_ )
 
-import Fpex.Course.Types
+import           Fpex.Course.Types
 
 dirSetup :: Course -> IO ()
-dirSetup course@Course{..} = do
+dirSetup course@Course {..} = do
     -- create course directory
     createDirectoryIfMissing True courseRootDir
 

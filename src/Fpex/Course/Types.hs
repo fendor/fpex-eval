@@ -35,10 +35,6 @@ data Group = Group
     deriving (Ord, Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
-studentHomedir :: Course -> Student -> FilePath
-studentHomedir Course { courseName, courseRootDir } Student { matrNr } =
-    courseRootDir </> T.unpack (courseName <> matrNr)
-
 courseAdminDir :: Course -> FilePath
 courseAdminDir Course { courseRootDir } = courseRootDir </> "admin"
 

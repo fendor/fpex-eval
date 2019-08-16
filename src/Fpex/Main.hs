@@ -22,6 +22,7 @@ import           Fpex.Eval.Effect              as Eval
 import           Fpex.Eval.Pretty              as Eval
 import           Fpex.Course.DirSetup          as Setup
 import           Fpex.Collect                  as Collect
+import           Fpex.Publish                  as Publish
 
 defaultMain :: IO ()
 defaultMain = do
@@ -61,3 +62,6 @@ defaultMain = do
         Collect CollectCommand { collectTestSuiteFile } -> do
             Just testSuite <- decodeFileStrict' collectTestSuiteFile
             forM_ students $ Collect.collectAssignment course testSuite
+        Publish PublishCommand { publishTestSuiteFile } -> do
+            Just testSuite <- decodeFileStrict' publishTestSuiteFile
+            forM_ students $ Publish.publishTestResult course testSuite

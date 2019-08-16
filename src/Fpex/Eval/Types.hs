@@ -135,3 +135,7 @@ assignmentCollectFile course testSuite Student{matrNr} =
 reportCollectFile :: Course -> TestSuite -> Student -> FilePath
 reportCollectFile course testSuite Student{matrNr} =
     assignmentCollectDir course testSuite </> T.unpack matrNr <.> "hs_out1"
+
+reportPublishFile :: Course -> TestSuite -> Student -> FilePath
+reportPublishFile course TestSuite {assignmentName} student =
+    studentDir course student </> T.unpack assignmentName <.> "hs_out1"
