@@ -17,16 +17,17 @@ import           Data.Maybe (fromMaybe)
 
 type Parser = Parsec Void Text
 
-parseTestSpecification' :: FilePath
-          -> IO (Either (ParseErrorBundle Text Void) [Fpex.TestGroup Fpex.TestCase])
+parseTestSpecification'
+  :: FilePath
+  -> IO (Either (ParseErrorBundle Text Void) [Fpex.TestGroup Fpex.TestCase])
 parseTestSpecification' fp = do
   contents <- T.readFile fp
   return $ parseTestSpecification (Just fp) contents
 
-
-parseTestSpecification :: Maybe String
-          -> Text
-          -> Either (ParseErrorBundle Text Void) [Fpex.TestGroup Fpex.TestCase]
+parseTestSpecification
+  :: Maybe String
+  -> Text
+  -> Either (ParseErrorBundle Text Void) [Fpex.TestGroup Fpex.TestCase]
 parseTestSpecification fpM input =
   let contents' = T.unlines $ filter (not . T.isPrefixOf "#") (T.lines input)
   in parse parser (fromMaybe "" fpM) contents'
@@ -38,7 +39,6 @@ parser = do
 
 parseSingleTestGroup :: Parser (Fpex.TestGroup Fpex.TestCase)
 parseSingleTestGroup = do
-  -- TODO: sanity check
   space
   (perTest, penalty, maximal) <- points
   space
@@ -100,4 +100,9 @@ parseTestCaseSpecification input =
        E.ParseOk expr    -> case expr of
          (E.InfixApp _ inputExpr _ expectedExpr)
            -> Just (E.exactPrint inputExpr [], E.exactPrint expectedExpr [])
+         (E.Let l binds letExpr) -> case letExpr of
+           (E.InfixApp _ inputExpr _ expectedExpr) -> Just
+             ( E.exactPrint (E.Let l binds inputExpr) []
+             , E.exactPrint expectedExpr [])
+           _ -> Nothing
          _ -> Nothing
