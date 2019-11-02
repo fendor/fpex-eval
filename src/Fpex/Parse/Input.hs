@@ -13,16 +13,23 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Void
 import           Data.Coerce (coerce)
+import           Data.Maybe (fromMaybe)
 
 type Parser = Parsec Void Text
 
-test :: String -> IO ()
-test input = do
-  contents <- T.readFile input
-  let contents' = T.unlines $ filter (not . T.isPrefixOf "#") (T.lines contents)
-  let res = parse parser input contents'
-  print res
-  return ()
+parseTestSpecification' :: FilePath
+          -> IO (Either (ParseErrorBundle Text Void) [Fpex.TestGroup Fpex.TestCase])
+parseTestSpecification' fp = do
+  contents <- T.readFile fp
+  return $ parseTestSpecification (Just fp) contents
+
+
+parseTestSpecification :: Maybe String
+          -> Text
+          -> Either (ParseErrorBundle Text Void) [Fpex.TestGroup Fpex.TestCase]
+parseTestSpecification fpM input =
+  let contents' = T.unlines $ filter (not . T.isPrefixOf "#") (T.lines input)
+  in parse parser (fromMaybe "" fpM) contents'
 
 parser :: Parser [Fpex.TestGroup Fpex.TestCase]
 parser = do
