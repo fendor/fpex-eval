@@ -10,7 +10,6 @@ import           Fpex.Course.Types
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 
-import           Fpex.Course.Types
 import           Polysemy                       ( runM )
 
 -- other tests
@@ -191,20 +190,20 @@ spec =
         describe
             ("submission of student" <> T.unpack (matrNr $ student submission))
           $ do
-              it "test evaluation should be correct" $ do
+              it "evaluate tests" $ do
                 report <- runEvalStudent testCourse
                                          testSuiteSimple
                                          (student submission)
                 map (map snd . group) (assignmentPoints report)
                   `shouldBe` testResults submission
 
-              it "report should be correct" $ do
+              it "verify report" $ do
                 report <- runEvalStudent testCourse
                                          testSuiteSimple
                                          (student submission)
                 gradeReport report `shouldBe` testSummary submission
 
-              it "points should be correct" $ do
+              it "computed points" $ do
                 report <- runEvalStudent testCourse
                                          testSuiteSimple
                                          (student submission)

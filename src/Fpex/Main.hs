@@ -1,6 +1,5 @@
 module Fpex.Main where
 
-import           Data.Function                  ( (&) )
 import qualified Data.Text.IO                  as T
 import           Data.Aeson                     ( decodeFileStrict' )
 import           Control.Monad                  ( forM_ )
@@ -8,14 +7,8 @@ import           Control.Monad                  ( forM_ )
 import           Options.Applicative
 
 import           Polysemy                       ( runM )
-import           Polysemy.Error                 ( runError )
-import           Polysemy.IO                    ( embedToMonadIO )
-
 import           Fpex.Options
 import           Fpex.Course.Types
-import qualified Fpex.User.Simple              as User
-import qualified Fpex.User.Types               as User
-import qualified Fpex.User.Effect              as User
 import           Fpex.Eval.Main                as Eval
 import           Fpex.Eval.Types               as Eval
 import           Fpex.Eval.Effect              as Eval
@@ -44,18 +37,6 @@ defaultMain = do
                 -- TODO: move this into grade-function?
                 T.writeFile (Eval.reportCollectFile course testSuite student)
                     $ prettyTestReport testReport
-
-        User UserManagementCommand {..} ->
-
-            User.createNewUser username userGroup
-                &   User.runUserManagement
-                &   User.runPasswordGenerator
-                &   runError
-                &   embedToMonadIO
-                &   runM
-                >>= \case
-                        Left  err                        -> print err
-                        Right User.Password { password } -> T.putStrLn password
 
 
         Setup -> Setup.dirSetup course

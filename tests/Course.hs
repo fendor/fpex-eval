@@ -1,13 +1,8 @@
 module Course where
 
-import qualified Test.Tasty
 import           Test.Tasty.Hspec
 import           Fpex.Course.Types
-import qualified Data.Text                     as T
-import           Control.Monad                  ( forM_ )
 import           Data.Aeson                     (decodeFileStrict')
-
-import           Fpex.Course.Types
 
 courseEmpty :: Course
 courseEmpty =

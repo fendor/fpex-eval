@@ -33,7 +33,7 @@ runGrade = interpret $ \case
                 let actualOutput = T.strip $ T.pack stdout
                 return . TestCaseRun $ TestRun actualOutput
 
-runStudentData :: (Member (Embed IO) r) => Sem (StudentData : r) a -> Sem r a
+runStudentData :: Member (Embed IO) r => Sem (StudentData : r) a -> Sem r a
 runStudentData = interpret $ \case
             GetStudentSubmission course testSuite student -> do
                 let sourceFile = assignmentCollectFile course testSuite student

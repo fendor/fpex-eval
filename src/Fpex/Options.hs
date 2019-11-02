@@ -2,7 +2,6 @@ module Fpex.Options where
 
 import           Options.Applicative
 import qualified Data.Text                     as T
-import           Fpex.User.Types
 import           Fpex.Course.Types
 
 data Options = Options
@@ -13,7 +12,6 @@ data Options = Options
 
 data OptionCommand
     = Grade CommandGrade
-    | User UserManagementCommand
     | Setup
     | Collect CollectCommand
     | Publish PublishCommand
@@ -21,12 +19,6 @@ data OptionCommand
 
 data CommandGrade = CommandGrade
     { testSuiteFile :: FilePath
-    }
-    deriving (Show)
-
-data UserManagementCommand = UserManagementCommand
-    { username :: Username
-    , userGroup :: UserGroup
     }
     deriving (Show)
 
@@ -48,18 +40,6 @@ options =
                 <$> (   CommandGrade
                     <$> option str (long "test-suite")
                     )
-        buildUserManagement user group prefix = UserManagementCommand
-            user
-            (UserGroup { group, prefix })
-        userParser =
-            User
-                <$> (   buildUserManagement
-                    <$> (Username . T.pack <$> option str (long "username"))
-                    <*> (T.pack <$> option str (long "group"))
-                    <*> (   fmap T.pack
-                        <$> optional (option str (long "home-prefix"))
-                        )
-                    )
 
         collectParser =
             Collect <$> (CollectCommand <$> option str (long "test-suite"))
@@ -68,7 +48,6 @@ options =
 
         commandParser = hsubparser
             ( command "setup" (info (pure Setup) fullDesc)
-            <> command "user"  (info userParser fullDesc)
             <> command "collect" (info collectParser fullDesc)
             <> command "grade" (info gradeParser fullDesc)
             <> command "publish" (info publishParser fullDesc)
