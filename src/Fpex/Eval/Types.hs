@@ -95,6 +95,7 @@ data TestGroup a = TestGroup
     { label :: !Text
     , pointsPerTest :: !Points
     , penalty :: !Points
+    , maximal :: !Points
     , group :: ![a]
     }
     deriving (Eq, Show, Generic)

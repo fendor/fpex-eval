@@ -18,6 +18,7 @@ testgroups =
   [ TestGroup { label = ""
               , pointsPerTest = Points { getPoints = 10 }
               , penalty = Points { getPoints = 0 }
+              , maximal = Points { getPoints = 20 }
               , group =
                   [ TestCase { query = "[streiche s v 'c'|s<-[\"\",\"c\",\"a\"],v<-[-1..2]]"
                              , expectedOutput =
@@ -31,6 +32,7 @@ testgroups =
   , TestGroup { label = ""
               , pointsPerTest = Points { getPoints = 3 }
               , penalty = Points { getPoints = 0 }
+              , maximal = Points { getPoints = 15 }
               , group =
                   [ TestCase { query = "[n|n<-[0..99],ist_umgekehrt_2er_potenz n]"
                              , expectedOutput = "[1,2,4,8,10,20,23,40,46,61,80]"
@@ -52,6 +54,7 @@ testgroups =
   , TestGroup { label = ""
               , pointsPerTest = Points { getPoints = 3 }
               , penalty = Points { getPoints = 0 }
+              , maximal = Points { getPoints = 15 }
               , group =
                   [ TestCase { query =
                                  "[n|n<-[0..200],groesstes_palindrom_in[n]==n]"

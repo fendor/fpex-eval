@@ -40,7 +40,7 @@ parseSingleTestGroup :: Parser (Fpex.TestGroup Fpex.TestCase)
 parseSingleTestGroup = do
   -- TODO: sanity check
   space
-  (perTest, penalty, _) <- points
+  (perTest, penalty, maximal) <- points
   space
   testCases <- label "Parse test groups"
     $ many
@@ -52,6 +52,7 @@ parseSingleTestGroup = do
     Fpex.TestGroup { label = ""
                    , pointsPerTest = coerce perTest
                    , penalty = coerce penalty
+                   , maximal = coerce maximal
                    , group = testCases
                    }
 

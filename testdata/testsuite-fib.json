@@ -32,6 +32,9 @@
             "pointsPerTest": {
                 "getPoints": 5
             },
+            "maximal": {
+                "getPoints": 26
+            },
             "label": "Fibonacci tests"
         },
         {
@@ -53,6 +56,9 @@
             },
             "pointsPerTest": {
                 "getPoints": 10
+            },
+            "maximal": {
+                "getPoints": 30
             },
             "label": "Factorial tests"
         }

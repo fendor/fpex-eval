@@ -5,8 +5,10 @@ import           Data.Coerce                  ( coerce )
 import           Data.List                      ( foldl' )
 
 scoreGroup :: TestGroup (TestCase, TestCaseResult) -> TestSummary -> Points
-scoreGroup TestGroup { penalty, pointsPerTest } TestSummary { failedTest, okTest }
-    = coerce okTest * pointsPerTest - penalty * coerce failedTest
+scoreGroup TestGroup { penalty, pointsPerTest, maximal } TestSummary { failedTest, okTest }
+    = max (min points maximal) 0
+    where
+        points = coerce okTest * pointsPerTest - penalty * coerce failedTest
 
 scoreReport :: TestReport -> Points
 scoreReport (TestReport report) =

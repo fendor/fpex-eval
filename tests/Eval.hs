@@ -24,6 +24,7 @@ fibTestGroup =
   TestGroup { label = "Fibonacci tests"
             , pointsPerTest = Points 5
             , penalty = Points 0
+            , maximal = Points 26
             , group = [ TestCase "fib 0" "1"
                       , TestCase "fib 1" "1"
                       , TestCase "fib 2" "2"
@@ -50,6 +51,7 @@ factorialTestGroup =
   TestGroup { label = "Factorial tests"
             , pointsPerTest = Points 10
             , penalty = Points 0
+            , maximal = Points 30
             , group = [ TestCase "factorial 3" "6"
                       , TestCase "factorial 0" "1"
                       , TestCase "factorial 10" "3628800"]
@@ -72,7 +74,7 @@ submissionsSimple =
                           , TestCaseRun $ TestRun "1"
                           , TestCaseRun $ TestRun "3628800"]]
       , testSummary = mempty { okTest = 9 }
-      , points = 60
+      , points = 56
       }
   , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
       {   -- Also, no submission for the function "factorial"
