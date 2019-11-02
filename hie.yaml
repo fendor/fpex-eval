@@ -15,3 +15,7 @@ cradle:
         cradle:
           cabal:
             component: test:fpex-test
+    - path: ./testdata
+      config:
+        cradle:
+          none:

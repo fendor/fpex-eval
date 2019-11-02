@@ -46,6 +46,8 @@ library:
   - unix
   - polysemy
   - polysemy-plugin
+  - haskell-src-exts
+  - megaparsec
   source-dirs: src
   ghc-options: -O2 -flate-specialise -fspecialise-aggressively -fplugin=Polysemy.Plugin
 
