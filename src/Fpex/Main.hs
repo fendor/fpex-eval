@@ -7,6 +7,7 @@ import           Control.Monad                  ( forM_ )
 import           Options.Applicative
 
 import           Polysemy                       ( runM )
+import           Polysemy.State                 ( runState )
 import           Fpex.Options
 import           Fpex.Course.Types
 import           Fpex.Eval.Main                as Eval
@@ -29,11 +30,18 @@ defaultMain = do
             Just testSuite <- decodeFileStrict' testSuiteFile
             forM_ students $ \student@Student { matrNr } -> do
                 T.putStrLn $ "grade student " <> matrNr
-                testReport <-
+                testReportM <-
                     runM
+                    $ runState Nothing
                     $ Eval.runGrade
                     $ Eval.runStudentData
                     $ Eval.evalStudent course testSuite student
+
+                case fst testReportM of
+                    Just ProcessState { .. } -> stopGhciProcess ghciProcess
+                    Nothing -> return ()
+
+                let testReport = snd testReportM
                 -- TODO: move this into grade-function?
                 T.writeFile (Eval.reportCollectFile course testSuite student)
                     $ prettyTestReport testReport

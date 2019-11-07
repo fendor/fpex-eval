@@ -32,6 +32,7 @@ default-extensions:
 - GADTs
 - RankNTypes
 - TypeApplications
+- NumericUnderscores
 
 library:
   dependencies:
@@ -43,6 +44,7 @@ library:
   - directory
   - filepath
   - aeson
+  - async
   - unix
   - polysemy
   - polysemy-plugin
