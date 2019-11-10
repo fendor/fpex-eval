@@ -194,7 +194,7 @@ spec = describe "evaluate students" $ forM_ submissionsSimple $ \submission ->
 
 runEvalStudent :: Course -> TestSuite -> Student -> IO TestReport
 runEvalStudent course suite submission =
-  runM . runReader (Timeout 4.0) . runGrade Ghci . runStudentData $ evalStudent
+  runM . runReader (Timeout 4.0) . runGrade Hugs . runStudentData $ evalStudent
     course
     suite
     submission

@@ -6,9 +6,7 @@ import           Polysemy.State
 import           Polysemy.Reader
 import           Polysemy.Internal
 import qualified Data.Text                     as T
-import           Data.Maybe                     ( isNothing
-                                                , mapMaybe
-                                                )
+import           Data.Maybe                     ( isNothing )
 import           Control.Monad
 import           Control.Monad.Extra            ( whenJust )
 
@@ -56,22 +54,35 @@ runHugsGrade = interpret $ \case
         timeoutSec           <- ask @Timeout
         (exitCode, stout, _) <- embed $ readProcessWithExitCode
             "timeout"
-            [show $ getTimeout timeoutSec, "hugs", "-p:a%a:", fp]
+            [show $ getTimeout timeoutSec, "hugs", "-p" <> T.unpack prompt, fp]
             (T.unpack query)
         case exitCode of
             ExitFailure 124 -> return TestCaseTimeout
             ExitFailure _   -> return TestCaseCompilefail
             ExitSuccess     -> do
                 let actualOutput = T.strip $ T.pack stout
-                return . TestCaseRun $ TestRun $ parseHugsOutput actualOutput
-              where
-                parseHugsOutput :: T.Text -> T.Text
-                parseHugsOutput =
-                    T.strip
-                        . head
-                        . mapMaybe (T.stripPrefix ":a%a:")
-                        . filter (T.isPrefixOf ":a%a:")
-                        . T.lines
+                return $ parseHugsOutput actualOutput
+  where
+    prompt :: T.Text
+    prompt = ":a%a:"
+
+    extractTermBetween :: T.Text -> T.Text -> T.Text
+    extractTermBetween ctx input =
+        T.strip
+            . fst
+            . T.breakOn prompt
+            . T.drop (T.length prompt)
+            . snd
+            $ T.breakOn ctx input
+
+    parseHugsOutput :: T.Text -> TestCaseResult
+    parseHugsOutput input =
+        let parsedResult = extractTermBetween prompt input
+        in  case parsedResult of
+                "ERROR - Undefined variable"     -> TestCaseCompilefail
+                "ERROR - Control stack overflow" -> TestCaseTimeout
+                x | T.isPrefixOf "ERROR" x -> TestCaseCompilefail
+                _                          -> TestCaseRun $ TestRun parsedResult
 
 runGrade
     :: (Members '[Reader Timeout, Embed IO] r)
