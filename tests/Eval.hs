@@ -93,12 +93,12 @@ submissionsSimple =
                       , TestCaseRun $ TestRun "4"
                       , TestCaseRun $ TestRun "4"
                       ]
-                    , [ TestCaseTimeout
-                      , TestCaseTimeout
-                      , TestCaseTimeout
+                    , [ TestCaseCompilefail
+                      , TestCaseCompilefail
+                      , TestCaseCompilefail
                       ]
                     ]
-    , testSummary = mempty { okTest = 3, failedTest = 6, timedOutTest = 3 }
+    , testSummary = mempty { okTest = 3, failedTest = 6, compileFailTest = 3 }
     , points      = 15
     }
   , Submission -- ^ Fibonacci sequence incorrectly defined as f_(n+2) = f_n + f_n
@@ -194,7 +194,7 @@ spec = describe "evaluate students" $ forM_ submissionsSimple $ \submission ->
 
 runEvalStudent :: Course -> TestSuite -> Student -> IO TestReport
 runEvalStudent course suite submission =
-  runM . runReader (Timeout 2.0) . runGrade Ghci . runStudentData $ evalStudent
+  runM . runReader (Timeout 4.0) . runGrade Ghci . runStudentData $ evalStudent
     course
     suite
     submission

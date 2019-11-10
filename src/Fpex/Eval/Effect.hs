@@ -6,7 +6,9 @@ import           Polysemy.State
 import           Polysemy.Reader
 import           Polysemy.Internal
 import qualified Data.Text                     as T
-import           Data.Maybe                     ( isNothing )
+import           Data.Maybe                     ( isNothing
+                                                , mapMaybe
+                                                )
 import           Control.Monad
 import           Control.Monad.Extra            ( whenJust )
 
@@ -54,17 +56,22 @@ runHugsGrade = interpret $ \case
         timeoutSec           <- ask @Timeout
         (exitCode, stout, _) <- embed $ readProcessWithExitCode
             "timeout"
-            [ show $ getTimeout timeoutSec
-            , "hugs"
-            , fp
-            ]
+            [show $ getTimeout timeoutSec, "hugs", "-p:a%a:", fp]
             (T.unpack query)
         case exitCode of
             ExitFailure 124 -> return TestCaseTimeout
             ExitFailure _   -> return TestCaseCompilefail
             ExitSuccess     -> do
                 let actualOutput = T.strip $ T.pack stout
-                return . TestCaseRun $ TestRun actualOutput
+                return . TestCaseRun $ TestRun $ parseHugsOutput actualOutput
+              where
+                parseHugsOutput :: T.Text -> T.Text
+                parseHugsOutput =
+                    T.strip
+                        . head
+                        . mapMaybe (T.stripPrefix ":a%a:")
+                        . filter (T.isPrefixOf ":a%a:")
+                        . T.lines
 
 runGrade
     :: (Members '[Reader Timeout, Embed IO] r)
@@ -85,7 +92,7 @@ runGhciGrade
     :: Members '[Reader Timeout, Embed IO] r => Sem (Grade : r) a -> Sem r a
 runGhciGrade = interpret $ \case
     RunTestCase fp TestCase { query } -> do
-        timeoutSec <- ask
+        timeoutSec           <- ask
         (exitCode, stout, _) <- embed $ readProcessWithExitCode
             "timeout"
             [show $ getTimeout timeoutSec, "ghci", fp, "-e", T.unpack query]
