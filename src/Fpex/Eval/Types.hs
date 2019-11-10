@@ -31,6 +31,19 @@ newtype CompileFailTest = CompileFailTest { getCompileFailTest :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
+newtype Timeout = Timeout { getTimeout :: Float }
+    deriving (Show, Generic)
+    deriving newtype (Eq, Num, Ord)
+
+seconds :: Timeout -> Int
+seconds = round . (* 1_000_000) . getTimeout
+
+data GradeRunner
+    = Ghci
+    | Hugs
+    | SavedGhci
+    deriving (Ord, Show, Eq)
+
 data TestSummary =
     TestSummary
         { okTest :: !OkTest

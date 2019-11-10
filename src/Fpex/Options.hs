@@ -3,6 +3,7 @@ module Fpex.Options where
 import           Options.Applicative
 import qualified Data.Text                     as T
 import           Fpex.Course.Types
+import           Fpex.Eval.Types
 
 data Options = Options
     { optionCommand :: OptionCommand
@@ -19,8 +20,10 @@ data OptionCommand
 
 data CommandGrade = CommandGrade
     { testSuiteFile :: FilePath
+    , gradeRunner :: GradeRunner
+    , testTimeout :: Timeout
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data CollectCommand = CollectCommand
     { collectTestSuiteFile :: FilePath
@@ -39,6 +42,34 @@ options =
             Grade
                 <$> (   CommandGrade
                     <$> option str (long "test-suite")
+                    <*> (   flag'
+                              Hugs
+                              (  long "hugs"
+                              <> help "Grade students using 'Hugs'"
+                              )
+                        <|> flag'
+                                Ghci
+                                (  long "ghci"
+                                <> help
+                                       "Grade students using 'Ghci' (default)"
+                                )
+                        <|> flag'
+                                SavedGhci
+                                (  long "ghci-session"
+                                <> help
+                                       "Grade students using 'Ghci', reusing a Session if possible"
+                                )
+                        <|> pure Ghci
+                        )
+                    <*> (Timeout <$> option
+                            auto
+                            (  long "timeout"
+                            <> short 't'
+                            <> help
+                                   "Amount of time a test may run before receiving a timeout"
+                            <> value 5.0
+                            )
+                        )
                     )
 
         collectParser =
@@ -47,14 +78,15 @@ options =
             Publish <$> (PublishCommand <$> option str (long "test-suite"))
 
         commandParser = hsubparser
-            ( command "setup" (info (pure Setup) fullDesc)
+            (  command "setup"   (info (pure Setup) fullDesc)
             <> command "collect" (info collectParser fullDesc)
-            <> command "grade" (info gradeParser fullDesc)
+            <> command "grade"   (info gradeParser fullDesc)
             <> command "publish" (info publishParser fullDesc)
             )
 
         courseOption = option str (long "course")
-        studentOption = optional $ Student . T.pack <$> option str (long "student")
+        studentOption =
+            optional $ Student . T.pack <$> option str (long "student")
         parser = Options <$> commandParser <*> courseOption <*> studentOption
     in
         info (helper <*> parser) fullDesc

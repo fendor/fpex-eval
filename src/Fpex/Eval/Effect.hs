@@ -3,10 +3,15 @@ module Fpex.Eval.Effect where
 
 import           Polysemy
 import           Polysemy.State
+import           Polysemy.Reader
 import           Polysemy.Internal
 import qualified Data.Text                     as T
+import           Data.Maybe                     ( isNothing )
+import           Control.Monad
+import           Control.Monad.Extra            ( whenJust )
 
 import           System.Process
+import           System.Exit                    ( ExitCode(..) )
 import           System.IO
 import           System.Directory               ( doesFileExist )
 import           System.Timeout                 ( timeout )
@@ -26,47 +31,101 @@ data Grade m a where
 data StudentData m a where
     GetStudentSubmission ::Course -> TestSuite -> Student -> StudentData m (Maybe FilePath)
 
-runGrade :: Members [Embed IO, State (Maybe ProcessState)] r => Sem (Grade : r) a -> Sem r a
-runGrade = interpret $ \case
+runSessionGhciGrade
+    :: Members '[Reader Timeout, Embed IO, State (Maybe ProcessState)] r
+    => Sem (Grade : r) a
+    -> Sem r a
+runSessionGhciGrade = interpret $ \case
     RunTestCase fp testCase -> do
-        procState <- getGhciProcess fp
-        embed (timeout (seconds 5) $ runTestCase (ghciProcess procState) testCase)
+        timeoutTime <- ask
+        procState   <- getGhciProcess fp
+        embed (timeout (seconds timeoutTime) $ runTestCase procState testCase)
             >>= \case
-            Nothing -> do
-                embed $ stopGhciProcess (ghciProcess procState)
-                put @(Maybe ProcessState) Nothing
-                return TestCaseTimeout
-            Just testResult  -> return testResult
+                    Nothing -> do
+                        embed $ stopGhciProcess procState
+                        put @(Maybe ProcessState) Nothing
+                        return TestCaseTimeout
+                    Just testResult -> return testResult
 
-    where
-        seconds = (* (1_000_000 :: Int))
+runHugsGrade
+    :: Members '[Reader Timeout, Embed IO] r => Sem (Grade : r) a -> Sem r a
+runHugsGrade = interpret $ \case
+    RunTestCase fp TestCase { query } -> do
+        timeoutSec           <- ask @Timeout
+        (exitCode, stout, _) <- embed $ readProcessWithExitCode
+            "timeout"
+            [ show $ getTimeout timeoutSec
+            , "hugs"
+            , fp
+            ]
+            (T.unpack query)
+        case exitCode of
+            ExitFailure 124 -> return TestCaseTimeout
+            ExitFailure _   -> return TestCaseCompilefail
+            ExitSuccess     -> do
+                let actualOutput = T.strip $ T.pack stout
+                return . TestCaseRun $ TestRun actualOutput
 
-runTestCase
-    :: (Handle, Handle, Handle, ProcessHandle) -> TestCase -> IO TestCaseResult
-runTestCase (stin, stout, _, _) TestCase { query } = do
+runGrade
+    :: (Members '[Reader Timeout, Embed IO] r)
+    => GradeRunner
+    -> Sem (Grade : State (Maybe ProcessState) : r) a
+    -> Sem r a
+runGrade gradeRunner act = do
+    (s, res) <- runState @(Maybe ProcessState) Nothing $ case gradeRunner of
+        Hugs      -> runHugsGrade act
+        Ghci      -> runGhciGrade act
+        SavedGhci -> runSessionGhciGrade act
+
+    embed $ whenJust s stopGhciProcess
+    return res
+
+
+runGhciGrade
+    :: Members '[Reader Timeout, Embed IO] r => Sem (Grade : r) a -> Sem r a
+runGhciGrade = interpret $ \case
+    RunTestCase fp TestCase { query } -> do
+        timeoutSec <- ask
+        (exitCode, stout, _) <- embed $ readProcessWithExitCode
+            "timeout"
+            [show $ getTimeout timeoutSec, "ghci", fp, "-e", T.unpack query]
+            []
+        case exitCode of
+            ExitFailure 124 -> return TestCaseTimeout
+            ExitFailure _   -> return TestCaseCompilefail
+            ExitSuccess     -> do
+                let actualOutput = T.strip $ T.pack stout
+                return . TestCaseRun $ TestRun actualOutput
+
+runTestCase :: ProcessState -> TestCase -> IO TestCaseResult
+runTestCase s TestCase { query } = do
+    let (stin, stout, _, _) = ghciProcess s
     hPutStrLn stin (T.unpack query)
     output <- hGetLine stout
     return (TestCaseRun TestRun { actualOutput = T.pack output })
 
-stopGhciProcess :: (Handle, Handle, Handle, ProcessHandle) -> IO ()
-stopGhciProcess = cleanupProcess . wrap
+stopGhciProcess :: ProcessState -> IO ()
+stopGhciProcess ProcessState {..} = do
+    let procInfo@(stin, _, _, p) = ghciProcess
+    hPutStrLn stin ":q"
+    cleanupProcess $ wrap procInfo
+    e <- getProcessExitCode p
+    when (isNothing e) $ terminateProcess p
   where
     wrap
         :: (Handle, Handle, Handle, ProcessHandle)
         -> (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
-    wrap (o, i, e, p) = (Just o, Just i, Just e, p)
+    wrap (o, i, e, p') = (Just o, Just i, Just e, p')
 
 createGhciProcess
-    :: FilePath
-    -> FilePath
-    -> IO (Handle, Handle, Handle, ProcessHandle)
+    :: FilePath -> FilePath -> IO (Handle, Handle, Handle, ProcessHandle)
 createGhciProcess process fp = do
-    (Just stin, Just stout, Just sterr, procHandle) <- createProcess (proc process ["-v0", fp])
-        { std_out       = CreatePipe
-        , std_in        = CreatePipe
-        , std_err       = CreatePipe
-        }
-    hSetBuffering stin LineBuffering
+    (Just stin, Just stout, Just sterr, procHandle) <- createProcess
+        (proc process ["-v0", fp]) { std_out = CreatePipe
+                                   , std_in  = CreatePipe
+                                   , std_err = CreatePipe
+                                   }
+    hSetBuffering stin  LineBuffering
     hSetBuffering stout LineBuffering
     hSetBuffering sterr LineBuffering
     return (stin, stout, sterr, procHandle)
@@ -81,41 +140,36 @@ getGhciProcess fp = do
         Nothing -> do
             procInfo <- embed $ createGhciProcess "ghci" fp
             case procInfo of
-                (handleStdin, handleStdout, handleStderr, procHandle) ->
-                    do
-                        let procState =  ProcessState
-                                { assignment  = fp
-                                , ghciProcess =
-                                        ( handleStdin
-                                        , handleStdout
-                                        , handleStderr
-                                        , procHandle
-                                        )
-                                }
+                (handleStdin, handleStdout, handleStderr, procHandle) -> do
+                    let procState = ProcessState
+                            { assignment  = fp
+                            , ghciProcess = ( handleStdin
+                                            , handleStdout
+                                            , handleStderr
+                                            , procHandle
+                                            )
+                            }
 
-                        put @(Maybe ProcessState) (Just procState)
-                        return procState
-        Just procState ->
-            if assignment procState == fp
-                then return procState
-                else do
-                    embed . stopGhciProcess $ ghciProcess procState
-                    put @(Maybe ProcessState) Nothing
-                    procInfo <- embed $ createGhciProcess "ghci" fp
-                    case procInfo of
-                        (handleStdin, handleStdout, handleStderr, procHandle) ->
-                            do
-                                let newProcState =  ProcessState
-                                        { assignment  = fp
-                                        , ghciProcess =
-                                                ( handleStdin
+                    put @(Maybe ProcessState) (Just procState)
+                    return procState
+        Just procState -> if assignment procState == fp
+            then return procState
+            else do
+                embed $ stopGhciProcess procState
+                put @(Maybe ProcessState) Nothing
+                procInfo <- embed $ createGhciProcess "ghci" fp
+                case procInfo of
+                    (handleStdin, handleStdout, handleStderr, procHandle) -> do
+                        let newProcState = ProcessState
+                                { assignment  = fp
+                                , ghciProcess = ( handleStdin
                                                 , handleStdout
                                                 , handleStderr
                                                 , procHandle
                                                 )
-                                        }
-                                put @(Maybe ProcessState) (Just newProcState)
-                                return newProcState
+                                }
+                        put @(Maybe ProcessState) (Just newProcState)
+                        return newProcState
 
 
 

@@ -1,0 +1,23 @@
+# -- Ist ein Trigger dabei ist
+# Anzahl der Punkte pro Testfall / abzug pro fehlerhaften Testfall/ Gesamt
+# Punkte fuer diese Funktion
+
+
+--10/0/20
+{-1,1-}[streiche s v 'c'|s<-["","c","a"],v<-[-1..2]] == ["","","","","c","c","","c","a","a","a","a"]
+{-1,2-}[streiche s v 'c'|s<-["aca","acac"],v<-[-1..2]] == ["aca","aca","aa","aca","acac","acac","aa","aca"]
+
+--3/0/15
+{-2,1-} [n|n<-[0..99],ist_umgekehrt_2er_potenz n] == [1,2,4,8,10,20,23,40,46,61,80]
+{-2,2-} [n|n<-[100..160],ist_umgekehrt_2er_potenz n] == [100]
+{-2,3-} [n|i<-[0..29],n<-[(read.reverse.show)(2^i)::Int],not(ist_umgekehrt_2er_potenz n)] == []
+{-2,4-} [n|i<-[0..29],n<-[(read.reverse.show)(1+2^i)::Int],ist_umgekehrt_2er_potenz n] == [2]
+{-2,5-} [n|i<-[0..26],n<-[((10*).read.reverse.show)(2^i)::Int],not(ist_umgekehrt_2er_potenz n)] == []
+
+
+--3/0/15
+{-3,1-}[n|n<-[0..200],groesstes_palindrom_in[n]==n] == [0,1,2,3,4,5,6,7,8,9,11,22,33,44,55,66,77,88,99,101,111,121,131,141,151,161,171,181,191]
+{-3,2-}[n|n<-[1000..1200],groesstes_palindrom_in[n]==n] == [1001,1111]
+{-3,3-}groesstes_palindrom_in[0..120] == 111
+{-3,4-}groesstes_palindrom_in[0..500] == 494
+{-3,5-}groesstes_palindrom_in(reverse[0..500]) == 494

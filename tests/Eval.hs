@@ -9,7 +9,7 @@ import           Fpex.Course.Types
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 import           Polysemy                       ( runM )
-import           Polysemy.State                 ( runState )
+import           Polysemy.Reader                ( runReader )
 
 data Submission = Submission { student :: Student
                              , testResults :: [[TestCaseResult]]
@@ -193,12 +193,8 @@ spec = describe "evaluate students" $ forM_ submissionsSimple $ \submission ->
           scoreReport report `shouldBe` points submission
 
 runEvalStudent :: Course -> TestSuite -> Student -> IO TestReport
-runEvalStudent course suite submission = do
-  (processState, report) <-
-    runM
-    . runState @(Maybe ProcessState) Nothing
-    . runGrade
-    . runStudentData
-    $ evalStudent course suite submission
-  mapM_ (stopGhciProcess . ghciProcess) processState
-  return report
+runEvalStudent course suite submission =
+  runM . runReader (Timeout 2.0) . runGrade Ghci . runStudentData $ evalStudent
+    course
+    suite
+    submission
