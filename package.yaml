@@ -64,6 +64,18 @@ executables:
     - -rtsopts
     - -threaded
     - -with-rtsopts=-N
+  fpex-to-json:
+    source-dirs: util
+    main: DumpTestSpecification.hs
+    dependencies:
+    - base
+    - fpex
+    - text
+    - aeson
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
 
 tests:
   fpex-test:

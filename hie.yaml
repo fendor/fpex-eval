@@ -10,6 +10,11 @@ cradle:
         cradle:
           cabal:
             component: exe:fpex
+    - path: ./util
+      config:
+        cradle:
+          cabal:
+            component: exe:fpex-to-json
     - path: ./tests
       config:
         cradle:

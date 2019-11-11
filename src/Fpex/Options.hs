@@ -29,43 +29,52 @@ data CommandGrade = CommandGrade
     deriving (Show, Eq)
 
 data TestSuiteSpecification
-    = Legacy FilePath
-    -- ^ Legacy specification of the test-suite
+    = Legacy FilePath T.Text
+    -- ^ Legacy specification of the test-suite.
+    -- Also adds the assignment name since this information
+    -- is not contained in the legacy specification.
     | Json FilePath
     -- ^ Modern json specification of the test-suite
     deriving (Show, Eq, Read)
 
 data CollectCommand = CollectCommand
-    { collectTestSuiteFile :: FilePath
+    { collectTestSuiteFile :: TestSuiteSpecification
     }
     deriving (Show)
 
 data PublishCommand = PublishCommand
-    { publishTestSuiteFile :: FilePath
+    { publishTestSuiteFile :: TestSuiteSpecification
     }
     deriving (Show)
 
 options :: ParserInfo Options
 options =
     let
+        testSuiteParser =
+            Json
+                <$> option
+                        str
+                        (long "test-suite" <> help
+                            "Test-suite specification using the json format"
+                        )
+                <|> Legacy
+                <$> option
+                        str
+                        (long "legacy-test-suite" <> help
+                            "Test-suite specification using the legacy format"
+                        )
+                <*> option
+                        str
+                        (  long "legacy-assignment-name"
+                        <> help
+                               "Assignment name. Required since this information is not contained in the legacy specification."
+                        )
+
+
         gradeParser =
             Grade
                 <$> (   CommandGrade
-                    <$> (   Json
-                        <$> option
-                                str
-                                (  long "test-suite"
-                                <> help
-                                       "Test-suite specification using the json format"
-                                )
-                        <|> Legacy
-                        <$> option
-                                str
-                                (  long "test-suite-legacy"
-                                <> help
-                                       "Test-suite specification using the legacy format"
-                                )
-                        )
+                    <$> testSuiteParser
                     <*> (   flag'
                               Hugs
                               (  long "hugs"
@@ -96,10 +105,8 @@ options =
                         )
                     )
 
-        collectParser =
-            Collect <$> (CollectCommand <$> option str (long "test-suite"))
-        publishParser =
-            Publish <$> (PublishCommand <$> option str (long "test-suite"))
+        collectParser = Collect <$> (CollectCommand <$> testSuiteParser)
+        publishParser = Publish <$> (PublishCommand <$> testSuiteParser)
 
         commandParser = hsubparser
             (  command "setup"   (info (pure Setup) fullDesc)

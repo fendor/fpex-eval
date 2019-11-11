@@ -58,17 +58,17 @@ defaultMain = do
 
         Setup -> Setup.dirSetup course
         Collect CollectCommand { collectTestSuiteFile } -> do
-            Just testSuite <- decodeFileStrict' collectTestSuiteFile
+            Just testSuite <- getTestSuiteFile collectTestSuiteFile
             forM_ students $ Collect.collectAssignment course testSuite
         Publish PublishCommand { publishTestSuiteFile } -> do
-            Just testSuite <- decodeFileStrict' publishTestSuiteFile
+            Just testSuite <- getTestSuiteFile publishTestSuiteFile
             forM_ students $ Publish.publishTestResult course testSuite
 
 
 getTestSuiteFile :: TestSuiteSpecification -> IO (Maybe TestSuite)
-getTestSuiteFile (Legacy fp) = Parser.parseTestSpecification' fp >>= \case
+getTestSuiteFile (Legacy fp ass) = Parser.parseTestSpecification' fp >>= \case
     Left err -> do
         hPrint stderr err
         return Nothing
-    Right s -> return $ Just $ TestSuite "" s
+    Right s -> return $ Just $ TestSuite ass s
 getTestSuiteFile (Json fp) = decodeFileStrict' fp
