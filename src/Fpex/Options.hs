@@ -20,14 +20,19 @@ data OptionCommand
 
 data CommandGrade = CommandGrade
     { testSuiteSpec :: TestSuiteSpecification
+    -- ^ Test-suite to grade.
     , gradeRunner :: GradeRunner
+    -- ^ Which runner to use for executing the tests, e.g. Hugs or Ghci.
     , testTimeout :: Timeout
+    -- ^ Time in seconds each test may at most run before abort.
     }
     deriving (Show, Eq)
 
 data TestSuiteSpecification
     = Legacy FilePath
+    -- ^ Legacy specification of the test-suite
     | Json FilePath
+    -- ^ Modern json specification of the test-suite
     deriving (Show, Eq, Read)
 
 data CollectCommand = CollectCommand
