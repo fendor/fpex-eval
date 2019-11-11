@@ -88,7 +88,7 @@ testCase = do
   testCaseNumber <- between
     (string "{-")
     (string "-}")
-    (label "Parse test number" $ sepBy1 (some digitChar) (string ","))
+    (label "Parse test number" $ sepBy1 (some digitChar) (string "," <|> string "."))
   testCaseString <- many printChar
   return (map read testCaseNumber, testCaseString)
 
