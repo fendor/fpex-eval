@@ -79,7 +79,6 @@ runHugsGrade = interpret $ \case
     parseHugsOutput input =
         let parsedResult = extractTermBetween prompt input
         in  case parsedResult of
-                "ERROR - Undefined variable"     -> TestCaseCompilefail
                 "ERROR - Control stack overflow" -> TestCaseTimeout
                 x | T.isPrefixOf "ERROR" x -> TestCaseCompilefail
                 _                          -> TestCaseRun $ TestRun parsedResult

@@ -19,11 +19,16 @@ data OptionCommand
     deriving (Show)
 
 data CommandGrade = CommandGrade
-    { testSuiteFile :: FilePath
+    { testSuiteSpec :: TestSuiteSpecification
     , gradeRunner :: GradeRunner
     , testTimeout :: Timeout
     }
     deriving (Show, Eq)
+
+data TestSuiteSpecification
+    = Legacy FilePath
+    | Json FilePath
+    deriving (Show, Eq, Read)
 
 data CollectCommand = CollectCommand
     { collectTestSuiteFile :: FilePath
@@ -41,7 +46,21 @@ options =
         gradeParser =
             Grade
                 <$> (   CommandGrade
-                    <$> option str (long "test-suite")
+                    <$> (   Json
+                        <$> option
+                                str
+                                (  long "test-suite"
+                                <> help
+                                       "Test-suite specification using the json format"
+                                )
+                        <|> Legacy
+                        <$> option
+                                str
+                                (  long "test-suite-legacy"
+                                <> help
+                                       "Test-suite specification using the legacy format"
+                                )
+                        )
                     <*> (   flag'
                               Hugs
                               (  long "hugs"

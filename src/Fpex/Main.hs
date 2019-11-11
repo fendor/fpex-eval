@@ -7,9 +7,7 @@ import           Control.Monad                  ( forM_ )
 import           Options.Applicative
 
 import           Polysemy
-import           Polysemy.Reader                ( runReader
-
-                                                )
+import           Polysemy.Reader                ( runReader )
 import           Fpex.Options
 import           Fpex.Course.Types
 import           Fpex.Eval.Main                as Eval
@@ -19,6 +17,12 @@ import           Fpex.Eval.Pretty              as Eval
 import           Fpex.Course.DirSetup          as Setup
 import           Fpex.Collect                  as Collect
 import           Fpex.Publish                  as Publish
+import qualified Fpex.Parse.Input              as Parser
+import           System.IO                      ( stderr
+                                                , hPrint
+                                                , hPutStrLn
+                                                )
+import           System.Exit                    ( exitFailure )
 
 defaultMain :: IO ()
 defaultMain = do
@@ -29,20 +33,27 @@ defaultMain = do
 
     case optionCommand of
         Grade CommandGrade {..} -> do
-            Just testSuite <- decodeFileStrict' testSuiteFile
-            forM_ students $ \student@Student { matrNr } -> do
-                -- Run logging effect
-                T.putStrLn $ "grade student " <> matrNr
-                testReport <-
-                    runM
-                    $ runReader testTimeout
-                    $ Eval.runGrade gradeRunner
-                    $ Eval.runStudentData
-                    $ Eval.evalStudent course testSuite student
+            testSuiteM <- getTestSuiteFile testSuiteSpec
+            case testSuiteM of
+                Nothing -> do
+                    hPutStrLn stderr "Could not decode test-suite specification"
+                    exitFailure
+                Just testSuite ->
+                    forM_ students $ \student@Student { matrNr } -> do
+                        -- Run logging effect
+                        T.putStrLn $ "Grading student " <> matrNr
+                        testReport <-
+                            runM
+                            $ runReader testTimeout
+                            $ Eval.runGrade gradeRunner
+                            $ Eval.runStudentData
+                            $ Eval.evalStudent course testSuite student
 
-                -- TODO: move this into grade-function?
-                T.writeFile (Eval.reportCollectFile course testSuite student)
-                    $ prettyTestReport testReport
+                        -- TODO: move this into grade-function?
+                        T.writeFile
+                                (Eval.reportCollectFile course testSuite student
+                                )
+                            $ prettyTestReport testReport
 
 
         Setup -> Setup.dirSetup course
@@ -52,3 +63,12 @@ defaultMain = do
         Publish PublishCommand { publishTestSuiteFile } -> do
             Just testSuite <- decodeFileStrict' publishTestSuiteFile
             forM_ students $ Publish.publishTestResult course testSuite
+
+
+getTestSuiteFile :: TestSuiteSpecification -> IO (Maybe TestSuite)
+getTestSuiteFile (Legacy fp) = Parser.parseTestSpecification' fp >>= \case
+    Left err -> do
+        hPrint stderr err
+        return Nothing
+    Right s -> return $ Just $ TestSuite "" s
+getTestSuiteFile (Json fp) = decodeFileStrict' fp
