@@ -1,18 +1,25 @@
-module Fpex.Eval.Summary (gradeReport, gradeTestGroup, scoreReport, scoreGroup) where
+module Fpex.Eval.Summary
+    ( gradeReport
+    , gradeTestGroup
+    , scoreReport
+    , scoreGroup
+    )
+where
 
 import           Fpex.Eval.Types
-import           Data.Coerce                  ( coerce )
+import           Data.Coerce                    ( coerce )
 import           Data.List                      ( foldl' )
 
-scoreGroup :: TestGroup (TestCase, TestCaseResult) -> TestSummary -> Points
-scoreGroup TestGroup { penalty, pointsPerTest, maximal } TestSummary { failedTest, okTest }
-    = max (min points maximal) 0
-    where
-        points = coerce okTest * pointsPerTest - penalty * coerce failedTest
+scoreGroup :: TestGroup (TestCase, TestCaseResult) -> Points
+scoreGroup t@TestGroup { penalty, pointsPerTest, maximal } = max
+    (min points maximal)
+    0
+  where
+    TestSummary { okTest, failedTest } = gradeTestGroup t
+    points = coerce okTest * pointsPerTest - penalty * coerce failedTest
 
 scoreReport :: TestReport -> Points
-scoreReport (TestReport report) =
-    sum $ map (\rep -> scoreGroup rep $ gradeTestGroup rep) report
+scoreReport (TestReport report) = sum $ map scoreGroup report
 
 gradeTestGroup :: TestGroup (TestCase, TestCaseResult) -> TestSummary
 gradeTestGroup TestGroup { group } =
