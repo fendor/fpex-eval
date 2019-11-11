@@ -1,17 +1,13 @@
 {
     "courseName": "course1",
     "courseRootDir": "testdata/course1",
-    "courseStudents": [{
-        "matrNr": "1234567"
-    }, {
-        "matrNr": "1000000"
-    }, {
-        "matrNr": "1113330"
-    }, {
-        "matrNr": "1711000"
-    }, {
-        "matrNr": "1831000"
-    }],
+    "courseStudents": [
+        "1234567",
+        "1000000",
+        "1113330",
+        "1711000",
+        "1831000"
+    ],
     "courseGroups": [],
     "courseUserPrefix": "c1-"
 }

@@ -1,11 +1,10 @@
 {
     "courseName": "course3",
     "courseRootDir": "testdata/course3",
-    "courseStudents": [{
-        "matrNr": "1234567"
-    }, {
-        "matrNr": "1000000"
-    }],
+    "courseStudents": [
+        "1234567",
+        "1000000"
+    ],
     "courseGroups": [],
     "courseUserPrefix": "c3-"
 }

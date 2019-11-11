@@ -87,8 +87,7 @@ testCompileFail = mempty { compileFailTest = 1 }
 
 newtype Points = Points { getPoints :: Int }
     deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
-    deriving anyclass (FromJSON, ToJSON)
+    deriving newtype (Eq, Num, Ord, FromJSON, ToJSON)
 
 newtype TestRun = TestRun
     { actualOutput :: Text
@@ -118,7 +117,7 @@ newtype TestReport = TestReport
     { assignmentPoints :: [TestGroup (TestCase, TestCaseResult)]
     }
     deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+    deriving newtype (FromJSON, ToJSON)
 
 data TestSuite = TestSuite
     { assignmentName :: !Text

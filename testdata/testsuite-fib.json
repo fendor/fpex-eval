@@ -1,7 +1,9 @@
 {
     "assignmentName": "assignment1",
-    "testSuiteGroups": [{
-            "group": [{
+    "testSuiteGroups": [
+        {
+            "group": [
+                {
                     "query": "fib 0",
                     "expectedOutput": "1"
                 },
@@ -26,19 +28,14 @@
                     "expectedOutput": "8"
                 }
             ],
-            "penalty": {
-                "getPoints": 0
-            },
-            "pointsPerTest": {
-                "getPoints": 5
-            },
-            "maximal": {
-                "getPoints": 26
-            },
+            "penalty": 0,
+            "pointsPerTest": 5,
+            "maximal": 26,
             "label": "Fibonacci tests"
         },
         {
-            "group": [{
+            "group": [
+                {
                     "query": "factorial 3",
                     "expectedOutput": "6"
                 },
@@ -51,15 +48,9 @@
                     "expectedOutput": "3628800"
                 }
             ],
-            "penalty": {
-                "getPoints": 0
-            },
-            "pointsPerTest": {
-                "getPoints": 10
-            },
-            "maximal": {
-                "getPoints": 30
-            },
+            "penalty": 0,
+            "pointsPerTest": 10,
+            "maximal": 30,
             "label": "Factorial tests"
         }
     ]

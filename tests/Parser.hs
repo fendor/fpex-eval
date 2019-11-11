@@ -11,7 +11,7 @@ spec = describe "parser tests" $ do
     parseResult <- liftIO $ parseTestSpecification' "testdata/ws19_fp_ueb01_testfaelle.tex"
     parseResult `shouldBe` Right testgroups
 
-  it "Parse first exercise" $ do
+  it "Parse second exercise" $ do
     parseResult <- liftIO $ parseTestSpecification' "testdata/ws19_fp_ueb02_testfaelle.tex"
     parseResult `shouldBe` Right moretests
 

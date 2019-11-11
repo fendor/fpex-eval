@@ -25,8 +25,7 @@ newtype Student = Student
     { matrNr :: Text
     }
     deriving (Ord, Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
-    deriving newtype (FromJSONKey, ToJSONKey)
+    deriving newtype (FromJSON, ToJSON, FromJSONKey, ToJSONKey)
 
 data Group = Group
     { groupName :: Text
