@@ -20,13 +20,13 @@ renderTestGroup :: TestGroup (TestCase, TestCaseResult) -> T.Text
 renderTestGroup testGroup@TestGroup { label, group, pointsPerTest, penalty, maximal }
     = let TestSummary { okTest, failedTest } = gradeTestGroup testGroup
       in  T.unlines
-              $  [ label
-                 , "Points per test case: "
-                 <> T.pack (show $ getPoints pointsPerTest)
-                 <> "; penalty per failed test case: "
-                 <> T.pack (show $ getPoints penalty)
-                 <> "; maximum: "
-                 <> T.pack (show $ getPoints maximal)
+              $  [label | not $ T.null label]
+              <> [ "Points per test case: "
+                   <> T.pack (show $ getPoints pointsPerTest)
+                   <> "; penalty per failed test case: "
+                   <> T.pack (show $ getPoints penalty)
+                   <> "; maximum: "
+                   <> T.pack (show $ getPoints maximal)
                  ]
               <> [""]
               <> map (uncurry renderTestCase) group
