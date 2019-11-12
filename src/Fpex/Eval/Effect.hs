@@ -18,7 +18,6 @@ import           System.Timeout                 ( timeout )
 
 import           Fpex.Course.Types
 import           Fpex.Eval.Types
-import Debug.Trace
 
 data ProcessState = ProcessState
     { assignment :: FilePath
@@ -82,7 +81,7 @@ runHugsGrade = interpret $ \case
         in  case parsedResult of
                 "ERROR - Control stack overflow" -> TestCaseTimeout
                 x | T.isPrefixOf "ERROR" x -> TestCaseCompilefail
-                x | T.isPrefixOf "Program Error" x -> TestRunTimeException
+                x | T.isInfixOf "Program error" x -> TestRunTimeException
                 _                          -> TestCaseRun $ TestRun parsedResult
 
 runGrade
