@@ -55,4 +55,6 @@ renderTestCase TestCase { query } TestCaseCompilefail =
     "Test case: " <> query <> " ; test FAILED COMPILATION"
 renderTestCase TestCase { query } TestCaseTimeout =
     "Test case: " <> query <> " ; test TIMED OUT"
+renderTestCase TestCase { query } TestRunTimeException =
+    "Test case: " <> query <> " ; test RUN-TIME EXCEPTION"
 

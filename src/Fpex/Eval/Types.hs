@@ -35,6 +35,10 @@ newtype Timeout = Timeout { getTimeout :: Float }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
+newtype RunTimeException = RunTimeException { getRunTimeException :: Int }
+    deriving (Show, Generic)
+    deriving newtype (Eq, Num, Ord)
+
 seconds :: Timeout -> Int
 seconds = round . (* 1_000_000) . getTimeout
 
@@ -51,6 +55,7 @@ data TestSummary =
         , timedOutTest :: !TimedOutTest
         , notSubmittedTest :: !NotSubmittedTest
         , compileFailTest :: !CompileFailTest
+        , runTimeExceptionTest :: !RunTimeException
         } deriving (Show, Eq)
 
 instance Semigroup TestSummary where
@@ -60,6 +65,7 @@ instance Semigroup TestSummary where
         , timedOutTest     = timedOutTest t1 + timedOutTest t2
         , notSubmittedTest = notSubmittedTest t1 + notSubmittedTest t2
         , compileFailTest  = compileFailTest t1 + compileFailTest t2
+        , runTimeExceptionTest = runTimeExceptionTest t1 + runTimeExceptionTest t2
         }
 
 instance Monoid TestSummary where
@@ -68,6 +74,7 @@ instance Monoid TestSummary where
                          , timedOutTest     = 0
                          , notSubmittedTest = 0
                          , compileFailTest  = 0
+                         , runTimeExceptionTest = 0
                          }
 
 testOk :: TestSummary
@@ -85,6 +92,9 @@ testNotSubmitted = mempty { notSubmittedTest = 1 }
 testCompileFail :: TestSummary
 testCompileFail = mempty { compileFailTest = 1 }
 
+testRunTimeException :: TestSummary
+testRunTimeException = mempty { runTimeExceptionTest = 1 }
+
 newtype Points = Points { getPoints :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord, FromJSON, ToJSON)
@@ -97,6 +107,7 @@ newtype TestRun = TestRun
 
 data TestCaseResult
     = TestCaseRun TestRun
+    | TestRunTimeException
     | TestCaseCompilefail
     | TestCaseNotSubmitted
     | TestCaseTimeout

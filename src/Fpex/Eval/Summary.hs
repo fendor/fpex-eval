@@ -29,6 +29,7 @@ gradedPoints :: TestCase -> TestCaseResult -> TestSummary
 gradedPoints _ TestCaseCompilefail  = testCompileFail <> testFailed
 gradedPoints _ TestCaseNotSubmitted = testNotSubmitted <> testFailed
 gradedPoints _ TestCaseTimeout      = testTimeOut <> testFailed
+gradedPoints _ TestRunTimeException = testRunTimeException <> testFailed
 gradedPoints TestCase { expectedOutput } (TestCaseRun TestRun { actualOutput })
     = if expectedOutput == actualOutput then testOk else testFailed
 

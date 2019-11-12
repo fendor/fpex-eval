@@ -14,6 +14,7 @@ import           Fpex.Eval.Main                as Eval
 import           Fpex.Eval.Types               as Eval
 import           Fpex.Eval.Effect              as Eval
 import           Fpex.Eval.Pretty              as Eval
+import           Fpex.Log.Effect              as Log
 import           Fpex.Course.DirSetup          as Setup
 import           Fpex.Collect                  as Collect
 import           Fpex.Publish                  as Publish
@@ -44,6 +45,7 @@ defaultMain = do
                         T.putStrLn $ "Grading student " <> matrNr
                         testReport <-
                             runM
+                            $ Log.runLog
                             $ runReader testTimeout
                             $ Eval.runGrade gradeRunner
                             $ Eval.runStudentData

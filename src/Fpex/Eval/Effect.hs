@@ -18,6 +18,7 @@ import           System.Timeout                 ( timeout )
 
 import           Fpex.Course.Types
 import           Fpex.Eval.Types
+import Debug.Trace
 
 data ProcessState = ProcessState
     { assignment :: FilePath
@@ -81,6 +82,7 @@ runHugsGrade = interpret $ \case
         in  case parsedResult of
                 "ERROR - Control stack overflow" -> TestCaseTimeout
                 x | T.isPrefixOf "ERROR" x -> TestCaseCompilefail
+                x | T.isPrefixOf "Program Error" x -> TestRunTimeException
                 _                          -> TestCaseRun $ TestRun parsedResult
 
 runGrade
@@ -187,8 +189,6 @@ getGhciProcess fp = do
                                 }
                         put @(Maybe ProcessState) (Just newProcState)
                         return newProcState
-
-
 
 runStudentData :: Member (Embed IO) r => Sem (StudentData : r) a -> Sem r a
 runStudentData = interpret $ \case

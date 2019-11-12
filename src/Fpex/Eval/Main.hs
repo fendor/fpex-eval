@@ -12,11 +12,12 @@ import           Polysemy.Output
 import           Fpex.Eval.Pretty
 import           Fpex.Eval.Types
 import           Fpex.Eval.Effect
+import           Fpex.Log.Effect
 import           Fpex.Course.Types
 
 
 evalStudent
-    :: Members '[StudentData, Grade] r
+    :: Members '[StudentData, Grade, Log] r
     => Course
     -> TestSuite
     -> Student
@@ -24,26 +25,31 @@ evalStudent
 evalStudent course testSuite@TestSuite { testSuiteGroups } student =
     getStudentSubmission course testSuite student >>= \case
         -- If no file can be found, mark anything as not submitted.
-        Nothing -> return $ TestReport
-            (map
-                (\testGroup@TestGroup { group } -> testGroup
-                    { group = zip group (repeat TestCaseNotSubmitted)
-                    }
+        Nothing -> do
+            debug $ "Student: " <> matrNr student <> " had not submission"
+            return $ TestReport
+                (map
+                    (\testGroup@TestGroup { group } -> testGroup
+                        { group = zip group (repeat TestCaseNotSubmitted)
+                        }
+                    )
+                    testSuiteGroups
                 )
-                testSuiteGroups
-            )
         -- run the test cases only if there is a submission.
         Just fp -> do
             testResults <- mapM (runTestGroup fp) testSuiteGroups
             return $ TestReport testResults
 
 runTestGroup
-    :: Members '[Grade] r
+    :: Members '[Grade, Log] r
     => FilePath
     -> TestGroup TestCase
     -> Sem r (TestGroup (TestCase, TestCaseResult))
 runTestGroup fp testGroup@TestGroup { group } = do
-    results <- forM group (gradeTestCase fp)
+    results <- forM group $ \testCase -> do
+        res <- gradeTestCase fp testCase
+        traceTestCase res
+        return res
     return $ testGroup { group = zip group results }
 
 
@@ -52,12 +58,13 @@ generateReport
 generateReport _ report _ = output $ prettyTestReport report
 
 grade
-    :: Members '[Output T.Text, StudentData, Grade] r
+    :: Members '[Output T.Text, StudentData, Grade, Log] r
     => Course
     -> TestSuite
     -> Student
     -> Sem r ()
 grade course testSuite student = do
+    logStudent student
     report  <- evalStudent course testSuite student
     fileMay <- getStudentSubmission course testSuite student
     whenJust fileMay $ generateReport student report
