@@ -26,7 +26,7 @@ evalStudent course testSuite@TestSuite { testSuiteGroups } student =
     getStudentSubmission course testSuite student >>= \case
         -- If no file can be found, mark anything as not submitted.
         Nothing -> do
-            debug $ "Student: " <> matrNr student <> " had not submission"
+            debug $ "Student \"" <> matrNr student <> "\" has no submission"
             return $ TestReport
                 (map
                     (\testGroup@TestGroup { group } -> testGroup

@@ -26,6 +26,11 @@ logStudent t = send (LogStudent t)
 runLog :: Member (Embed IO) r => Sem (Log : r) a -> Sem r a
 runLog = interpret $ \case
     Debug         t -> embed $ T.hPutStrLn stderr t
-    TraceTestCase t -> embed $ T.hPutStrLn stderr $ T.pack $ show t
+    TraceTestCase t -> embed $ T.hPutStrLn stderr $ "\t" <> case t of
+        TestCaseRun r        -> "Result: " <> actualOutput r
+        TestRunTimeException -> "Run-Time Exception"
+        TestCaseCompilefail  -> "Compilation Failed"
+        TestCaseNotSubmitted -> "Testcase has not been submitted"
+        TestCaseTimeout      -> "Testcase received a timeout"
     LogStudent t ->
-        embed $ T.hPutStrLn stderr $ "Evaluate Student: " <> T.pack (show t)
+        embed $ T.hPutStrLn stderr $ "Evaluate Student: " <> matrNr t
