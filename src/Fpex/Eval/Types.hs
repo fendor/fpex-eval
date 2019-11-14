@@ -163,7 +163,7 @@ assignmentCollectFile sid course testSuite Student{matrNr} =
 
 reportCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
 reportCollectFile sid course testSuite Student{matrNr} =
-    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> ("hs_out_" <> show (getSubmissionId sid))
+    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> "hs_out"
 
 reportJsonFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
 reportJsonFile sid course testSuite Student{matrNr} =
