@@ -9,6 +9,7 @@ data Options = Options
     { optionCommand :: OptionCommand
     , optionCourseFile :: FilePath
     , optionStudent :: Maybe Student
+    , optionSubmissionId :: SubmissionId
     }
 
 data OptionCommand
@@ -115,9 +116,21 @@ options =
             <> command "publish" (info publishParser fullDesc)
             )
 
-        courseOption = option str (long "course")
-        studentOption =
-            optional $ Student . T.pack <$> option str (long "student")
-        parser = Options <$> commandParser <*> courseOption <*> studentOption
+        courseOption  = option str (long "course")
+        studentOption = optional $ Student <$> option str (long "student")
+        submissionId  = SubmissionId <$> option
+            auto
+            (long "submission-id" <> short 'n' <> help
+                ("Id of the submission."
+                <> " Can be used to collect, grade and publish an assignment multiple times."
+                <> " Submission id is added as a suffix to the submission folder."
+                )
+            )
+        parser =
+            Options
+                <$> commandParser
+                <*> courseOption
+                <*> studentOption
+                <*> submissionId
     in
         info (helper <*> parser) fullDesc

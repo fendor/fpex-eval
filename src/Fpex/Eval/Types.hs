@@ -35,6 +35,10 @@ newtype Timeout = Timeout { getTimeout :: Float }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
+newtype SubmissionId = SubmissionId { getSubmissionId :: Int }
+    deriving (Show, Generic)
+    deriving newtype (Eq, Num, Ord)
+
 newtype RunTimeException = RunTimeException { getRunTimeException :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
@@ -144,26 +148,27 @@ data TestCase = TestCase
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
+
 studentSourceFile :: Course -> TestSuite -> Student -> FilePath
 studentSourceFile course TestSuite {assignmentName} student =
     studentDir course student </> T.unpack assignmentName <.> "hs"
 
-assignmentCollectDir :: Course -> TestSuite -> FilePath
-assignmentCollectDir course TestSuite {assignmentName} =
-    courseAdminDir course </> T.unpack assignmentName
+assignmentCollectDir :: SubmissionId -> Course -> TestSuite -> FilePath
+assignmentCollectDir sid course TestSuite {assignmentName} =
+    courseAdminDir course </> (T.unpack assignmentName <> "-" <> show (getSubmissionId sid))
 
-assignmentCollectFile :: Course -> TestSuite -> Student -> FilePath
-assignmentCollectFile course testSuite Student{matrNr} =
-    assignmentCollectDir course testSuite </> T.unpack matrNr <.> "hs"
+assignmentCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+assignmentCollectFile sid course testSuite Student{matrNr} =
+    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> "hs"
 
-reportCollectFile :: Course -> TestSuite -> Student -> FilePath
-reportCollectFile course testSuite Student{matrNr} =
-    assignmentCollectDir course testSuite </> T.unpack matrNr <.> "hs_out1"
+reportCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+reportCollectFile sid course testSuite Student{matrNr} =
+    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> ("hs_out_" <> show (getSubmissionId sid))
 
-reportJsonFile :: Course -> TestSuite -> Student -> FilePath
-reportJsonFile course testSuite Student{matrNr} =
-    assignmentCollectDir course testSuite </> T.unpack matrNr <.> ".json"
+reportJsonFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+reportJsonFile sid course testSuite Student{matrNr} =
+    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> ".json"
 
-reportPublishFile :: Course -> TestSuite -> Student -> FilePath
-reportPublishFile course TestSuite {assignmentName} student =
-    studentDir course student </> T.unpack assignmentName <.> "hs_out1"
+reportPublishFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+reportPublishFile sid course TestSuite {assignmentName} student =
+    studentDir course student </> T.unpack assignmentName <.> ("hs_out_" <> show (getSubmissionId sid))

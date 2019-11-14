@@ -43,6 +43,7 @@ defaultMain = do
                     testReport <-
                         runM
                         $ Log.runLog
+                        $ runReader optionSubmissionId
                         $ runReader testTimeout
                         $ Eval.runGrade gradeRunner
                         $ Eval.runStudentData
@@ -50,21 +51,26 @@ defaultMain = do
 
                     -- TODO: move this into grade-function?
                     T.writeFile
-                            (Eval.reportCollectFile course testSuite student)
+                            (Eval.reportCollectFile optionSubmissionId course testSuite student
+                            )
                         $ prettyTestReport testReport
 
                     Aeson.encodeFile
-                        (Eval.reportCollectFile course testSuite student)
+                        (Eval.reportJsonFile optionSubmissionId course testSuite student)
                         testReport
 
 
         Setup -> Setup.dirSetup course
         Collect CollectCommand { collectTestSuiteFile } -> do
             Just testSuite <- getTestSuiteFile collectTestSuiteFile
-            forM_ students $ Collect.collectAssignment course testSuite
+            forM_ students $ Collect.collectAssignment optionSubmissionId
+                                                       course
+                                                       testSuite
         Publish PublishCommand { publishTestSuiteFile } -> do
             Just testSuite <- getTestSuiteFile publishTestSuiteFile
-            forM_ students $ Publish.publishTestResult course testSuite
+            forM_ students $ Publish.publishTestResult optionSubmissionId
+                                                       course
+                                                       testSuite
 
 
 getTestSuiteFile :: TestSuiteSpecification -> IO (Maybe TestSuite)

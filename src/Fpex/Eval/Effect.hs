@@ -189,10 +189,11 @@ getGhciProcess fp = do
                         put @(Maybe ProcessState) (Just newProcState)
                         return newProcState
 
-runStudentData :: Member (Embed IO) r => Sem (StudentData : r) a -> Sem r a
+runStudentData :: Members '[Embed IO, Reader SubmissionId] r => Sem (StudentData : r) a -> Sem r a
 runStudentData = interpret $ \case
     GetStudentSubmission course testSuite student -> do
-        let sourceFile = assignmentCollectFile course testSuite student
+        sid <- ask
+        let sourceFile = assignmentCollectFile sid course testSuite student
         embed (doesFileExist sourceFile) >>= \case
             True  -> pure $ Just sourceFile
             False -> pure Nothing
