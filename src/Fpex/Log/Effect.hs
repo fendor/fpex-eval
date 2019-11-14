@@ -34,3 +34,9 @@ runLog = interpret $ \case
         TestCaseTimeout      -> "Testcase received a timeout"
     LogStudent t ->
         embed $ T.hPutStrLn stderr $ "Evaluate Student: " <> matrNr t
+
+runVoidLog :: Member (Embed IO) r => Sem (Log : r) a -> Sem r a
+runVoidLog = interpret $ \case
+    Debug         _ -> embed (return () :: IO ())
+    TraceTestCase _ -> embed (return () :: IO ())
+    LogStudent    _ -> embed (return () :: IO ())

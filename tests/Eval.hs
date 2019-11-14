@@ -6,6 +6,7 @@ import           Fpex.Eval.Summary
 import           Fpex.Eval.Types
 import           Fpex.Eval.Effect
 import           Fpex.Course.Types
+import           Fpex.Log.Effect
 import qualified Data.Text                     as T
 import           Control.Monad                  ( forM_ )
 import           Polysemy                       ( runM )
@@ -194,7 +195,7 @@ spec = describe "evaluate students" $ forM_ submissionsSimple $ \submission ->
 
 runEvalStudent :: Course -> TestSuite -> Student -> IO TestReport
 runEvalStudent course suite submission =
-  runM . runReader (Timeout 4.0) . runGrade Hugs . runStudentData $ evalStudent
+  runM . runVoidLog . runReader (Timeout 4.0) . runGrade Hugs . runStudentData $ evalStudent
     course
     suite
     submission

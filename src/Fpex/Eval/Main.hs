@@ -22,11 +22,12 @@ evalStudent
     -> TestSuite
     -> Student
     -> Sem r TestReport
-evalStudent course testSuite@TestSuite { testSuiteGroups } student =
+evalStudent course testSuite@TestSuite { testSuiteGroups } student@Student { matrNr } = do
+    debug $ "Grading student " <> matrNr
     getStudentSubmission course testSuite student >>= \case
         -- If no file can be found, mark anything as not submitted.
         Nothing -> do
-            debug $ "Student \"" <> matrNr student <> "\" has no submission"
+            debug $ "Student \"" <> matrNr <> "\" has no submission"
             return $ TestReport
                 (map
                     (\testGroup@TestGroup { group } -> testGroup

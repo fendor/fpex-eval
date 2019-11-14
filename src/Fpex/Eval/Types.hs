@@ -160,6 +160,10 @@ reportCollectFile :: Course -> TestSuite -> Student -> FilePath
 reportCollectFile course testSuite Student{matrNr} =
     assignmentCollectDir course testSuite </> T.unpack matrNr <.> "hs_out1"
 
+reportJsonFile :: Course -> TestSuite -> Student -> FilePath
+reportJsonFile course testSuite Student{matrNr} =
+    assignmentCollectDir course testSuite </> T.unpack matrNr <.> ".json"
+
 reportPublishFile :: Course -> TestSuite -> Student -> FilePath
 reportPublishFile course TestSuite {assignmentName} student =
     studentDir course student </> T.unpack assignmentName <.> "hs_out1"

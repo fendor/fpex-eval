@@ -14,9 +14,9 @@ data Course = Course
     { courseName :: Text
     -- | The root-directory of the course. Contains home-dirs of the users and the `admin` directory
     , courseRootDir :: FilePath
-    , courseStudents :: [Student]
     , courseGroups :: [Group]
     , courseUserPrefix :: Text
+    , courseStudents :: [Student]
     }
     deriving (Ord, Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
