@@ -83,14 +83,14 @@ testCaseParser = do
                   , expectedOutput = T.strip $ T.pack expectedOutput
                   }
 
-testCase :: Parser ([Int], String)
+testCase :: Parser ([String], String)
 testCase = do
-  testCaseNumber <- between
+  testCaseIdentifier <- between
     (string "{-")
     (string "-}")
     (label "Parse test number" $ sepBy1 (some digitChar) (string "," <|> string "."))
   testCaseString <- many printChar
-  return (map read testCaseNumber, testCaseString)
+  return (testCaseIdentifier, testCaseString)
 
 parseTestCaseSpecification :: String -> Maybe (String, String)
 parseTestCaseSpecification input =
