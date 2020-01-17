@@ -24,3 +24,7 @@ cradle:
       config:
         cradle:
           none:
+    - path: Setup.hs
+      config:
+        cradle:
+          none:

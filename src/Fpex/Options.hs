@@ -7,9 +7,9 @@ import           Fpex.Eval.Types
 
 data Options = Options
     { optionCommand :: OptionCommand
-    , optionCourseFile :: FilePath
+    , optionCourseFile :: Maybe FilePath
     , optionStudent :: Maybe Student
-    , optionSubmissionId :: SubmissionId
+    -- , optionSubmissionId :: SubmissionId
     }
 
 data OptionCommand
@@ -19,13 +19,9 @@ data OptionCommand
     | Publish PublishCommand
     deriving (Show)
 
-data CommandGrade = CommandGrade
-    { testSuiteSpec :: TestSuiteSpecification
-    -- ^ Test-suite to grade.
-    , gradeRunner :: GradeRunner
-    -- ^ Which runner to use for executing the tests, e.g. Hugs or Ghci.
-    , testTimeout :: Timeout
-    -- ^ Time in seconds each test may at most run before abort.
+data TestSuiteOptions = TestSuiteOptions 
+    { optionSubmissionId :: SubmissionId
+    , optionTestSuiteSpecification :: TestSuiteSpecification
     }
     deriving (Show, Eq)
 
@@ -38,13 +34,23 @@ data TestSuiteSpecification
     -- ^ Modern json specification of the test-suite
     deriving (Show, Eq, Read)
 
+data CommandGrade = CommandGrade
+    { gradeTestSuiteOptions :: TestSuiteOptions
+    -- ^ Test-suite to grade.
+    , gradeRunner :: GradeRunner
+    -- ^ Which runner to use for executing the tests, e.g. Hugs or Ghci.
+    , testTimeout :: Timeout
+    -- ^ Time in seconds each test may at most run before abort.
+    }
+    deriving (Show, Eq)
+
 data CollectCommand = CollectCommand
-    { collectTestSuiteFile :: TestSuiteSpecification
+    { collectTestSuiteOptions :: TestSuiteOptions
     }
     deriving (Show)
 
 data PublishCommand = PublishCommand
-    { publishTestSuiteFile :: TestSuiteSpecification
+    { publishTestSuiteOptions :: TestSuiteOptions
     }
     deriving (Show)
 
@@ -71,11 +77,23 @@ options =
                                "Assignment name. Required since this information is not contained in the legacy specification."
                         )
 
+        submissionIdParser = SubmissionId <$> option
+            auto
+            (long "submission-id" <> short 'n' <> help
+                ("Id of the submission."
+                <> " Can be used to collect, grade and publish an assignment multiple times."
+                <> " Submission id is added as a suffix to the submission folder."
+                )
+            )
+
+        testSuiteOptionParser =
+            TestSuiteOptions <$> submissionIdParser <*> testSuiteParser
+
 
         gradeParser =
             Grade
                 <$> (   CommandGrade
-                    <$> testSuiteParser
+                    <$> testSuiteOptionParser
                     <*> (   flag'
                               Hugs
                               (  long "hugs"
@@ -106,8 +124,8 @@ options =
                         )
                     )
 
-        collectParser = Collect <$> (CollectCommand <$> testSuiteParser)
-        publishParser = Publish <$> (PublishCommand <$> testSuiteParser)
+        collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)
+        publishParser = Publish <$> (PublishCommand <$> testSuiteOptionParser)
 
         commandParser = hsubparser
             (  command "setup"   (info (pure Setup) fullDesc)
@@ -116,21 +134,9 @@ options =
             <> command "publish" (info publishParser fullDesc)
             )
 
-        courseOption  = option str (long "course")
+        courseOption = optional $ option str (long "course")
         studentOption = optional $ Student <$> option str (long "student")
-        submissionId  = SubmissionId <$> option
-            auto
-            (long "submission-id" <> short 'n' <> help
-                ("Id of the submission."
-                <> " Can be used to collect, grade and publish an assignment multiple times."
-                <> " Submission id is added as a suffix to the submission folder."
-                )
-            )
-        parser =
-            Options
-                <$> commandParser
-                <*> courseOption
-                <*> studentOption
-                <*> submissionId
+
+        parser = Options <$> commandParser <*> courseOption <*> studentOption
     in
         info (helper <*> parser) fullDesc
