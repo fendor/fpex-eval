@@ -48,6 +48,7 @@ defaultMain' = do
     Options {..} <- embed $ execParser options
 
     case optionCommand of
+        EdslGrade testSuiteSpec -> error "not implemented"
         Grade CommandGrade {..} -> do
             course@Course {..} <- getCourseConfig optionCourseFile
             let students = maybe courseStudents pure optionStudent
@@ -122,14 +123,15 @@ getDefaultCourseFile :: IO (Maybe FilePath)
 getDefaultCourseFile = do
     ancestors <-
         map joinPath . reverse . inits . splitPath <$> getCurrentDirectory
-    findM (\f -> doesFileExist $ f </> "course.json") ancestors
+    let possibleCourseJsonFiles = map (</> "course.json") ancestors
+    findM doesFileExist possibleCourseJsonFiles
 
 getCourseFile
     :: (Member (Error Text) r, Member (Embed IO) r)
     => Maybe FilePath
     -> Sem r (Maybe FilePath)
 getCourseFile (Just c) = return $ Just c
-getCourseFile Nothing  = embed $ getDefaultCourseFile
+getCourseFile Nothing  = embed getDefaultCourseFile
 
 getCourseConfig
     :: (Member (Error Text) r, Member (Embed IO) r)

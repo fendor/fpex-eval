@@ -14,12 +14,13 @@ data Options = Options
 
 data OptionCommand
     = Grade CommandGrade
+    | EdslGrade TestSuiteOptions
     | Setup
     | Collect CollectCommand
     | Publish PublishCommand
     deriving (Show)
 
-data TestSuiteOptions = TestSuiteOptions 
+data TestSuiteOptions = TestSuiteOptions
     { optionSubmissionId :: SubmissionId
     , optionTestSuiteSpecification :: TestSuiteSpecification
     }
@@ -32,6 +33,8 @@ data TestSuiteSpecification
     -- is not contained in the legacy specification.
     | Json FilePath
     -- ^ Modern json specification of the test-suite
+    | EdslSpec FilePath
+    -- ^ specification of the test-suite using the edsl format
     deriving (Show, Eq, Read)
 
 data CommandGrade = CommandGrade
@@ -76,6 +79,12 @@ options =
                         <> help
                                "Assignment name. Required since this information is not contained in the legacy specification."
                         )
+                <|> EdslSpec
+                <$> option 
+                        str
+                        (long "edsl-test-suite" <> help
+                            "Test-suite specification using the edsl format"
+                        )
 
         submissionIdParser = SubmissionId <$> option
             auto
@@ -89,6 +98,7 @@ options =
         testSuiteOptionParser =
             TestSuiteOptions <$> submissionIdParser <*> testSuiteParser
 
+        edslGradeParser = EdslGrade <$> testSuiteOptionParser
 
         gradeParser =
             Grade
@@ -131,6 +141,7 @@ options =
             (  command "setup"   (info (pure Setup) fullDesc)
             <> command "collect" (info collectParser fullDesc)
             <> command "grade"   (info gradeParser fullDesc)
+            <> command "edsl-grade"   (info edslGradeParser fullDesc)
             <> command "publish" (info publishParser fullDesc)
             )
 

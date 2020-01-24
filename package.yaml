@@ -91,6 +91,7 @@ tests:
     - text
     - tasty
     - tasty-hspec
+    - HUnit
     - aeson
     - polysemy
     - polysemy-plugin

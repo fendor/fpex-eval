@@ -7,8 +7,11 @@ import qualified Course
 import qualified Eval
 import qualified Parser
 
+import qualified Experiments
+
 main :: IO ()
 main = do
+  Experiments.run
   test <- testSpec "fpex-eval"
     $ do
       Eval.spec

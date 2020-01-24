@@ -2,8 +2,8 @@ module Fpex.Collect where
 
 import           System.Directory
 import           System.IO
-import           Data.List
-import           Control.Monad.Extra                      ( whenM )
+import qualified Data.ByteString                     as BS
+import           Control.Monad.Extra            ( whenM )
 
 import           Fpex.Course.Types
 import           Fpex.Eval.Types
@@ -17,8 +17,10 @@ collectAssignment sid course testSuite student = do
     let targetFile = assignmentCollectFile sid course testSuite student
 
     whenM (doesFileExist sourceFile) $ do
-        whenM (isInfixOf "unsafePerformIO" <$> readFile sourceFile) $
-            hPutStrLn stderr $ "Warning: `unsafePerformIO` in submission " <> sourceFile
+        whenM (BS.isInfixOf "unsafePerformIO" <$> BS.readFile sourceFile)
+            $  hPutStrLn stderr
+            $  "Warning: `unsafePerformIO` in submission "
+            <> sourceFile
 
         createDirectoryIfMissing False targetDir
         whenM (doesFileExist sourceFile) $ copyFile sourceFile targetFile

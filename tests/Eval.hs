@@ -199,6 +199,6 @@ runEvalStudent course suite submission =
     . runVoidLog
     . runReader (SubmissionId 1)
     . runReader (Timeout 4.0)
-    . runGrade Hugs
+    . runGrade Ghci
     . runStudentData
     $ evalStudent course suite submission

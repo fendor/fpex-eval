@@ -8,9 +8,13 @@
       ... 
      |-- <testsuite-spec-N>
      |-- <testsuite-1>
-         |-- <student-1>.hs
-         |-- <student-1>.hs_out1
-         |-- <student-1>.hs_out2
+         |-- <student-1-1>
+             |-- <assignment-1>.hs
+             |-- <assignment-1>.o
+             |-- <Main-exe>
+             \-- test-result.json
+         |-- <student-1-2>
+             ...
           ...
          |-- <student-N>.hs
          |-- <student-N>.hs_out1
