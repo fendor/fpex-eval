@@ -43,9 +43,8 @@ courseSetup = do
     studentDirs <- embed $ listDirectory courseDir
     let students = mapMaybe (parseStudentDir userPrefix) studentDirs
 
-
     let course = Course { courseName       = T.pack courseName
-                        , courseRootDir    = ".."
+                        , courseRootDir    = courseDir
                         , courseGroups     = []
                         , courseUserPrefix = userPrefix
                         , courseStudents   = students

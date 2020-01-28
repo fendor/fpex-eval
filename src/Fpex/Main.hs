@@ -19,6 +19,7 @@ import qualified Fpex.Eval.Types               as Eval
 import           Fpex.Eval.Types                ( TestSuite(..) )
 import qualified Fpex.Eval.Effect              as Eval
 import qualified Fpex.Eval.Pretty              as Eval
+import qualified Fpex.EdslGrade                as EdslGrade
 import qualified Fpex.Log.Effect               as Log
 import qualified Fpex.Course.CourseSetup       as Setup
 import qualified Fpex.Collect                  as Collect
@@ -48,12 +49,42 @@ defaultMain' = do
     Options {..} <- embed $ execParser options
 
     case optionCommand of
-        EdslGrade testSuiteSpec -> error "not implemented"
+        EdslGrade TestSuiteOptions {..} -> do
+            course@Course {..} <- getCourseConfig optionCourseFile
+            let EdslSpec testSuiteName = optionTestSuiteSpecification
+            let students               = maybe courseStudents pure optionStudent
+
+            embed $ EdslGrade.prepareSubmissionFolder optionSubmissionId
+                                                      course
+                                                      testSuiteName
+
+            forM_ students $ \student -> do
+                embed $ EdslGrade.collectSubmission optionSubmissionId
+                                                    course
+                                                    testSuiteName
+                                                    student
+                embed $ EdslGrade.compileSubmission optionSubmissionId
+                                                    course
+                                                    testSuiteName
+                                                    student
+                return ()
+            forM_ students $ \student -> do
+                embed $ EdslGrade.linkSubmission optionSubmissionId
+                                                 course
+                                                 testSuiteName
+                                                 student
+                embed $ EdslGrade.runSubmission optionSubmissionId
+                                                course
+                                                testSuiteName
+                                                student
+                return ()
+
         Grade CommandGrade {..} -> do
             course@Course {..} <- getCourseConfig optionCourseFile
             let students = maybe courseStudents pure optionStudent
 
-            testSuite <- getTestSuiteFile $ optionTestSuiteSpecification gradeTestSuiteOptions
+            testSuite <- getTestSuiteFile
+                $ optionTestSuiteSpecification gradeTestSuiteOptions
             forM_ students $ \student -> do
                 testReport <-
                     Log.runLog
@@ -66,18 +97,20 @@ defaultMain' = do
                 -- TODO: move this into grade-function?
                 embed
                     $ T.writeFile
-                          (Eval.reportCollectFile (optionSubmissionId gradeTestSuiteOptions)
-                                                  course
-                                                  testSuite
-                                                  student
+                          (Eval.reportCollectFile
+                              (optionSubmissionId gradeTestSuiteOptions)
+                              course
+                              testSuite
+                              student
                           )
                     $ Eval.prettyTestReport testReport
 
                 embed $ Aeson.encodeFile
-                    (Eval.reportJsonFile (optionSubmissionId gradeTestSuiteOptions)
-                                         course
-                                         testSuite
-                                         student
+                    (Eval.reportJsonFile
+                        (optionSubmissionId gradeTestSuiteOptions)
+                        course
+                        testSuite
+                        student
                     )
                     testReport
 
