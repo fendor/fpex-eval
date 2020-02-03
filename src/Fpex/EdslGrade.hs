@@ -36,9 +36,6 @@ prepareSubmissionFolder sid course testSuite = do
     putStrLn $ "copy " <> testSuite
     copyFile testSuite testSuiteTarget
 
-    -- compile testSpecLib 
-    putStrLn $ "compile " <> testSpecLibTarget
-    _ <- Proc.readProcess "ghc" ["-c", testSpecLibTarget] ""
     return ()
 
 
@@ -59,34 +56,8 @@ collectSubmission sid course testSuite student = do
         putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
 
         createDirectoryIfMissing True targetDir
-        whenM (doesFileExist sourceFile) $ copyFile sourceFile targetFile
+        copyFile sourceFile targetFile
 
-
-compileSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
-compileSubmission sid course testSuite student = do
-
-    let submissionFile = assignmentCollectFile sid course testSuite student
-    let assignmentDir  = assignmentCollectDir sid course testSuite
-
-    whenM (doesFileExist submissionFile) $ do
-        putStrLn $ "compile " <> submissionFile
-
-
-
-        let procConfig = (Proc.proc
-                             "ghc"
-                             [ submissionFile
-                             , "-i" <> T.unpack (matrNr student)
-                             , "-outputdir"
-                             , T.unpack (matrNr student)
-                             ]
-                         )
-                { Proc.cwd = Just assignmentDir
-                }
-        (_, _, _, procHandle) <- Proc.createProcess procConfig
-        ExitSuccess           <- Proc.waitForProcess procHandle
-
-        return ()
 
     return ()
 
@@ -112,7 +83,6 @@ linkSubmission sid course testSuite student = do
             }
     (_, _, _, procHandle) <- Proc.createProcess procConfig
     ExitSuccess           <- Proc.waitForProcess procHandle
-    putStrLn $ "done " <> T.unpack (matrNr student)
 
     return ()
 
