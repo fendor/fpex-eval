@@ -1,0 +1,28 @@
+{
+    "testGroupResults": [
+        {
+            "testCaseResults": [
+                {
+                    "tag": "TestCaseResultOk"
+                },
+                {
+                    "tag": "TestCaseResultOk"
+                },
+                {
+                    "tag": "TestCaseResultException",
+                    "contents": "<<timeout>>"
+                },
+                {
+                    "tag": "TestCaseResultException",
+                    "contents": "<<timeout>>"
+                },
+                {
+                    "tag": "TestCaseResultException",
+                    "contents": "<<timeout>>"
+                }
+            ],
+            "testGroupPoints": 10
+        }
+    ],
+    "testSuitePoints": 10
+}

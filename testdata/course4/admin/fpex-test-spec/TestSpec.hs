@@ -1,12 +1,23 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 
-module TestSpecLib where
+module TestSpec where
 
 import           Data.Maybe                     ( fromMaybe )
 import           System.Timeout                 ( timeout )
+import           System.IO                      ( FilePath )
 import           Test.HUnit.Lang                ( performTestCase
                                                 , Assertion
                                                 )
+import           GHC.Generics                   ( Generic )
+import           Data.Aeson                     ( FromJSON
+                                                , ToJSON
+                                                )
+import qualified Data.Aeson.Encode.Pretty      as Aeson
+import qualified Data.ByteString.Lazy          as BL
+
 import qualified Test.HUnit.Lang               as HUnit
 
 group :: TestGroupProps -> [TestCase] -> TestGroup
@@ -41,19 +52,22 @@ data TestCaseResult
     | TestCaseResultNok String
     | TestCaseResultException String
     | TestCaseResultTimeout
-    deriving Show
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data TestGroupResults = TestGroupResults
     { testCaseResults :: [TestCaseResult]
     , testGroupPoints :: Points
     }
-    deriving Show
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data TestSuiteResults = TestSuiteResults
     { testGroupResults :: [TestGroupResults]
     , testSuitePoints :: Points
     }
-    deriving Show
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 getTestCasePoints :: TestGroupProps -> TestCaseResult -> Points
 getTestCasePoints TestGroupProps {..} TestCaseResultOk = pointsPerTest
@@ -63,6 +77,8 @@ getTestGroupPoints :: TestGroupProps -> [TestCaseResult] -> Points
 getTestGroupPoints props@TestGroupProps {..} =
     max 0 . min maximal . sum . map (getTestCasePoints props)
 
+writeTestSuiteResults :: FilePath -> TestSuiteResults -> IO ()
+writeTestSuiteResults outFile = BL.writeFile outFile . Aeson.encodePretty
 
 -- runners
 

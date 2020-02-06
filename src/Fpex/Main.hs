@@ -65,12 +65,6 @@ defaultMain' = do
                                                     student
                 return ()
             forM_ students $ \student -> do
-                embed $ EdslGrade.linkSubmission optionSubmissionId
-                                                 course
-                                                 testSuiteName
-                                                 student
-                return ()
-            forM_ students $ \student -> do
                 embed $ EdslGrade.runSubmission optionSubmissionId
                                                 course
                                                 testSuiteName
