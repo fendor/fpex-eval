@@ -20,7 +20,13 @@
                     "contents": "expected: 5\n but got: 4"
                 }
             ],
-            "testGroupPoints": 15
+            "testGroupPoints": 15,
+            "testGroupResultProps": {
+                "penalty": 0,
+                "pointsPerTest": 5,
+                "maximal": 26,
+                "label": ""
+            }
         }
     ],
     "testSuitePoints": 15

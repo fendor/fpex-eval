@@ -37,7 +37,8 @@ data TestGroupProps = TestGroupProps
     , penalty :: !Points
     , maximal :: !Points
     }
-    deriving Show
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data TestGroup = TestGroup
     { testGroupProps :: TestGroupProps
@@ -58,6 +59,7 @@ data TestCaseResult
 data TestGroupResults = TestGroupResults
     { testCaseResults :: [TestCaseResult]
     , testGroupPoints :: Points
+    , testGroupResultProps :: TestGroupProps
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
@@ -96,6 +98,7 @@ runTestGroup :: TimeoutSecs -> TestGroup -> IO TestGroupResults
 runTestGroup timeoutSecs TestGroup {..} = do
     testCaseResults <- mapM (runTestCase timeoutSecs) testCases
     let testGroupPoints = getTestGroupPoints testGroupProps testCaseResults
+    let testGroupResultProps = testGroupProps
     return TestGroupResults { .. }
 
 runTestSuite :: TimeoutSecs -> TestSuite -> IO TestSuiteResults

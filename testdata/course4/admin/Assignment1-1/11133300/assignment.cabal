@@ -1,15 +1,24 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 189da0921fb5965d467495303545956e63e7a1bfd9a6580be982810860dacee4
+
 name:           assignment
 version:        0.0.0
 build-type:     Simple
-cabal-version: 2
 
 executable assignment
   main-is: ../Main.hs
   other-modules:
-      -- TODO: this is hardcoded....
       Assignment1
+      Paths_assignment
   hs-source-dirs:
-      .
+      ./.
   build-depends:
-      base, HUnit, fpex-test-spec
+      HUnit
+    , base
+    , fpex-test-spec
   default-language: Haskell2010

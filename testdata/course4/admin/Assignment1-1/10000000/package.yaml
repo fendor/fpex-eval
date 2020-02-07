@@ -1,0 +1,11 @@
+name:           assignment
+version:        '0.0.0'
+
+executables:
+  assignment:
+    main: ../Main.hs
+    source-dirs: .
+    dependencies:
+        - base
+        - HUnit
+        - fpex-test-spec

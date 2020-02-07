@@ -21,7 +21,13 @@
                     "contents": "<<timeout>>"
                 }
             ],
-            "testGroupPoints": 10
+            "testGroupPoints": 10,
+            "testGroupResultProps": {
+                "penalty": 0,
+                "pointsPerTest": 5,
+                "maximal": 26,
+                "label": ""
+            }
         }
     ],
     "testSuitePoints": 10

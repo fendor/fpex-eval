@@ -56,10 +56,17 @@ collectSubmission sid course testSuite student = do
         copyFile sourceFile targetFile
 
         -- copy default project template
-        forM_ ["assignment.cabal", "cabal.project"] $ \filename ->
+        forM_ ["package.yaml", "cabal.project"] $ \filename ->
             copyFile
                 (courseAdminDir course </> "project-template" </> filename)
                 (targetDir </> filename)
+
+        putStrLn $ "run hpack for student " <> T.unpack (matrNr student)
+        let procConfig = (Proc.proc "hpack" []) { Proc.cwd = Just targetDir }
+        (_, _, _, procHandle) <- Proc.createProcess procConfig
+        ExitSuccess           <- Proc.waitForProcess procHandle
+        return ()
+
 
     return ()
 
@@ -71,17 +78,6 @@ runSubmission sid course testSuite student = do
     let procConfig = (Proc.proc "cabal" ["run"]) { Proc.cwd = Just targetDir }
     (_, _, _, procHandle) <- Proc.createProcess procConfig
     ExitSuccess           <- Proc.waitForProcess procHandle
-
-    -- return ()
-    -- let targetDir = assignmentCollectStudentDir sid course testSuite student
-    -- let testMain  = targetDir </> "Main"
-
-    -- putStrLn $ "run testsuite for student " <> T.unpack (matrNr student)
-
-
-    -- let procConfig = (Proc.proc testMain [])
-    -- (_, _, _, procHandle) <- Proc.createProcess procConfig
-    -- ExitSuccess           <- Proc.waitForProcess procHandle
 
     return ()
 
