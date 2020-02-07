@@ -1,20 +1,15 @@
 cradle:
   multi:
-    - path: ./src
+    - path: ./
       config:
         cradle:
           cabal:
-            component: lib:fpex
-    - path: ./app
-      config:
-        cradle:
-          cabal:
-            component: exe:fpex
-    - path: ./tests
-      config:
-        cradle:
-          cabal:
-            component: test:fpex-test
+            - path: ./src
+              component: lib:fpex
+            - path: ./app
+              component: exe:fpex
+            - path: ./tests
+              component: test:fpex-test
     - path: ./testdata
       config:
         cradle:
