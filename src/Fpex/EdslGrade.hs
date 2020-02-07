@@ -7,7 +7,6 @@ import qualified Data.Text                     as T
 import           System.IO
 import           System.Exit                    ( ExitCode(..) )
 import           Control.Monad.Extra            ( whenM )
-import           Control.Monad                  ( forM_ )
 import qualified Data.ByteString               as BS
 import           Data.Maybe                     ( fromMaybe )
 import           Data.List.Extra                ( stripSuffix )
@@ -55,19 +54,6 @@ collectSubmission sid course testSuite student = do
         putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
         copyFile sourceFile targetFile
 
-        -- copy default project template
-        forM_ ["package.yaml", "cabal.project"] $ \filename ->
-            copyFile
-                (courseAdminDir course </> "project-template" </> filename)
-                (targetDir </> filename)
-
-        putStrLn $ "run hpack for student " <> T.unpack (matrNr student)
-        let procConfig = (Proc.proc "hpack" []) { Proc.cwd = Just targetDir }
-        (_, _, _, procHandle) <- Proc.createProcess procConfig
-        ExitSuccess           <- Proc.waitForProcess procHandle
-        return ()
-
-
     return ()
 
 runSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
@@ -75,7 +61,9 @@ runSubmission sid course testSuite student = do
     let targetDir = assignmentCollectStudentDir sid course testSuite student
 
     putStrLn $ "run testsuite for student " <> T.unpack (matrNr student)
-    let procConfig = (Proc.proc "cabal" ["run"]) { Proc.cwd = Just targetDir }
+    let procConfig = (Proc.proc "ghci" ["../Main.hs", "-e", "main"])
+            { Proc.cwd = Just targetDir
+            }
     (_, _, _, procHandle) <- Proc.createProcess procConfig
     ExitSuccess           <- Proc.waitForProcess procHandle
 
