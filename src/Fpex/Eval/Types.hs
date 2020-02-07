@@ -1,35 +1,13 @@
 module Fpex.Eval.Types where
 
-import           Data.Text                                ( Text )
-import qualified Data.Text                               as T
-import           GHC.Generics                             ( Generic )
-import           Data.Aeson                               ( FromJSON
-                                                          , ToJSON
-                                                          )
 import           System.FilePath
+import qualified Data.Text                     as T
+import           Data.Maybe                     ( fromMaybe )
+import           Data.List.Extra                ( stripSuffix )
+import           GHC.Generics                   ( Generic )
 
 import           Fpex.Course.Types
 
-
-newtype OkTest = OkTest { getOkTest :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
-
-newtype FailedTest = FailedTest { getFailedTest :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
-
-newtype TimedOutTest = TimedOutTest { getTimedOutTest :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
-
-newtype NotSubmittedTest = NotSubmittedTest { getNotSubmittedTest :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
-
-newtype CompileFailTest = CompileFailTest { getCompileFailTest :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
 
 newtype Timeout = Timeout { getTimeout :: Float }
     deriving (Show, Generic)
@@ -39,136 +17,37 @@ newtype SubmissionId = SubmissionId { getSubmissionId :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
-newtype RunTimeException = RunTimeException { getRunTimeException :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
+-- filename of the submission file
+studentSourceFile :: Course -> String -> Student -> FilePath
+studentSourceFile course assignmentFile student =
+    studentDir course student </> assignmentFile
 
-seconds :: Timeout -> Int
-seconds = round . (* 1_000_000) . getTimeout
+assignmentCollectDir :: SubmissionId -> Course -> String -> FilePath
+assignmentCollectDir sid course assignmentName =
+    courseAdminDir course
+        </> (  fromMaybe assignmentName (stripSuffix ".hs" assignmentName)
+            <> "-"
+            <> show (getSubmissionId sid)
+            )
 
-data GradeRunner
-    = Ghci
-    | Hugs
-    | SavedGhci
-    deriving (Ord, Show, Eq)
+assignmentCollectStudentDir
+    :: SubmissionId -> Course -> String -> Student -> FilePath
+assignmentCollectStudentDir sid course assignmentName student =
+    assignmentCollectDir sid course assignmentName </> T.unpack (matrNr student)
 
-data TestSummary =
-    TestSummary
-        { okTest :: !OkTest
-        , failedTest :: !FailedTest
-        , timedOutTest :: !TimedOutTest
-        , notSubmittedTest :: !NotSubmittedTest
-        , compileFailTest :: !CompileFailTest
-        , runTimeExceptionTest :: !RunTimeException
-        } deriving (Show, Eq)
+assignmentCollectFile :: SubmissionId -> Course -> String -> Student -> FilePath
+assignmentCollectFile sid course assignmentFile student =
+    assignmentCollectStudentDir sid course assignmentFile student
+        </> assignmentFile
 
-instance Semigroup TestSummary where
-    t1 <> t2 = TestSummary
-        { okTest           = okTest t1 + okTest t2
-        , failedTest       = failedTest t1 + failedTest t2
-        , timedOutTest     = timedOutTest t1 + timedOutTest t2
-        , notSubmittedTest = notSubmittedTest t1 + notSubmittedTest t2
-        , compileFailTest  = compileFailTest t1 + compileFailTest t2
-        , runTimeExceptionTest = runTimeExceptionTest t1 + runTimeExceptionTest t2
-        }
+-- reportCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+-- reportCollectFile sid course testSuite Student{matrNr} =
+--     assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> "hs_out"
 
-instance Monoid TestSummary where
-    mempty = TestSummary { okTest           = 0
-                         , failedTest       = 0
-                         , timedOutTest     = 0
-                         , notSubmittedTest = 0
-                         , compileFailTest  = 0
-                         , runTimeExceptionTest = 0
-                         }
+-- reportJsonFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+-- reportJsonFile sid course testSuite Student{matrNr} =
+--     assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> ".json"
 
-testOk :: TestSummary
-testOk = mempty { okTest = 1 }
-
-testFailed :: TestSummary
-testFailed = mempty { failedTest = 1 }
-
-testTimeOut :: TestSummary
-testTimeOut = mempty { timedOutTest = 1 }
-
-testNotSubmitted :: TestSummary
-testNotSubmitted = mempty { notSubmittedTest = 1 }
-
-testCompileFail :: TestSummary
-testCompileFail = mempty { compileFailTest = 1 }
-
-testRunTimeException :: TestSummary
-testRunTimeException = mempty { runTimeExceptionTest = 1 }
-
-newtype Points = Points { getPoints :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord, FromJSON, ToJSON)
-
-newtype TestRun = TestRun
-    { actualOutput :: Text
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
-
-data TestCaseResult
-    = TestCaseRun TestRun
-    | TestRunTimeException
-    | TestCaseCompilefail
-    | TestCaseNotSubmitted
-    | TestCaseTimeout
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
-
-data TestGroup a = TestGroup
-    { label :: !Text
-    , pointsPerTest :: !Points
-    , penalty :: !Points
-    , maximal :: !Points
-    , group :: ![a]
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
-
-newtype TestReport = TestReport
-    { assignmentPoints :: [TestGroup (TestCase, TestCaseResult)]
-    }
-    deriving (Eq, Show, Generic)
-    deriving newtype (FromJSON, ToJSON)
-
-data TestSuite = TestSuite
-    { assignmentName :: !Text
-    , testSuiteGroups :: ![TestGroup TestCase]
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
-
-data TestCase = TestCase
-    { query :: !Text
-    , expectedOutput :: !Text
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
-
-
-studentSourceFile :: Course -> TestSuite -> Student -> FilePath
-studentSourceFile course TestSuite {assignmentName} student =
-    studentDir course student </> T.unpack assignmentName <.> "hs"
-
-assignmentCollectDir :: SubmissionId -> Course -> TestSuite -> FilePath
-assignmentCollectDir sid course TestSuite {assignmentName} =
-    courseAdminDir course </> (T.unpack assignmentName <> "-" <> show (getSubmissionId sid))
-
-assignmentCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
-assignmentCollectFile sid course testSuite Student{matrNr} =
-    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> "hs"
-
-reportCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
-reportCollectFile sid course testSuite Student{matrNr} =
-    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> "hs_out"
-
-reportJsonFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
-reportJsonFile sid course testSuite Student{matrNr} =
-    assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> ".json"
-
-reportPublishFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
-reportPublishFile sid course TestSuite {assignmentName} student =
-    studentDir course student </> T.unpack assignmentName <.> ("hs_out_" <> show (getSubmissionId sid))
+-- reportPublishFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
+-- reportPublishFile sid course TestSuite {assignmentName} student =
+--     studentDir course student </> T.unpack assignmentName <.> ("hs_out_" <> show (getSubmissionId sid))
