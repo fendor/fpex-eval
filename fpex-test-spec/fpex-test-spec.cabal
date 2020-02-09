@@ -9,5 +9,5 @@ library
   hs-source-dirs:
       .
   build-depends:
-      base, HUnit, aeson, aeson-pretty, bytestring
+      base, aeson, aeson-pretty, bytestring, deepseq
   default-language: Haskell2010
