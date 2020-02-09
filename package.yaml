@@ -48,7 +48,6 @@ library:
   - aeson
   - aeson-pretty
   - async
-  - unix
   - polysemy
   - polysemy-plugin
   - haskell-src-exts
