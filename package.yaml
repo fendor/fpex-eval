@@ -47,12 +47,8 @@ library:
   - filepath
   - aeson
   - aeson-pretty
-  - async
-  - unix
   - polysemy
   - polysemy-plugin
-  - haskell-src-exts
-  - megaparsec
   - regex-tdfa
   source-dirs: src
   ghc-options: -O2 -flate-specialise -fspecialise-aggressively -fplugin=Polysemy.Plugin
