@@ -55,7 +55,7 @@ data TestGroupProps = TestGroupProps
     { label :: String
     , pointsPerTest :: !Points
     , penalty :: !Points
-    , maximal :: !Points
+    , upperBound :: !Points
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
@@ -97,7 +97,7 @@ getTestCasePoints TestGroupProps {..} _                = -penalty
 
 getTestGroupPoints :: TestGroupProps -> [TestCaseResult] -> Points
 getTestGroupPoints props@TestGroupProps {..} =
-    max 0 . min maximal . sum . map (getTestCasePoints props)
+    max 0 . min upperBound . sum . map (getTestCasePoints props)
 
 
 -- runners

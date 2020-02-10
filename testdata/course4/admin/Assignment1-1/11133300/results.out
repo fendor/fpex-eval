@@ -40,7 +40,7 @@
             "testGroupResultProps": {
                 "penalty": 0,
                 "pointsPerTest": 5,
-                "maximal": 26,
+                "upperBound": 26,
                 "label": ""
             }
         }
