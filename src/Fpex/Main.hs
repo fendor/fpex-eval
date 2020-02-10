@@ -15,6 +15,7 @@ import           Fpex.Course.Types
 import qualified Fpex.Grade                    as Grade
 import qualified Fpex.Course.CourseSetup       as Setup
 import qualified Fpex.Collect                  as Collect
+import qualified Fpex.Publish                  as Publish
 import           System.IO                      ( stderr )
 import           System.Exit                    ( exitFailure )
 import           System.Directory               ( getCurrentDirectory
@@ -80,17 +81,17 @@ defaultMain' = do
                                                   student
                 return ()
         Publish PublishCommand {..} -> do
-            return ()
-            -- course@Course {..} <- getCourseConfig optionCourseFile
-            -- let students = maybe courseStudents pure optionStudent
+            let TestSuiteOptions {..} = publishTestSuiteOptions
+            course@Course {..} <- getCourseConfig optionCourseFile
+            let testSuiteName = optionTestSuiteSpecification
+            let students = maybe courseStudents pure optionStudent
 
-            -- testSuite <- getTestSuiteFile
-            --     $ optionTestSuiteSpecification publishTestSuiteOptions
-            -- embed $ forM_ students $ Publish.publishTestResult
-            --     (optionSubmissionId publishTestSuiteOptions)
-            --     course
-            --     testSuite
-
+            forM_ students $ \student -> do
+                embed $ Publish.publishTestResult optionSubmissionId
+                                                  course
+                                                  testSuiteName
+                                                  student
+                return ()
 
 
 -- | get the default course file

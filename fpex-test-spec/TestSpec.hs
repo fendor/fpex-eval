@@ -124,8 +124,8 @@ runTestGroup timeoutSecs TestGroup {..} = do
     let testGroupResultProps = testGroupProps
     return TestGroupResults { .. }
 
-runTestSuite :: FilePath -> TimeoutSecs -> TestSuite -> IO ()
-runTestSuite outFile timeoutSecs TestSuite {..} = do
+runTestSuite :: TimeoutSecs -> TestSuite -> IO ()
+runTestSuite timeoutSecs TestSuite {..} = do
     testGroupResults <- mapM (runTestGroup timeoutSecs) testSuiteGroups
     let testSuitePoints = sum . map testGroupPoints $ testGroupResults
-    BL.writeFile outFile $ Aeson.encodePretty TestSuiteResults { .. }
+    BL.writeFile "report.json" $ Aeson.encodePretty TestSuiteResults { .. }

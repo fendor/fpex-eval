@@ -40,14 +40,10 @@ assignmentCollectFile sid course assignmentFile student =
     assignmentCollectStudentDir sid course assignmentFile student
         </> assignmentFile
 
--- reportCollectFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
--- reportCollectFile sid course testSuite Student{matrNr} =
---     assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> "hs_out"
+reportSourceJsonFile :: SubmissionId -> Course -> String -> Student -> FilePath
+reportSourceJsonFile sid course testSuite student =
+    assignmentCollectStudentDir sid course testSuite student </> "report.json"
 
--- reportJsonFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
--- reportJsonFile sid course testSuite Student{matrNr} =
---     assignmentCollectDir sid course testSuite </> T.unpack matrNr <.> ".json"
-
--- reportPublishFile :: SubmissionId -> Course -> TestSuite -> Student -> FilePath
--- reportPublishFile sid course TestSuite {assignmentName} student =
---     studentDir course student </> T.unpack assignmentName <.> ("hs_out_" <> show (getSubmissionId sid))
+reportPublishFile :: SubmissionId -> Course -> String -> Student -> FilePath
+reportPublishFile sid course assignmentName student =
+    studentDir course student </> assignmentName <.> ("out_" <> show (getSubmissionId sid))
