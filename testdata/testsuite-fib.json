@@ -30,7 +30,7 @@
             ],
             "penalty": 0,
             "pointsPerTest": 5,
-            "maximal": 26,
+            "upperBound": 26,
             "label": "Fibonacci tests"
         },
         {
@@ -50,7 +50,7 @@
             ],
             "penalty": 0,
             "pointsPerTest": 10,
-            "maximal": 30,
+            "upperBound": 30,
             "label": "Factorial tests"
         }
     ]
