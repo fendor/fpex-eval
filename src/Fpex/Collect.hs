@@ -17,11 +17,12 @@ prepareSubmissionFolder sid course testSuite = do
     createDirectoryIfMissing True targetDir
 
     -- copy assignment main
-    let assignmentDir   = assignmentCollectDir sid course testSuite
-    let testSuiteTarget = assignmentDir </> "Main.hs"
-
+    let testSuiteTarget = targetDir </> "Main.hs"
     putStrLn $ "copy " <> testSuite
     copyFile testSuite testSuiteTarget
+
+    -- copy test-spec file
+    copyFile (courseAdminDir course </> "TestSpec.hs") (targetDir </> "TestSpec.hs")
 
     return ()
 

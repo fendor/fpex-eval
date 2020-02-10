@@ -2,24 +2,39 @@
     "testGroupResults": [
         {
             "testCaseResults": [
-                {
-                    "tag": "TestCaseResultOk"
-                },
-                {
-                    "tag": "TestCaseResultOk"
-                },
-                {
-                    "tag": "TestCaseResultException",
-                    "contents": "<<timeout>>"
-                },
-                {
-                    "tag": "TestCaseResultException",
-                    "contents": "<<timeout>>"
-                },
-                {
-                    "tag": "TestCaseResultException",
-                    "contents": "<<timeout>>"
-                }
+                [
+                    "Assignment1.fib 0 `TestSpec.assertEqual` 1",
+                    {
+                        "tag": "TestCaseResultOk"
+                    }
+                ],
+                [
+                    "Assignment1.fib 1 `TestSpec.assertEqual` 1",
+                    {
+                        "tag": "TestCaseResultOk"
+                    }
+                ],
+                [
+                    "Assignment1.fib 2 `TestSpec.assertEqual` 2",
+                    {
+                        "tag": "TestCaseResultException",
+                        "contents": "<<timeout>>"
+                    }
+                ],
+                [
+                    "Assignment1.fib 3 `TestSpec.assertEqual` 3",
+                    {
+                        "tag": "TestCaseResultException",
+                        "contents": "<<timeout>>"
+                    }
+                ],
+                [
+                    "Assignment1.fib 4 `TestSpec.assertEqual` 5",
+                    {
+                        "tag": "TestCaseResultException",
+                        "contents": "<<timeout>>"
+                    }
+                ]
             ],
             "testGroupPoints": 10,
             "testGroupResultProps": {

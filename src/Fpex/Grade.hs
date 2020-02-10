@@ -10,14 +10,26 @@ import           Fpex.Eval.Types
 
 runSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
 runSubmission sid course testSuite student = do
-    let targetDir = assignmentCollectStudentDir sid course testSuite student
+        let targetDir =
+                    assignmentCollectStudentDir sid course testSuite student
 
-    putStrLn $ "run testsuite for student " <> T.unpack (matrNr student)
-    let procConfig = (Proc.proc "ghci" ["../Main.hs", "-e", "main"])
-            { Proc.cwd = Just targetDir
-            }
-    (_, _, _, procHandle) <- Proc.createProcess procConfig
-    ExitSuccess           <- Proc.waitForProcess procHandle
+        putStrLn $ "run testsuite for student " <> T.unpack (matrNr student)
+        let
+                procConfig =
+                        (Proc.proc
+                                        "ghci"
+                                        [ "../Main.hs"
+                                        , "-i"
+                                        , "-i."
+                                        , "-i.."
+                                        , "-e"
+                                        , "main"
+                                        ]
+                                )
+                                { Proc.cwd = Just targetDir
+                                }
+        (_, _, _, procHandle) <- Proc.createProcess procConfig
+        ExitSuccess           <- Proc.waitForProcess procHandle
 
-    return ()
+        return ()
 
