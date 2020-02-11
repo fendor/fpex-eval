@@ -40,7 +40,7 @@ renderTestGroup TestGroupResults { .. }
         failedTestN = length failedTest
 
 renderTestCase :: T.Text -> TestCaseResult -> T.Text
-renderTestCase query TestCaseResultOk = "Test case: " <> query <> "; test OK"
+renderTestCase query TestCaseResultOk = "Test case: " <> query <> " ; test OK"
 renderTestCase query (TestCaseResultExpectedButGot (ExpectedButGot expectedOutput actualOutput))
     = T.intercalate
         "\n"
