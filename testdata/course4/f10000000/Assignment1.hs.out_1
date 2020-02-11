@@ -1,54 +1,17 @@
-{
-    "testGroupResults": [
-        {
-            "testCaseResults": [
-                [
-                    "Assignment1.fib 0 `TestSpec.assertEqual` 1",
-                    {
-                        "tag": "TestCaseResultOk"
-                    }
-                ],
-                [
-                    "Assignment1.fib 1 `TestSpec.assertEqual` 1",
-                    {
-                        "tag": "TestCaseResultOk"
-                    }
-                ],
-                [
-                    "Assignment1.fib 2 `TestSpec.assertEqual` 2",
-                    {
-                        "tag": "TestCaseResultOk"
-                    }
-                ],
-                [
-                    "Assignment1.fib 3 `TestSpec.assertEqual` 3",
-                    {
-                        "tag": "TestCaseResultExpectedButGot",
-                        "contents": [
-                            "2",
-                            "3"
-                        ]
-                    }
-                ],
-                [
-                    "Assignment1.fib 4 `TestSpec.assertEqual` 5",
-                    {
-                        "tag": "TestCaseResultExpectedButGot",
-                        "contents": [
-                            "4",
-                            "5"
-                        ]
-                    }
-                ]
-            ],
-            "testGroupPoints": 15,
-            "testGroupResultProps": {
-                "penalty": 0,
-                "pointsPerTest": 5,
-                "maximal": 26,
-                "label": ""
-            }
-        }
-    ],
-    "testSuitePoints": 15
-}
+Points per test case: 5; penalty per failed test case: 0; maximum: 26
+
+Test case: Assignment1.fib 0 `TestSpec.assertEqual` 1; test OK
+Test case: Assignment1.fib 1 `TestSpec.assertEqual` 1; test OK
+Test case: Assignment1.fib 2 `TestSpec.assertEqual` 2; test OK
+Test case: Assignment1.fib 3 `TestSpec.assertEqual` 3 ; test FAILED
+Expected:  Assignment1.fib 3 `TestSpec.assertEqual` 3 == 2
+Result:    Assignment1.fib 3 `TestSpec.assertEqual` 3 == 3
+Test case: Assignment1.fib 4 `TestSpec.assertEqual` 5 ; test FAILED
+Expected:  Assignment1.fib 4 `TestSpec.assertEqual` 5 == 4
+Result:    Assignment1.fib 4 `TestSpec.assertEqual` 5 == 5
+
+OK tests: 3; FAILED tests: 2
+Score: 15
+
+
+Total Score: 15
