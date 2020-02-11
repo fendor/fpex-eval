@@ -26,24 +26,20 @@ prepareSubmissionFolder sid course testSuite = do
 
     return ()
 
-
-
 collectSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
 collectSubmission sid course testSuite student = do
-
     let sourceFile = studentSourceFile course testSuite student
     let targetDir  = assignmentCollectStudentDir sid course testSuite student
     let targetFile = assignmentCollectFile sid course testSuite student
+    -- create submission dir even if there is no submission
+    createDirectoryIfMissing True targetDir
 
+    -- copy submission file if it exists
     whenM (doesFileExist sourceFile) $ do
         whenM (BS.isInfixOf "unsafePerformIO" <$> BS.readFile sourceFile)
             $  hPutStrLn stderr
             $  "Warning: `unsafePerformIO` in submission "
             <> sourceFile
-
-        createDirectoryIfMissing True targetDir
-
-        -- copy submission file
         putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
         copyFile sourceFile targetFile
 

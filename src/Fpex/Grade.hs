@@ -20,7 +20,7 @@ runSubmission sid course testSuite student = do
         let
             procConfig =
                 (Proc.proc "ghci"
-                           ["../Main.hs", "-i", "-i.", "-i..", "-e", "main"]
+                           ["../Main.hs", "-i", "-i.", "-i..", "-e", "Main.main"]
                     )
                     { Proc.cwd = Just targetDir
                     }
