@@ -45,8 +45,7 @@ renderTestCase query (TestCaseResultExpectedButGot (ExpectedButGot expectedOutpu
     = T.intercalate
         "\n"
         [ buildTestCase query <> " FAILED"
-        , "Expected:  " <> query <> " == " <> expectedOutput
-        , "Result:    " <> query <> " == " <> actualOutput
+        , "Expected:  " <> actualOutput <> ", but got: " <> expectedOutput 
         ]
 renderTestCase query TestCaseResultTimeout =
     buildTestCase query <> " TIMED OUT"

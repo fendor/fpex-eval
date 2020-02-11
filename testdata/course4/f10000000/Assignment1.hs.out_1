@@ -4,11 +4,9 @@ Test case: Assignment1.fib 0 `TestSpec.assertEqual` 1; test OK
 Test case: Assignment1.fib 1 `TestSpec.assertEqual` 1; test OK
 Test case: Assignment1.fib 2 `TestSpec.assertEqual` 2; test OK
 Test case: Assignment1.fib 3 `TestSpec.assertEqual` 3 ; test FAILED
-Expected:  Assignment1.fib 3 `TestSpec.assertEqual` 3 == 2
-Result:    Assignment1.fib 3 `TestSpec.assertEqual` 3 == 3
+Expected:  2, but got: 3
 Test case: Assignment1.fib 4 `TestSpec.assertEqual` 5 ; test FAILED
-Expected:  Assignment1.fib 4 `TestSpec.assertEqual` 5 == 4
-Result:    Assignment1.fib 4 `TestSpec.assertEqual` 5 == 5
+Expected:  4, but got: 5
 
 OK tests: 3; FAILED tests: 2
 Score: 15
