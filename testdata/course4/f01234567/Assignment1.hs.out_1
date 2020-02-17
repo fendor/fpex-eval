@@ -1,0 +1,13 @@
+Points per test case: 5; penalty per failed test case: 0; maximum: 26
+
+Test case: fib 0 `TestSpec.assertEqual` 1 ; test NOT SUBMITTED
+Test case: fib 1 `TestSpec.assertEqual` 1 ; test NOT SUBMITTED
+Test case: fib 2 `TestSpec.assertEqual` 2 ; test NOT SUBMITTED
+Test case: fib 3 `TestSpec.assertEqual` 3 ; test NOT SUBMITTED
+Test case: fib 4 `TestSpec.assertEqual` 5 ; test NOT SUBMITTED
+
+OK tests: 0; FAILED tests: 5
+Score: 0
+
+
+Total Score: 0

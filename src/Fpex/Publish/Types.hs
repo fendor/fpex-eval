@@ -38,6 +38,7 @@ data TestCaseResult
     | TestCaseResultException T.Text
     | TestCaseResultTimeout
     | TestCaseResultNotSubmitted
+    | TestCaseResultCompileFail
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 

@@ -2,6 +2,7 @@ module Fpex.Main where
 
 import qualified Data.Text.IO                  as T
 import           Data.Text                      ( Text )
+import qualified Data.Text                     as T
 import qualified Data.Aeson                    as Aeson
 import           Data.List                      ( inits )
 import           Control.Monad                  ( forM_ )
@@ -10,23 +11,28 @@ import           Control.Monad.Extra            ( findM )
 import           Options.Applicative
 
 import           Polysemy
+import           Polysemy.Error
 import           Fpex.Options
 import           Fpex.Course.Types
 import qualified Fpex.Grade                    as Grade
 import qualified Fpex.Course.CourseSetup       as Setup
 import qualified Fpex.Collect                  as Collect
 import qualified Fpex.Publish                  as Publish
+import qualified Fpex.Publish.Types            as Publish
+import qualified Fpex.Eval.Types               as Eval
 import           System.IO                      ( stderr )
 import           System.Exit                    ( exitFailure )
 import           System.Directory               ( getCurrentDirectory
                                                 , doesFileExist
+                                                , createDirectoryIfMissing
                                                 )
 import           System.FilePath                ( splitPath
                                                 , joinPath
                                                 , (</>)
+                                                , dropExtension
+                                                , takeFileName
                                                 )
 
-import           Polysemy.Error
 
 defaultMain :: IO ()
 defaultMain = (runM . runError $ defaultMain') >>= \case
@@ -46,11 +52,55 @@ defaultMain' = do
             let testSuiteName = optionTestSuiteSpecification
             let students      = maybe courseStudents pure optionStudent
 
+            -- create error student
+            (compileFailTestSuite, noSubmissionTestSuite) <- do
+                let errorStudent = Student "errorStudent"
+                let targetDir = Eval.assignmentCollectStudentDir optionSubmissionId course testSuiteName errorStudent
+                let targetFile = Eval.assignmentCollectStudentFile optionSubmissionId course testSuiteName errorStudent
+                let moduleName = T.pack $ dropExtension $ takeFileName testSuiteName
+                let resultSourceFile = targetDir </> "report.json"
+                embed $ createDirectoryIfMissing True targetDir
+                embed $ T.writeFile targetFile ("module " <> moduleName <> " where\n")
+                
+                Grade.runGradeError (Grade.runSubmission optionSubmissionId course testSuiteName errorStudent)
+                    >>= \case 
+                        Right () -> return ()
+                        Left err -> throw $ T.pack $ show err
+
+
+                testSuiteResults <- embed (Aeson.eitherDecodeFileStrict resultSourceFile)
+                    >>= \case 
+                    Right (r :: Publish.TestSuiteResults) -> return r 
+                    Left msg -> throw ("Could not decode \"" <> T.pack resultSourceFile <> "\": " <> T.pack msg)
+
+                let modifyTestCaseResult (label, _) = (label, Publish.TestCaseResultCompileFail)
+                    modifyTestGroup  Publish.TestGroupResults {..} = 
+                        Publish.TestGroupResults 
+                            { testCaseResults = map modifyTestCaseResult testCaseResults
+                            , .. 
+                            }
+                    modifyTestSuiteResults Publish.TestSuiteResults {..} =
+                        Publish.TestSuiteResults
+                            { testGroupResults = map modifyTestGroup testGroupResults
+                            , ..
+                            }
+                return ((modifyTestSuiteResults testSuiteResults), testSuiteResults)
+
             forM_ students $ \student -> do
-                embed $ Grade.runSubmission optionSubmissionId
+                let targetFile = Eval.assignmentCollectStudentDir optionSubmissionId course testSuiteName student </> "report.json"
+                Grade.runGradeError (Grade.runSubmission optionSubmissionId
                                             course
                                             testSuiteName
-                                            student
+                                            student)
+                    >>= \case 
+                        Right () -> return ()
+                        Left err -> embed $ do
+                            T.putStrLn (T.pack $ show err)
+                            case err of 
+                                Grade.RunnerFailedToCompile ->
+                                    Aeson.encodeFile targetFile compileFailTestSuite
+                                Grade.NoSubmission ->
+                                    Aeson.encodeFile targetFile noSubmissionTestSuite
                 return ()
 
         Setup                       -> Setup.courseSetup
@@ -82,7 +132,6 @@ defaultMain' = do
                                                   testSuiteName
                                                   student
                 return ()
-
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)

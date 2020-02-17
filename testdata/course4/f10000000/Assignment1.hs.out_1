@@ -1,12 +1,12 @@
 Points per test case: 5; penalty per failed test case: 0; maximum: 26
 
-Test case: Assignment1.fib 0 `TestSpec.assertEqual` 1; test OK
-Test case: Assignment1.fib 1 `TestSpec.assertEqual` 1; test OK
-Test case: Assignment1.fib 2 `TestSpec.assertEqual` 2; test OK
+Test case: Assignment1.fib 0 `TestSpec.assertEqual` 1 ; test OK
+Test case: Assignment1.fib 1 `TestSpec.assertEqual` 1 ; test OK
+Test case: Assignment1.fib 2 `TestSpec.assertEqual` 2 ; test OK
 Test case: Assignment1.fib 3 `TestSpec.assertEqual` 3 ; test FAILED
-Expected:  2, but got: 3
+Expected:  3, but got: 2
 Test case: Assignment1.fib 4 `TestSpec.assertEqual` 5 ; test FAILED
-Expected:  4, but got: 5
+Expected:  5, but got: 4
 
 OK tests: 3; FAILED tests: 2
 Score: 15

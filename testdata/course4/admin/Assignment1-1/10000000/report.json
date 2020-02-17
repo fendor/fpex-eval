@@ -43,9 +43,9 @@
             ],
             "testGroupPoints": 15,
             "testGroupResultProps": {
+                "upperBound": 26,
                 "penalty": 0,
                 "pointsPerTest": 5,
-                "upperBound": 26,
                 "label": ""
             }
         }

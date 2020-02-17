@@ -50,6 +50,7 @@ library:
   - polysemy
   - polysemy-plugin
   - regex-tdfa
+  - temporary
   source-dirs: src
   ghc-options: -O2 -flate-specialise -fspecialise-aggressively -fplugin=Polysemy.Plugin
 

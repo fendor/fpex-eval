@@ -35,8 +35,8 @@ assignmentCollectStudentDir
 assignmentCollectStudentDir sid course assignmentName student =
     assignmentCollectDir sid course assignmentName </> T.unpack (matrNr student)
 
-assignmentCollectFile :: SubmissionId -> Course -> String -> Student -> FilePath
-assignmentCollectFile sid course assignmentFile student =
+assignmentCollectStudentFile :: SubmissionId -> Course -> String -> Student -> FilePath
+assignmentCollectStudentFile sid course assignmentFile student =
     assignmentCollectStudentDir sid course assignmentFile student
         </> assignmentFile
 
