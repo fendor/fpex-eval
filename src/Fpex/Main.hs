@@ -46,16 +46,6 @@ defaultMain' = do
             let testSuiteName = optionTestSuiteSpecification
             let students      = maybe courseStudents pure optionStudent
 
-            embed $ Collect.prepareSubmissionFolder optionSubmissionId
-                                                    course
-                                                    testSuiteName
-
-            forM_ students $ \student -> do
-                embed $ Collect.collectSubmission optionSubmissionId
-                                                  course
-                                                  testSuiteName
-                                                  student
-                return ()
             forM_ students $ \student -> do
                 embed $ Grade.runSubmission optionSubmissionId
                                             course
