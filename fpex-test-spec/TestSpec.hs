@@ -12,6 +12,7 @@ module TestSpec where
 
 import qualified Data.Generics.Uniplate.Operations as Uniplate
 import           Data.Generics.Uniplate.Data ()
+import           Data.Data (Data)
 import           Data.Maybe                     ( fromMaybe )
 import           System.Timeout                 ( timeout )
 import           System.IO                      ( FilePath )
@@ -27,6 +28,7 @@ import qualified Data.ByteString.Lazy          as BL
 import           Control.DeepSeq                ( deepseq )
 
 import           Language.Haskell.TH as TH
+import qualified Language.Haskell.TH.Syntax as TH
 import           Language.Haskell.TH.Quote
 
 group :: TestGroupProps -> [TestCase] -> TestGroup
@@ -41,7 +43,12 @@ testcase e = do
         unbound m = not $ null [ () | TH.UnboundVarE {} <- Uniplate.universe m]
 
     expr <- runQ e
-    let prettyExpr = LitE $ StringL $ pprint expr
+
+    let simplifyName :: Name -> Name
+        simplifyName (TH.Name occ _) = TH.Name occ TH.NameS
+        simplifyNames :: Data a => a ->  a
+        simplifyNames = Uniplate.transformBi  simplifyName
+    let prettyExpr = LitE $ StringL $ pprint (simplifyNames expr)
 
     generatedExpr <- if unbound expr
         then [e|evaluate (throw NotSubmitted)|]
