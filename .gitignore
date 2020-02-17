@@ -27,3 +27,8 @@ cabal.project.local~
 *.hs_out*
 
 .vscode/
+
+report.json
+*out_*
+*out_*
+course.json
