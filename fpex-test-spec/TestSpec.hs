@@ -1,13 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 
 module TestSpec where
 
+import qualified Data.Generics.Uniplate.Operations as Uniplate
+import           Data.Generics.Uniplate.Data ()
 import           Data.Maybe                     ( fromMaybe )
 import           System.Timeout                 ( timeout )
 import           System.IO                      ( FilePath )
@@ -22,7 +26,7 @@ import qualified Data.Aeson.Encode.Pretty      as Aeson
 import qualified Data.ByteString.Lazy          as BL
 import           Control.DeepSeq                ( deepseq )
 
-import           Language.Haskell.TH
+import           Language.Haskell.TH as TH
 import           Language.Haskell.TH.Quote
 
 group :: TestGroupProps -> [TestCase] -> TestGroup
@@ -32,7 +36,19 @@ testSuite :: [TestGroup] -> TestSuite
 testSuite = TestSuite
 
 testcase :: Q Exp -> Q Exp
-testcase = fmap $ \e -> TupE [LitE $ StringL $ pprint e, e]
+testcase e = do
+    let unbound :: Exp -> Bool
+        unbound m = and [ True | (TH.UnboundVarE _) <- Uniplate.universe m]
+
+    expr <- runQ e
+    let prettyExpr = LitE $ StringL $ pprint expr
+
+    generatedExpr <- if unbound expr
+        then [e|evaluate (throw NotSubmitted)|]
+        else pure expr
+
+    tupE [pure prettyExpr, pure generatedExpr]
+            
 
 assertEqual :: (Show a, Eq a) => a -> a -> IO ()
 assertEqual left right =
@@ -46,6 +62,10 @@ type Points = Int
 type TimeoutSecs = Int
 
 data ExpectedButGot = ExpectedButGot String String
+    deriving (Eq, Show, Typeable, Generic)
+    deriving anyclass (FromJSON, ToJSON, E.Exception)
+
+data NotSubmitted = NotSubmitted 
     deriving (Eq, Show, Typeable, Generic)
     deriving anyclass (FromJSON, ToJSON, E.Exception)
 
@@ -73,6 +93,7 @@ data TestCaseResult
     | TestCaseResultExpectedButGot ExpectedButGot
     | TestCaseResultException String
     | TestCaseResultTimeout
+    | TestCaseNotSubmitted
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
@@ -108,6 +129,7 @@ runTestCase timeoutSecs (testCaseString, testCaseAction) =
         (timeoutSecs * 1000 * 1000)
         (           (testCaseAction >> return TestCaseResultOk)
         `E.catches` [ E.Handler (return . TestCaseResultExpectedButGot)
+                    , E.Handler (\(_ :: NotSubmitted) -> return TestCaseNotSubmitted)
                     -- Re-throw AsyncException
                     , E.Handler (throw :: E.AsyncException -> IO a)
                     , E.Handler

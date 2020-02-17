@@ -1,0 +1,46 @@
+{
+    "testGroupResults": [
+        {
+            "testCaseResults": [
+                [
+                    "fib 0 `TestSpec.assertEqual` 1",
+                    {
+                        "tag": "TestCaseNotSubmitted"
+                    }
+                ],
+                [
+                    "fib 1 `TestSpec.assertEqual` 1",
+                    {
+                        "tag": "TestCaseNotSubmitted"
+                    }
+                ],
+                [
+                    "fib 2 `TestSpec.assertEqual` 2",
+                    {
+                        "tag": "TestCaseNotSubmitted"
+                    }
+                ],
+                [
+                    "fib 3 `TestSpec.assertEqual` 3",
+                    {
+                        "tag": "TestCaseNotSubmitted"
+                    }
+                ],
+                [
+                    "fib 4 `TestSpec.assertEqual` 5",
+                    {
+                        "tag": "TestCaseNotSubmitted"
+                    }
+                ]
+            ],
+            "testGroupPoints": 0,
+            "testGroupResultProps": {
+                "upperBound": 26,
+                "penalty": 0,
+                "pointsPerTest": 5,
+                "label": ""
+            }
+        }
+    ],
+    "testSuitePoints": 0
+}
