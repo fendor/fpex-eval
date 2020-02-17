@@ -38,7 +38,7 @@ testSuite = TestSuite
 testcase :: Q Exp -> Q Exp
 testcase e = do
     let unbound :: Exp -> Bool
-        unbound m = and [ True | (TH.UnboundVarE _) <- Uniplate.universe m]
+        unbound m = not $ null [ () | TH.UnboundVarE {} <- Uniplate.universe m]
 
     expr <- runQ e
     let prettyExpr = LitE $ StringL $ pprint expr
