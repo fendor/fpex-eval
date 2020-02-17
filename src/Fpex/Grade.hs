@@ -13,7 +13,7 @@ import           Fpex.Eval.Types
 runSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
 runSubmission sid course testSuite student = do
     let targetDir = assignmentCollectStudentDir sid course testSuite student
-    let targetFile = assignmentCollectFile sid course testSuite student
+    let targetFile = assignmentCollectStudentFile sid course testSuite student
 
     whenM (doesFileExist targetFile) $ do
         putStrLn $ "run testsuite for student " <> T.unpack (matrNr student)
@@ -28,4 +28,3 @@ runSubmission sid course testSuite student = do
         ExitSuccess           <- Proc.waitForProcess procHandle
 
         return ()
-

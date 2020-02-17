@@ -30,7 +30,7 @@ collectSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
 collectSubmission sid course testSuite student = do
     let sourceFile = studentSourceFile course testSuite student
     let targetDir  = assignmentCollectStudentDir sid course testSuite student
-    let targetFile = assignmentCollectFile sid course testSuite student
+    let targetFile = assignmentCollectStudentFile sid course testSuite student
     -- create submission dir even if there is no submission
     createDirectoryIfMissing True targetDir
 
