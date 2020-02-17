@@ -93,7 +93,7 @@ data TestCaseResult
     | TestCaseResultExpectedButGot ExpectedButGot
     | TestCaseResultException String
     | TestCaseResultTimeout
-    | TestCaseNotSubmitted
+    | TestCaseResultNotSubmitted
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
@@ -129,7 +129,7 @@ runTestCase timeoutSecs (testCaseString, testCaseAction) =
         (timeoutSecs * 1000 * 1000)
         (           (testCaseAction >> return TestCaseResultOk)
         `E.catches` [ E.Handler (return . TestCaseResultExpectedButGot)
-                    , E.Handler (\(_ :: NotSubmitted) -> return TestCaseNotSubmitted)
+                    , E.Handler (\(_ :: NotSubmitted) -> return TestCaseResultNotSubmitted)
                     -- Re-throw AsyncException
                     , E.Handler (throw :: E.AsyncException -> IO a)
                     , E.Handler
