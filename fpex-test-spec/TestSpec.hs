@@ -104,11 +104,11 @@ getTestGroupPoints props@TestGroupProps {..} =
 
 runTestCase :: TimeoutSecs -> TestCase -> IO (String, TestCaseResult)
 runTestCase timeoutSecs (testCaseString, testCaseAction) =
-    (testCaseString,) . fromMaybe TestCaseResultTimeout <$> timeout
+    (testCaseString, ) . fromMaybe TestCaseResultTimeout <$> timeout
         (timeoutSecs * 1000 * 1000)
         (           (testCaseAction >> return TestCaseResultOk)
         `E.catches` [ E.Handler (return . TestCaseResultExpectedButGot)
-                -- Re-throw AsyncException
+                    -- Re-throw AsyncException
                     , E.Handler (throw :: E.AsyncException -> IO a)
                     , E.Handler
                         (\(e :: E.SomeException) ->
