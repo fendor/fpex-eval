@@ -1,4 +1,4 @@
-module Fpex.Publish.Pretty where 
+module Fpex.Publish.Pretty where
 
 import Fpex.Publish.Types
 import qualified Data.Text as T
@@ -26,7 +26,7 @@ renderTestGroup TestGroupResults { .. }
                    <> T.pack (show upperBound)
                  ]
               <> [""]
-              <> map (uncurry renderTestCase) testCaseResults
+              <> map renderTestCase testGroupReports
               <> [""]
               <> [ "OK tests: "
                  <> T.pack (show okTestN)
@@ -34,25 +34,23 @@ renderTestGroup TestGroupResults { .. }
                  <> T.pack (show failedTestN)
                  , "Score: " <> T.pack (show testGroupPoints)
                  ]
-    where 
-        (okTest, failedTest) = partition ((== TestCaseResultOk) . snd) testCaseResults
-        okTestN = length okTest 
+    where
+        (okTest, failedTest) = partition ((== TestCaseResultOk) . testCaseReportResult) testGroupReports
+        okTestN = length okTest
         failedTestN = length failedTest
 
-renderTestCase :: T.Text -> TestCaseResult -> T.Text
-renderTestCase query TestCaseResultOk = "Test case: " <> query <> " ; test OK"
-renderTestCase query TestCaseResultCompileFail = "Test case: " <> query <> " ; test FAILED TO COMPILE"
-renderTestCase query TestCaseResultNotSubmitted = "Test case: " <> query <> " ; test NOT SUBMITTED"
-renderTestCase query (TestCaseResultExpectedButGot (ExpectedButGot expectedOutput actualOutput))
-    = T.intercalate
-        "\n"
-        [ buildTestCase query <> " FAILED"
-        , "Expected:  " <> actualOutput <> ", but got: " <> expectedOutput 
-        ]
-renderTestCase query TestCaseResultTimeout =
-    buildTestCase query <> " TIMED OUT"
-renderTestCase query (TestCaseResultException exception) =
-    buildTestCase query <> " RUN-TIME EXCEPTION: " <> exception
+renderTestCase :: TestCaseReport -> T.Text
+renderTestCase TestCaseReport {..} =
+    "Test case: " <> testCaseReportLabel <> " ; test " <> renderTestCaseResult testCaseReportResult
 
-buildTestCase :: T.Text -> T.Text
-buildTestCase query = "Test case: " <> query <> " ; test"
+renderTestCaseResult :: TestCaseResult -> T.Text
+renderTestCaseResult TestCaseResultOk = "OK"
+renderTestCaseResult TestCaseResultCompileFail = "FAILED TO COMPILE"
+renderTestCaseResult TestCaseResultNotSubmitted = "NOT SUBMITTED"
+renderTestCaseResult (TestCaseResultExpectedButGot (ExpectedButGot expectedOutput actualOutput))
+    =  "FAILED\n"
+    <> "Expected:  " <> actualOutput <> ", but got: " <> expectedOutput
+renderTestCaseResult TestCaseResultTimeout =
+    "TIMED OUT"
+renderTestCaseResult (TestCaseResultException exception) =
+    "RUN-TIME EXCEPTION: " <> exception

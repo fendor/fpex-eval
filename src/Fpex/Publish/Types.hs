@@ -1,15 +1,15 @@
-module Fpex.Publish.Types where 
+module Fpex.Publish.Types where
 
 import qualified Data.Text                     as T
 import           GHC.Generics                   ( Generic )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
- 
+
 
 -- | Types mirroring the types from fpex-test-spec
 -- For backwards and forward compatibility.
- 
+
 type Points = Int
 
 data TestGroupProps = TestGroupProps
@@ -42,11 +42,18 @@ data TestCaseResult
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
+data TestCaseReport = TestCaseReport
+    { testCaseReportLabel :: T.Text
+    , testCaseReportResult :: TestCaseResult
+    , testCaseReportTime :: Double
+    }
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
+
 data TestGroupResults = TestGroupResults
-    { testCaseResults :: [(T.Text, TestCaseResult)]
+    { testGroupReports :: [TestCaseReport]
     , testGroupPoints :: Points
     , testGroupResultProps :: TestGroupProps
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
-

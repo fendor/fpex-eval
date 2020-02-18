@@ -21,10 +21,10 @@ publishTestResult sid course testSuite student = do
 
     whenM (doesFileExist sourceFile) $ do
         putStrLn $ "publish " <> sourceFile
-        testSuiteResults <- Aeson.eitherDecodeFileStrict sourceFile 
-          >>= \case 
-          Right (r :: Publish.TestSuiteResults) -> return r 
+        testSuiteResults <- Aeson.eitherDecodeFileStrict sourceFile
+          >>= \case
+          Right (r :: Publish.TestSuiteResults) -> return r
           Left msg -> errorIO $ "Could not decode \"" ++ sourceFile ++ "\": " ++ msg
 
         let prettyTextReport = Publish.prettyTestReport testSuiteResults
-        T.writeFile targetFile prettyTextReport 
+        T.writeFile targetFile prettyTextReport

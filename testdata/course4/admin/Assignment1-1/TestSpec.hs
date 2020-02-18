@@ -16,6 +16,7 @@ import           Data.Data (Data)
 import           Data.Maybe                     ( fromMaybe )
 import           System.Timeout                 ( timeout )
 import           System.IO                      ( FilePath )
+import           System.Clock
 import           GHC.Generics                   ( Generic )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
@@ -55,7 +56,7 @@ testcase e = do
         else pure expr
 
     tupE [pure prettyExpr, pure generatedExpr]
-            
+
 
 assertEqual :: (Show a, Eq a) => a -> a -> IO ()
 assertEqual left right =
@@ -72,7 +73,7 @@ data ExpectedButGot = ExpectedButGot String String
     deriving (Eq, Show, Typeable, Generic)
     deriving anyclass (FromJSON, ToJSON, E.Exception)
 
-data NotSubmitted = NotSubmitted 
+data NotSubmitted = NotSubmitted
     deriving (Eq, Show, Typeable, Generic)
     deriving anyclass (FromJSON, ToJSON, E.Exception)
 
@@ -104,8 +105,16 @@ data TestCaseResult
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
+data TestCaseReport = TestCaseReport
+    { testCaseReportLabel :: String
+    , testCaseReportResult :: TestCaseResult
+    , testCaseReportTime :: Double
+    }
+    deriving (Eq, Show, Generic)
+    deriving anyclass (FromJSON, ToJSON)
+
 data TestGroupResults = TestGroupResults
-    { testCaseResults :: [(String, TestCaseResult)]
+    { testGroupReports :: [TestCaseReport]
     , testGroupPoints :: Points
     , testGroupResultProps :: TestGroupProps
     }
@@ -130,9 +139,10 @@ getTestGroupPoints props@TestGroupProps {..} =
 
 -- runners
 
-runTestCase :: TimeoutSecs -> TestCase -> IO (String, TestCaseResult)
-runTestCase timeoutSecs (testCaseString, testCaseAction) =
-    (testCaseString, ) . fromMaybe TestCaseResultTimeout <$> timeout
+runTestCase :: TimeoutSecs -> TestCase -> IO TestCaseReport
+runTestCase timeoutSecs (testCaseReportLabel, testCaseAction) = do
+    before <- getTime Monotonic
+    testCaseReportResult <- fromMaybe TestCaseResultTimeout <$> timeout
         (timeoutSecs * 1000 * 1000)
         (           (testCaseAction >> return TestCaseResultOk)
         `E.catches` [ E.Handler (return . TestCaseResultExpectedButGot)
@@ -145,11 +155,18 @@ runTestCase timeoutSecs (testCaseString, testCaseAction) =
                         )
                     ]
         )
+    now <- getTime Monotonic
+    let diff = diffTimeSpec now before
+    let testCaseReportTime = toDouble diff
+    return TestCaseReport { .. }
+
+toDouble :: TimeSpec -> Double
+toDouble spec = fromIntegral (sec spec) + fromIntegral (nsec spec) * 1e-9
 
 runTestGroup :: TimeoutSecs -> TestGroup -> IO TestGroupResults
 runTestGroup timeoutSecs TestGroup {..} = do
-    testCaseResults <- mapM (runTestCase timeoutSecs) testCases
-    let testGroupPoints = getTestGroupPoints testGroupProps $ map snd testCaseResults
+    testGroupReports <- mapM (runTestCase timeoutSecs) testCases
+    let testGroupPoints = getTestGroupPoints testGroupProps $ map testCaseReportResult testGroupReports
     let testGroupResultProps = testGroupProps
     return TestGroupResults { .. }
 

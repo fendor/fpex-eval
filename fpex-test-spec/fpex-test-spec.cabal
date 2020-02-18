@@ -14,5 +14,6 @@ library
     , deepseq
     , template-haskell
     , uniplate
+    , clock
 
   default-language: Haskell2010

@@ -31,7 +31,7 @@ runSubmission sid course testSuite student = do
     let targetFile = assignmentCollectStudentFile sid course testSuite student
 
     unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
-    
+
     procRes <- embed $ do
         T.putStrLn $ "run testsuite for student " <> matrNr student
         let
@@ -42,13 +42,13 @@ runSubmission sid course testSuite student = do
                     { Proc.cwd = Just targetDir
                     }
         (_, _, _, procHandle) <- Proc.createProcess procConfig
-        Proc.waitForProcess procHandle 
-        
-    case procRes of 
+        Proc.waitForProcess procHandle
+
+    case procRes of
         ExitSuccess -> return ()
         ExitFailure _ -> throw RunnerFailedToCompile
 
--- | Create a directory 
+-- | Create a directory
 createEmptyStudent :: (Member (Embed IO) r, Member (Error RunnerError) r) => SubmissionId -> Course -> FilePath -> Sem r (Publish.TestSuiteResults, Publish.TestSuiteResults)
 createEmptyStudent sid course testsuite = do
     let errorStudent = Student "errorStudent"
@@ -58,19 +58,22 @@ createEmptyStudent sid course testsuite = do
     let resultSourceFile = Eval.reportSourceJsonFile sid course testsuite errorStudent
     embed $ createDirectoryIfMissing True targetDir
     embed $ T.writeFile targetFile ("module " <> moduleName <> " where\n")
-    
+
     runSubmission sid course testsuite errorStudent
 
     testSuiteResults <- embed (Aeson.eitherDecodeFileStrict resultSourceFile)
-        >>= \case 
-        Right (r :: Publish.TestSuiteResults) -> return r 
+        >>= \case
+        Right (r :: Publish.TestSuiteResults) -> return r
         Left _msg -> throw RunnerFailedToCompile
 
-    let modifyTestCaseResult (label, _) = (label, Publish.TestCaseResultCompileFail)
-        modifyTestGroup  Publish.TestGroupResults {..} = 
-            Publish.TestGroupResults 
-                { testCaseResults = map modifyTestCaseResult testCaseResults
-                , .. 
+    let modifyTestCaseResult report =
+            report
+                { testCaseReportResult = Publish.TestCaseResultCompileFail
+                }
+        modifyTestGroup  Publish.TestGroupResults {..} =
+            Publish.TestGroupResults
+                { testGroupReports = map modifyTestCaseResult testGroupReports
+                , ..
                 }
         modifyTestSuiteResults Publish.TestSuiteResults {..} =
             Publish.TestSuiteResults
