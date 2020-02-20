@@ -16,6 +16,7 @@ data OptionCommand
     | Setup SetupCommand
     | Collect CollectCommand
     | Publish PublishCommand
+    | Stats StatCommand
     deriving (Show)
 
 data TestSuiteOptions = TestSuiteOptions
@@ -47,6 +48,11 @@ data PublishCommand = PublishCommand
     { publishTestSuiteOptions :: TestSuiteOptions
     }
     deriving (Show)
+
+data StatCommand = StatCommand
+    { statTestSuiteOptions :: TestSuiteOptions
+    }
+    deriving (Show, Eq)
 
 options :: ParserInfo Options
 options =
@@ -102,12 +108,14 @@ options =
                     )
         collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)
         publishParser = Publish <$> (PublishCommand <$> testSuiteOptionParser)
+        statParser = Stats <$> (StatCommand <$> testSuiteOptionParser)
 
         commandParser = hsubparser
             (  command "setup"   (info setupParser fullDesc)
             <> command "collect" (info collectParser fullDesc)
             <> command "grade"   (info gradeParser fullDesc)
             <> command "publish" (info publishParser fullDesc)
+            <> command "stats"   (info statParser fullDesc)
             )
 
         courseOption = optional $ option str (long "course")

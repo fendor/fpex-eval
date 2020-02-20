@@ -42,6 +42,7 @@ library:
   - extra
   - process
   - text
+  - array
   - bytestring
   - directory
   - filepath

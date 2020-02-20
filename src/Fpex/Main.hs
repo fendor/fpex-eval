@@ -19,6 +19,7 @@ import qualified Fpex.Course.CourseSetup       as Setup
 import qualified Fpex.Collect                  as Collect
 import qualified Fpex.Publish                  as Publish
 import qualified Fpex.Eval.Types               as Eval
+import qualified Fpex.Stats.Histogram          as Histogram
 import           System.IO                      ( stderr )
 import           System.Exit                    ( exitFailure )
 import           System.Directory               ( getCurrentDirectory
@@ -100,6 +101,12 @@ defaultMain' = do
                                                   testSuiteName
                                                   student
                 return ()
+        Stats StatCommand {..} -> do
+            let TestSuiteOptions {..} = statTestSuiteOptions
+            course@Course {..} <- getCourseConfig optionCourseFile
+            let testSuiteName = optionTestSuiteSpecification
+            histoData <- embed (Histogram.compute optionSubmissionId course testSuiteName)
+            embed (putStrLn $ Histogram.asciiArt 20 histoData)
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)

@@ -63,6 +63,8 @@ data TestGroupResults = TestGroupResults
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
 
+maxScore :: TestSuiteResults -> Points
+maxScore TestSuiteResults {..} = sum (map (upperBound . testGroupResultProps) testGroupResults)
 
 newtype Timeout = Timeout { getTimeout :: Float }
     deriving (Show, Generic)
@@ -102,3 +104,4 @@ reportSourceJsonFile sid course testSuite student =
 reportPublishFile :: SubmissionId -> Course -> String -> Student -> FilePath
 reportPublishFile sid course assignmentName student =
     studentDir course student </> assignmentName <.> ("out_" <> show (getSubmissionId sid))
+
