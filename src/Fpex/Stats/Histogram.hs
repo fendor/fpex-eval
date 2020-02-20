@@ -45,11 +45,18 @@ asciiArt height hData =
                                       (replicate (binSize size) '#')
                                       (replicate (emptyBin size) ' ')
               )
-        & \x -> (border : x) ++ [border]
+        & wrapBorder
         & transpose
         & reverse
+        & zipWith (++) (yLabels ++ replicate 4 "    ")
         & unlines
   where
     binSize s = ceiling (s * fromIntegral height)
     emptyBin s = height - binSize s
-    border = replicate (height + 4) '|'
+    wrapBorder x = (border : x) ++ [border]
+    border  = replicate (height + 4) '|'
+    percents :: [Int]
+    percents = map
+        ((round :: Double -> Int ) . (*100) . (/ fromIntegral height) . fromIntegral)
+        [height, (height - 1) .. 1]
+    yLabels = map (printf "%3d%%") percents
