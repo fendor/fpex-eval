@@ -10,9 +10,10 @@
 
 module TestSpec where
 
-import qualified Data.Generics.Uniplate.Operations as Uniplate
-import           Data.Generics.Uniplate.Data ()
-import           Data.Data (Data)
+import qualified Data.Generics.Uniplate.Operations
+                                               as Uniplate
+import           Data.Generics.Uniplate.Data    ( )
+import           Data.Data                      ( Data )
 import           Data.Maybe                     ( fromMaybe )
 import           System.Timeout                 ( timeout )
 import           System.IO                      ( FilePath )
@@ -28,8 +29,8 @@ import qualified Data.Aeson.Encode.Pretty      as Aeson
 import qualified Data.ByteString.Lazy          as BL
 import           Control.DeepSeq                ( deepseq )
 
-import           Language.Haskell.TH as TH
-import qualified Language.Haskell.TH.Syntax as TH
+import           Language.Haskell.TH           as TH
+import qualified Language.Haskell.TH.Syntax    as TH
 import           Language.Haskell.TH.Quote
 
 group :: TestGroupProps -> [TestCase] -> TestGroup
@@ -41,14 +42,14 @@ testSuite = TestSuite
 testcase :: Q Exp -> Q Exp
 testcase e = do
     let unbound :: Exp -> Bool
-        unbound m = not $ null [ () | TH.UnboundVarE {} <- Uniplate.universe m]
+        unbound m = not $ null [ () | TH.UnboundVarE{} <- Uniplate.universe m ]
 
     expr <- runQ e
 
     let simplifyName :: Name -> Name
         simplifyName (TH.Name occ _) = TH.Name occ TH.NameS
-        simplifyNames :: Data a => a ->  a
-        simplifyNames = Uniplate.transformBi  simplifyName
+        simplifyNames :: Data a => a -> a
+        simplifyNames = Uniplate.transformBi simplifyName
     let prettyExpr = LitE $ StringL $ pprint (simplifyNames expr)
 
     generatedExpr <- if unbound expr
@@ -108,7 +109,7 @@ data TestCaseResult
 data TestCaseReport = TestCaseReport
     { testCaseReportLabel :: String
     , testCaseReportResult :: TestCaseResult
-    , testCaseReportTime :: Double
+    , testCaseReportTimeNs :: Integer
     }
     deriving (Eq, Show, Generic)
     deriving anyclass (FromJSON, ToJSON)
@@ -141,12 +142,15 @@ getTestGroupPoints props@TestGroupProps {..} =
 
 runTestCase :: TimeoutSecs -> TestCase -> IO TestCaseReport
 runTestCase timeoutSecs (testCaseReportLabel, testCaseAction) = do
-    before <- getTime Monotonic
+    before               <- getTime Monotonic
     testCaseReportResult <- fromMaybe TestCaseResultTimeout <$> timeout
         (timeoutSecs * 1000 * 1000)
         (           (testCaseAction >> return TestCaseResultOk)
         `E.catches` [ E.Handler (return . TestCaseResultExpectedButGot)
-                    , E.Handler (\(_ :: NotSubmitted) -> return TestCaseResultNotSubmitted)
+                    , E.Handler
+                        (\(_ :: NotSubmitted) ->
+                            return TestCaseResultNotSubmitted
+                        )
                     -- Re-throw AsyncException
                     , E.Handler (throw :: E.AsyncException -> IO a)
                     , E.Handler
@@ -156,17 +160,19 @@ runTestCase timeoutSecs (testCaseReportLabel, testCaseAction) = do
                     ]
         )
     now <- getTime Monotonic
-    let diff = diffTimeSpec now before
-    let testCaseReportTime = toDouble diff
+    let diff                 = diffTimeSpec now before
+    let testCaseReportTimeNs = timeSpecToNs diff
     return TestCaseReport { .. }
-
-toDouble :: TimeSpec -> Double
-toDouble spec = fromIntegral (sec spec) + fromIntegral (nsec spec) * 1e-9
+  where
+    timeSpecToNs :: TimeSpec -> Integer
+    timeSpecToNs spec =
+        fromIntegral (sec spec) * 10 ^ 9 + fromIntegral (nsec spec)
 
 runTestGroup :: TimeoutSecs -> TestGroup -> IO TestGroupResults
 runTestGroup timeoutSecs TestGroup {..} = do
     testGroupReports <- mapM (runTestCase timeoutSecs) testCases
-    let testGroupPoints = getTestGroupPoints testGroupProps $ map testCaseReportResult testGroupReports
+    let testGroupPoints = getTestGroupPoints testGroupProps
+            $ map testCaseReportResult testGroupReports
     let testGroupResultProps = testGroupProps
     return TestGroupResults { .. }
 
