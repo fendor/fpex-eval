@@ -13,7 +13,7 @@ data Options = Options
 
 data OptionCommand
     = Grade CommandGrade
-    | Setup
+    | Setup SetupCommand
     | Collect CollectCommand
     | Publish PublishCommand
     deriving (Show)
@@ -21,6 +21,12 @@ data OptionCommand
 data TestSuiteOptions = TestSuiteOptions
     { optionSubmissionId :: SubmissionId
     , optionTestSuiteSpecification :: FilePath
+    }
+    deriving (Show, Eq)
+
+data SetupCommand = SetupCommand
+    { useGroups :: Bool
+    , prefix :: Maybe String
     }
     deriving (Show, Eq)
 
@@ -47,8 +53,7 @@ options =
     let
         testSuiteParser = option
             str
-            (  long "test-suite"
-            <> help "Test-suite specification (Haskell file)"
+            (long "test-suite" <> help "Test-suite specification (Haskell file)"
             )
 
         submissionIdParser = SubmissionId <$> option
@@ -77,15 +82,32 @@ options =
                             )
                         )
                     )
-
+        setupParser =
+            Setup
+                <$> (   SetupCommand
+                    <$> flag
+                            True
+                            False
+                            (long "--use-groups" <> short 'g' <> help
+                                "Course participants are working in groups"
+                            )
+                    <*> optional
+                            (option
+                                str
+                                (  long "prefix"
+                                <> help
+                                       "Name prefix of participants. Applies to groups and students."
+                                )
+                            )
+                    )
         collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)
         publishParser = Publish <$> (PublishCommand <$> testSuiteOptionParser)
 
         commandParser = hsubparser
-            (  command "setup"      (info (pure Setup) fullDesc)
-            <> command "collect"    (info collectParser fullDesc)
-            <> command "grade"      (info gradeParser fullDesc)
-            <> command "publish"    (info publishParser fullDesc)
+            (  command "setup"   (info setupParser fullDesc)
+            <> command "collect" (info collectParser fullDesc)
+            <> command "grade"   (info gradeParser fullDesc)
+            <> command "publish" (info publishParser fullDesc)
             )
 
         courseOption = optional $ option str (long "course")

@@ -50,7 +50,7 @@ defaultMain' = do
 
             (compileFailTestSuite, noSubmissionTestSuite)
                 <- Grade.runGradeError (Grade.createEmptyStudent optionSubmissionId course testSuiteName)
-                    >>= \case 
+                    >>= \case
                     Right (a, b) -> return (a, b)
                     Left err -> throw (T.pack $ show err)
 
@@ -60,18 +60,18 @@ defaultMain' = do
                                             course
                                             testSuiteName
                                             student)
-                    >>= \case 
+                    >>= \case
                         Right () -> return ()
                         Left err -> embed $ do
                             T.putStrLn (T.pack $ show err)
-                            case err of 
+                            case err of
                                 Grade.RunnerFailedToCompile ->
                                     Aeson.encodeFile targetFile compileFailTestSuite
                                 Grade.NoSubmission ->
                                     Aeson.encodeFile targetFile noSubmissionTestSuite
                 return ()
 
-        Setup                       -> Setup.courseSetup
+        Setup   SetupCommand {..} -> Setup.courseSetup
         Collect CollectCommand {..} -> do
             let TestSuiteOptions {..} = collectTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
