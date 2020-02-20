@@ -1,6 +1,6 @@
 module Fpex.Publish.Pretty where
 
-import Fpex.Publish.Types
+import           Fpex.Eval.Types
 import qualified Data.Text as T
 import           Data.List                      ( partition )
 

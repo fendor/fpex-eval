@@ -8,7 +8,6 @@ import qualified Data.Text.IO as T
 
 import           Fpex.Course.Types
 import           Fpex.Eval.Types
-import qualified Fpex.Publish.Types as Publish
 import qualified Fpex.Publish.Pretty as Publish
 
 
@@ -23,7 +22,7 @@ publishTestResult sid course testSuite student = do
         putStrLn $ "publish " <> sourceFile
         testSuiteResults <- Aeson.eitherDecodeFileStrict sourceFile
           >>= \case
-          Right (r :: Publish.TestSuiteResults) -> return r
+          Right r -> return r
           Left msg -> errorIO $ "Could not decode \"" ++ sourceFile ++ "\": " ++ msg
 
         let prettyTextReport = Publish.prettyTestReport testSuiteResults
