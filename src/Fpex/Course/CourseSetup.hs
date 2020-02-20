@@ -8,6 +8,7 @@ import           Control.Monad                  ( when )
 import qualified Data.Aeson.Encode.Pretty      as Aeson
 import           Data.Maybe                     ( listToMaybe
                                                 , mapMaybe
+                                                , fromMaybe
                                                 )
 
 import           System.Directory               ( getCurrentDirectory
@@ -23,10 +24,11 @@ import           Polysemy
 import           Polysemy.Error
 
 import           Fpex.Course.Types
+import           Fpex.Options
 
 -- |To be called from the courses admin folder
-courseSetup :: (Member (Error Text) r, Member (Embed IO) r) => Sem r ()
-courseSetup = do
+courseSetup :: (Member (Error Text) r, Member (Embed IO) r) => SetupCommand -> Sem r ()
+courseSetup SetupCommand {..} = do
 
     -- check if in correct directory
     currentDir <- embed getCurrentDirectory
@@ -39,7 +41,7 @@ courseSetup = do
     let courseDir  = a !! 1
     let courseName = takeFileName courseDir
 
-    let userPrefix = "f"
+    let userPrefix = T.pack $ fromMaybe "f" prefix
     studentDirs <- embed $ listDirectory courseDir
     let students = mapMaybe (parseStudentDir userPrefix) studentDirs
 

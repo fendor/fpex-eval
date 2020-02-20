@@ -72,7 +72,7 @@ defaultMain' = do
                                     Aeson.encodeFile targetFile noSubmissionTestSuite
                 return ()
 
-        Setup   SetupCommand {..} -> Setup.courseSetup
+        Setup   setupCommand -> Setup.courseSetup setupCommand
         Collect CollectCommand {..} -> do
             let TestSuiteOptions {..} = collectTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
