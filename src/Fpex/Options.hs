@@ -27,7 +27,7 @@ data TestSuiteOptions = TestSuiteOptions
 
 data SetupCommand = SetupCommand
     { useGroups :: Bool
-    , prefix :: Maybe String
+    , prefix :: String
     }
     deriving (Show, Eq)
 
@@ -97,18 +97,17 @@ options =
                             (long "--use-groups" <> short 'g' <> help
                                 "Course participants are working in groups"
                             )
-                    <*> optional
-                            (option
-                                str
-                                (  long "prefix"
-                                <> help
-                                       "Name prefix of participants. Applies to groups and students."
-                                )
+                    <*> option
+                            str
+                            (  long "prefix"
+                            <> help
+                                   "Name prefix of participants. Applies to groups and students."
+                            <> value "f"
                             )
                     )
         collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)
         publishParser = Publish <$> (PublishCommand <$> testSuiteOptionParser)
-        statParser = Stats <$> (StatCommand <$> testSuiteOptionParser)
+        statParser    = Stats <$> (StatCommand <$> testSuiteOptionParser)
 
         commandParser = hsubparser
             (  command "setup"   (info setupParser fullDesc)

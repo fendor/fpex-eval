@@ -8,7 +8,6 @@ import           Control.Monad                  ( when )
 import qualified Data.Aeson.Encode.Pretty      as Aeson
 import           Data.Maybe                     ( listToMaybe
                                                 , mapMaybe
-                                                , fromMaybe
                                                 )
 
 import           System.Directory               ( getCurrentDirectory
@@ -41,14 +40,13 @@ courseSetup SetupCommand {..} = do
     let courseDir  = a !! 1
     let courseName = takeFileName courseDir
 
-    let userPrefix = T.pack $ fromMaybe "f" prefix
     studentDirs <- embed $ listDirectory courseDir
-    let students = mapMaybe (parseStudentDir userPrefix) studentDirs
+    let students = mapMaybe (parseStudentDir $ T.pack prefix) studentDirs
 
     let course = Course { courseName       = T.pack courseName
                         , courseRootDir    = courseDir
                         , courseGroups     = []
-                        , courseUserPrefix = userPrefix
+                        , courseUserPrefix = T.pack prefix
                         , courseStudents   = students
                         }
     embed $ BL.writeFile "course.json" $ Aeson.encodePretty course
