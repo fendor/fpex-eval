@@ -12,6 +12,7 @@ library
     , base
     , bytestring
     , deepseq
+    , pretty
     , template-haskell
     , uniplate
     , clock
