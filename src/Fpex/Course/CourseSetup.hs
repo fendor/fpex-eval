@@ -49,7 +49,7 @@ courseSetup SetupCommand {..} = do
                         , courseGroups           = []
                         , courseUserPrefix       = T.pack prefix
                         , courseStudents         = students
-                        , courseGhciOptions      = ["+RTS", "-M500M", "-RTS"]
+                        , courseGhciOptions      = ["+RTS", "-M500M", "-K10M", "-RTS"]
                         , courseGhciDependencies = ["base", "array"]
                         , courseGhciEnvironment  = ".ghc.environment.fpex"
                         }
