@@ -26,13 +26,14 @@ import           Fpex.Course.Types
 import           Fpex.Options
 
 -- |To be called from the courses admin folder
-courseSetup :: (Member (Error Text) r, Member (Embed IO) r) => SetupCommand -> Sem r ()
+courseSetup
+    :: (Member (Error Text) r, Member (Embed IO) r) => SetupCommand -> Sem r ()
 courseSetup SetupCommand {..} = do
 
     -- check if in correct directory
     currentDir <- embed getCurrentDirectory
     when (takeFileName currentDir /= "admin")
-        $ throw ("setup should be called from admin directly" :: Text)
+        $ throw ("setup should be called from admin directory" :: Text)
 
     a <- embed ancestors
     when (length a < 2)
@@ -43,11 +44,14 @@ courseSetup SetupCommand {..} = do
     studentDirs <- embed $ listDirectory courseDir
     let students = mapMaybe (parseStudentDir $ T.pack prefix) studentDirs
 
-    let course = Course { courseName       = T.pack courseName
-                        , courseRootDir    = courseDir
-                        , courseGroups     = []
-                        , courseUserPrefix = T.pack prefix
-                        , courseStudents   = students
+    let course = Course { courseName             = T.pack courseName
+                        , courseRootDir          = courseDir
+                        , courseGroups           = []
+                        , courseUserPrefix       = T.pack prefix
+                        , courseStudents         = students
+                        , courseGhciOptions      = ["+RTS", "-M500M", "-RTS"]
+                        , courseGhciDependencies = ["base", "array"]
+                        , courseGhciEnvironment  = ".ghc.environment.fpex"
                         }
     embed $ BL.writeFile "course.json" $ Aeson.encodePretty course
 

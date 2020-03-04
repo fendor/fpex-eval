@@ -1,13 +1,9 @@
 module Fpex.Course.Types where
 
-import           Data.Text                                ( Text )
-import qualified Data.Text as T
-import           GHC.Generics                             ( Generic )
-import           Data.Aeson                               ( FromJSON
-                                                          , ToJSON
-                                                          , FromJSONKey
-                                                          , ToJSONKey
-                                                          )
+import           Data.Text                      ( Text )
+import qualified Data.Text                     as T
+import           GHC.Generics                   ( Generic )
+import           Data.Aeson
 import           System.FilePath
 
 data Course = Course
@@ -17,9 +13,23 @@ data Course = Course
     , courseGroups :: [Group]
     , courseUserPrefix :: Text
     , courseStudents :: [Student]
+    , courseGhciOptions :: [String]
+    , courseGhciDependencies :: [Text]
+    , courseGhciEnvironment :: FilePath
     }
     deriving (Ord, Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+
+courseJsonModifier :: String -> String
+courseJsonModifier = drop (length ("course_" :: String)) . camelTo2 '_'
+
+instance FromJSON Course where
+    parseJSON = genericParseJSON defaultOptions
+        { fieldLabelModifier = courseJsonModifier
+        }
+
+instance ToJSON Course where
+    toJSON =
+        genericToJSON defaultOptions { fieldLabelModifier = courseJsonModifier }
 
 newtype Student = Student
     { matrNr :: Text
@@ -37,6 +47,10 @@ data Group = Group
 courseAdminDir :: Course -> FilePath
 courseAdminDir Course { courseRootDir } = courseRootDir </> "admin"
 
+ghciEnvironmentLocation :: Course -> FilePath
+ghciEnvironmentLocation c@Course { courseGhciEnvironment } =
+    courseAdminDir c </> courseGhciEnvironment
+
 studentDir :: Course -> Student -> FilePath
-studentDir Course {courseRootDir, courseUserPrefix} Student {matrNr} =
+studentDir Course { courseRootDir, courseUserPrefix } Student { matrNr } =
     courseRootDir </> T.unpack (courseUserPrefix <> matrNr)

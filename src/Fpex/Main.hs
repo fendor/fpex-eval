@@ -12,6 +12,7 @@ import           Options.Applicative
 
 import           Polysemy
 import           Polysemy.Error
+import           Polysemy.Reader
 import           Fpex.Options
 import           Fpex.Course.Types
 import qualified Fpex.Grade                    as Grade
@@ -46,31 +47,33 @@ defaultMain' = do
         Grade CommandGrade {..} -> do
             let TestSuiteOptions {..} = gradeTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
-            let testSuiteName = optionTestSuiteSpecification
-            let students      = maybe courseStudents pure optionStudent
+            
+            runReader course $ do
+                let testSuiteName = optionTestSuiteSpecification
+                let students      = maybe courseStudents pure optionStudent
 
-            (compileFailTestSuite, noSubmissionTestSuite)
-                <- Grade.runGradeError (Grade.createEmptyStudent optionSubmissionId course testSuiteName)
-                    >>= \case
-                    Right (a, b) -> return (a, b)
-                    Left err -> throw (T.pack $ show err)
+                (compileFailTestSuite, noSubmissionTestSuite)
+                    <- Grade.runGradeError (Grade.createEmptyStudent optionSubmissionId course testSuiteName)
+                        >>= \case
+                        Right (a, b) -> return (a, b)
+                        Left err -> throw (T.pack $ show err)
 
-            forM_ students $ \student -> do
-                let targetFile = Eval.reportSourceJsonFile optionSubmissionId course testSuiteName student
-                Grade.runGradeError (Grade.runSubmission optionSubmissionId
-                                            course
-                                            testSuiteName
-                                            student)
-                    >>= \case
-                        Right () -> return ()
-                        Left err -> embed $ do
-                            T.putStrLn (T.pack $ show err)
-                            case err of
-                                Grade.RunnerFailedToCompile ->
-                                    Aeson.encodeFile targetFile compileFailTestSuite
-                                Grade.NoSubmission ->
-                                    Aeson.encodeFile targetFile noSubmissionTestSuite
-                return ()
+                forM_ students $ \student -> do
+                    let targetFile = Eval.reportSourceJsonFile optionSubmissionId course testSuiteName student
+                    Grade.runGradeError (Grade.runSubmission optionSubmissionId
+                                                course
+                                                testSuiteName
+                                                student)
+                        >>= \case
+                            Right () -> return ()
+                            Left err -> embed $ do
+                                T.putStrLn (T.pack $ show err)
+                                case err of
+                                    Grade.RunnerFailedToCompile ->
+                                        Aeson.encodeFile targetFile compileFailTestSuite
+                                    Grade.NoSubmission ->
+                                        Aeson.encodeFile targetFile noSubmissionTestSuite
+                    return ()
 
         Setup   setupCommand -> Setup.courseSetup setupCommand
         Collect CollectCommand {..} -> do

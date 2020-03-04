@@ -31,7 +31,10 @@ import           Control.DeepSeq                ( deepseq )
 
 import           Language.Haskell.TH           as TH
 import qualified Language.Haskell.TH.Syntax    as TH
+import qualified Language.Haskell.TH.PprLib    as TH
 import           Language.Haskell.TH.Quote
+
+import qualified Text.PrettyPrint              as Pretty
 
 group :: TestGroupProps -> [TestCase] -> TestGroup
 group = TestGroup
@@ -41,22 +44,27 @@ testSuite = TestSuite
 
 testcase :: Q Exp -> Q Exp
 testcase e = do
-    let unbound :: Exp -> Bool
-        unbound m = not $ null [ () | TH.UnboundVarE{} <- Uniplate.universe m ]
-
     expr <- runQ e
 
-    let simplifyName :: Name -> Name
+    let unbound :: Exp -> Bool
+        unbound m = not $ null [ () | TH.UnboundVarE{} <- Uniplate.universe m ]
+        simplifyName :: Name -> Name
         simplifyName (TH.Name occ _) = TH.Name occ TH.NameS
-        simplifyNames :: Data a => a -> a
+        simplifyNames :: Exp -> Exp
         simplifyNames = Uniplate.transformBi simplifyName
-    let prettyExpr = LitE $ StringL $ pprint (simplifyNames expr)
+    let prettyExpr :: Exp -> Exp
+        prettyExpr e =
+            let
+                simplified = simplifyNames expr
+                simplDoc = TH.to_HPJ_Doc (pprExp 0 simplified)
+                customStyle = Pretty.Style Pretty.OneLineMode 200 2.0
+            in LitE $ StringL $ Pretty.renderStyle customStyle simplDoc
 
     generatedExpr <- if unbound expr
         then [e|evaluate (throw NotSubmitted)|]
         else pure expr
 
-    tupE [pure prettyExpr, pure generatedExpr]
+    tupE [pure (prettyExpr expr), pure generatedExpr]
 
 
 assertEqual :: (Show a, Eq a) => a -> a -> IO ()
@@ -151,8 +159,15 @@ runTestCase timeoutSecs (testCaseReportLabel, testCaseAction) = do
                         (\(_ :: NotSubmitted) ->
                             return TestCaseResultNotSubmitted
                         )
-                    -- Re-throw AsyncException
-                    , E.Handler (throw :: E.AsyncException -> IO a)
+                    -- Catch Stack and Heap Overflow, but retrhrow anyting else
+                    , E.Handler (\case
+                            E.StackOverflow ->
+                                return $ TestCaseResultException "Stack Overflow"
+                            E.HeapOverflow ->
+                                return $ TestCaseResultException "Heap Overflow"
+                            e -> throw e
+                        )
+
                     , E.Handler
                         (\(e :: E.SomeException) ->
                             return $ TestCaseResultException $ show e

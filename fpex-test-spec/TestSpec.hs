@@ -159,8 +159,15 @@ runTestCase timeoutSecs (testCaseReportLabel, testCaseAction) = do
                         (\(_ :: NotSubmitted) ->
                             return TestCaseResultNotSubmitted
                         )
-                    -- Re-throw AsyncException
-                    , E.Handler (throw :: E.AsyncException -> IO a)
+                    -- Catch Stack and Heap Overflow, but retrhrow anyting else
+                    , E.Handler (\case
+                            E.StackOverflow ->
+                                return $ TestCaseResultException "Stack Overflow"
+                            E.HeapOverflow ->
+                                return $ TestCaseResultException "Heap Overflow"
+                            e -> throw e
+                        )
+
                     , E.Handler
                         (\(e :: E.SomeException) ->
                             return $ TestCaseResultException $ show e

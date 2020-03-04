@@ -13,6 +13,7 @@ import           Control.Monad.Extra            ( unlessM )
 
 import           Polysemy
 import           Polysemy.Error
+import           Polysemy.Reader
 import           Fpex.Course.Types
 import           Fpex.Eval.Types               as Eval
 
@@ -25,7 +26,7 @@ runGradeError :: Sem (Error RunnerError ': r) a -> Sem r (Either RunnerError a)
 runGradeError = runError
 
 runSubmission
-    :: (Member (Embed IO) r, Member (Error RunnerError) r)
+    :: Members '[Embed IO, Error RunnerError, Reader Course] r
     => SubmissionId
     -> Course
     -> String
@@ -35,18 +36,26 @@ runSubmission sid course testSuite student = do
     let targetDir  = assignmentCollectStudentDir sid course testSuite student
     let targetFile = assignmentCollectStudentFile sid course testSuite student
 
+    ghciOptions <- asks courseGhciOptions
+    ghciEnv     <- asks ghciEnvironmentLocation
+
     unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
 
     procRes <- embed $ do
         T.putStrLn $ "run testsuite for student " <> matrNr student
-        let
-            procConfig =
-                (Proc.proc
-                        "ghci"
-                        ["../Main.hs", "-i", "-i.", "-i..", "-e", "Main.main"]
-                    )
-                    { Proc.cwd = Just targetDir
-                    }
+        let procConfig = (  Proc.proc "ghci"
+                         $  [ "../Main.hs"
+                            , "-package-env"
+                            , ghciEnv
+                            , "-i"
+                            , "-i."
+                            , "-i.."
+                            , "-e"
+                            , "Main.main"
+                            ]
+                         ++ ghciOptions
+                         ) { Proc.cwd = Just targetDir
+                           }
         (_, _, _, procHandle) <- Proc.createProcess procConfig
         Proc.waitForProcess procHandle
 
@@ -56,7 +65,7 @@ runSubmission sid course testSuite student = do
 
 -- | Create a directory
 createEmptyStudent
-    :: (Member (Embed IO) r, Member (Error RunnerError) r)
+    :: Members '[Embed IO, Error RunnerError, Reader Course] r
     => SubmissionId
     -> Course
     -> FilePath
