@@ -20,7 +20,8 @@ import qualified Fpex.Course.CourseSetup       as Setup
 import qualified Fpex.Collect                  as Collect
 import qualified Fpex.Publish                  as Publish
 import qualified Fpex.Eval.Types               as Eval
-import qualified Fpex.Stats.Histogram          as Histogram
+import qualified Fpex.Stats.Csv                as Stats
+import qualified Fpex.Stats.Grade              as Stats
 import           System.IO                      ( stderr )
 import           System.Exit                    ( exitFailure )
 import           System.Directory               ( getCurrentDirectory
@@ -47,35 +48,48 @@ defaultMain' = do
         Grade CommandGrade {..} -> do
             let TestSuiteOptions {..} = gradeTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
-            
+
             runReader course $ do
                 let testSuiteName = optionTestSuiteSpecification
                 let students      = maybe courseStudents pure optionStudent
 
-                (compileFailTestSuite, noSubmissionTestSuite)
-                    <- Grade.runGradeError (Grade.createEmptyStudent optionSubmissionId course testSuiteName)
+                (compileFailTestSuite, noSubmissionTestSuite) <-
+                    Grade.runGradeError
+                            (Grade.createEmptyStudent optionSubmissionId
+                                                      course
+                                                      testSuiteName
+                            )
                         >>= \case
-                        Right (a, b) -> return (a, b)
-                        Left err -> throw (T.pack $ show err)
+                                Right (a, b) -> return (a, b)
+                                Left  err    -> throw (T.pack $ show err)
 
                 forM_ students $ \student -> do
-                    let targetFile = Eval.reportSourceJsonFile optionSubmissionId course testSuiteName student
-                    Grade.runGradeError (Grade.runSubmission optionSubmissionId
-                                                course
-                                                testSuiteName
-                                                student)
+                    let targetFile = Eval.reportSourceJsonFile
+                            optionSubmissionId
+                            course
+                            testSuiteName
+                            student
+                    Grade.runGradeError
+                            (Grade.runSubmission optionSubmissionId
+                                                 course
+                                                 testSuiteName
+                                                 student
+                            )
                         >>= \case
-                            Right () -> return ()
-                            Left err -> embed $ do
-                                T.putStrLn (T.pack $ show err)
-                                case err of
-                                    Grade.RunnerFailedToCompile ->
-                                        Aeson.encodeFile targetFile compileFailTestSuite
-                                    Grade.NoSubmission ->
-                                        Aeson.encodeFile targetFile noSubmissionTestSuite
+                                Right ()  -> return ()
+                                Left  err -> embed $ do
+                                    T.putStrLn (T.pack $ show err)
+                                    case err of
+                                        Grade.RunnerFailedToCompile ->
+                                            Aeson.encodeFile
+                                                targetFile
+                                                compileFailTestSuite
+                                        Grade.NoSubmission -> Aeson.encodeFile
+                                            targetFile
+                                            noSubmissionTestSuite
                     return ()
 
-        Setup   setupCommand -> Setup.courseSetup setupCommand
+        Setup   setupCommand        -> Setup.courseSetup setupCommand
         Collect CollectCommand {..} -> do
             let TestSuiteOptions {..} = collectTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
@@ -96,7 +110,7 @@ defaultMain' = do
             let TestSuiteOptions {..} = publishTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
             let testSuiteName = optionTestSuiteSpecification
-            let students = maybe courseStudents pure optionStudent
+            let students      = maybe courseStudents pure optionStudent
 
             forM_ students $ \student -> do
                 embed $ Publish.publishTestResult optionSubmissionId
@@ -108,8 +122,12 @@ defaultMain' = do
             let TestSuiteOptions {..} = statTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
             let testSuiteName = optionTestSuiteSpecification
-            histoData <- embed (Histogram.compute optionSubmissionId course testSuiteName)
-            embed (putStrLn $ Histogram.asciiArt 20 histoData)
+            stats <- embed
+                (Stats.collectData optionSubmissionId course testSuiteName)
+            case statOutputKind of
+                StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
+                StatsOutputGrades ->
+                    embed (T.putStrLn $ Stats.statsGrade stats)
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)

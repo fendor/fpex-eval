@@ -10,6 +10,7 @@ data Options = Options
     , optionStudent :: Maybe Student
     -- , optionSubmissionId :: SubmissionId
     }
+    deriving (Show)
 
 data OptionCommand
     = Grade CommandGrade
@@ -51,7 +52,13 @@ data PublishCommand = PublishCommand
 
 data StatCommand = StatCommand
     { statTestSuiteOptions :: TestSuiteOptions
+    , statOutputKind :: StatCommandOutputKind
     }
+    deriving (Show, Eq)
+
+data StatCommandOutputKind
+    = StatsOutputCsv
+    | StatsOutputGrades
     deriving (Show, Eq)
 
 options :: ParserInfo Options
@@ -107,7 +114,14 @@ options =
                     )
         collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)
         publishParser = Publish <$> (PublishCommand <$> testSuiteOptionParser)
-        statParser    = Stats <$> (StatCommand <$> testSuiteOptionParser)
+        statParser =
+            Stats
+                <$> (   StatCommand
+                    <$> testSuiteOptionParser
+                    <*> (   flag' StatsOutputCsv    (long "csv")
+                        <|> flag' StatsOutputGrades (long "grades")
+                        )
+                    )
 
         commandParser = hsubparser
             (  command "setup"   (info setupParser fullDesc)
