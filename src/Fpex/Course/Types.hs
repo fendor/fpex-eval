@@ -10,9 +10,8 @@ data Course = Course
     { courseName :: Text
     -- | The root-directory of the course. Contains home-dirs of the users and the `admin` directory
     , courseRootDir :: FilePath
-    , courseGroups :: [Group]
     , courseUserPrefix :: Text
-    , courseStudents :: [Student]
+    , courseParticipants :: [Student]
     , courseGhciOptions :: [String]
     , courseGhciDependencies :: [Text]
     , courseGhciEnvironment :: FilePath
@@ -36,13 +35,6 @@ newtype Student = Student
     }
     deriving (Ord, Eq, Show, Generic)
     deriving newtype (FromJSON, ToJSON, FromJSONKey, ToJSONKey)
-
-data Group = Group
-    { groupName :: Text
-    , groupStudents :: [Student]
-    }
-    deriving (Ord, Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
 
 courseAdminDir :: Course -> FilePath
 courseAdminDir Course { courseRootDir } = courseRootDir </> "admin"

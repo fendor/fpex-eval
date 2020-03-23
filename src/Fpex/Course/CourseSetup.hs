@@ -46,15 +46,13 @@ courseSetup SetupCommand {..} = do
 
     let course = Course { courseName             = T.pack courseName
                         , courseRootDir          = courseDir
-                        , courseGroups           = []
                         , courseUserPrefix       = T.pack prefix
-                        , courseStudents         = students
+                        , courseParticipants     = students
                         , courseGhciOptions      = ["+RTS", "-M500M", "-K10M", "-RTS"]
                         , courseGhciDependencies = ["base", "array"]
                         , courseGhciEnvironment  = ".ghc.environment.fpex"
                         }
     embed $ BL.writeFile "course.json" $ Aeson.encodePretty course
-
 
 
 ancestors :: IO [FilePath]

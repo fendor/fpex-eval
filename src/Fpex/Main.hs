@@ -51,7 +51,7 @@ defaultMain' = do
 
             runReader course $ do
                 let testSuiteSpecification = optionTestSuiteSpecification
-                let students      = maybe courseStudents pure optionStudent
+                let students      = maybe courseParticipants pure optionStudent
 
                 checkTestSuiteExists testSuiteSpecification
 
@@ -96,7 +96,7 @@ defaultMain' = do
             let TestSuiteOptions {..} = collectTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
             let testSuiteSpecification = optionTestSuiteSpecification
-            let students = maybe courseStudents pure optionStudent
+            let students = maybe courseParticipants pure optionStudent
 
             checkTestSuiteExists testSuiteSpecification
 
@@ -114,7 +114,7 @@ defaultMain' = do
             let TestSuiteOptions {..} = publishTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
             let testSuiteSpecification = optionTestSuiteSpecification
-            let students      = maybe courseStudents pure optionStudent
+            let students      = maybe courseParticipants pure optionStudent
 
             checkTestSuiteExists testSuiteSpecification
 

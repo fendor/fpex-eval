@@ -13,7 +13,7 @@ import           Text.Printf                    ( printf )
 compute :: SubmissionId -> Course -> FilePath -> IO [(Int, Double)]
 compute sid Course {..} testSuite = do
 
-    points <- forM courseStudents $ \student -> do
+    points <- forM courseParticipants $ \student -> do
         let reportJson =
                 reportSourceJsonFile sid Course { .. } testSuite student
         Just TestSuiteResults {..} <- Aeson.decodeFileStrict reportJson
