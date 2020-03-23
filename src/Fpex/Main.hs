@@ -45,7 +45,7 @@ defaultMain' = do
     Options {..} <- embed $ execParser options
 
     case optionCommand of
-        Grade CommandGrade {..} -> do
+        Grade GradeCommand {..} -> do
             let TestSuiteOptions {..} = gradeTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
 

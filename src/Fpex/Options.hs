@@ -13,7 +13,7 @@ data Options = Options
     deriving (Show)
 
 data OptionCommand
-    = Grade CommandGrade
+    = Grade GradeCommand
     | Setup SetupCommand
     | Collect CollectCommand
     | Publish PublishCommand
@@ -32,7 +32,7 @@ data SetupCommand = SetupCommand
     }
     deriving (Show, Eq)
 
-data CommandGrade = CommandGrade
+data GradeCommand = GradeCommand
     { gradeTestSuiteOptions :: TestSuiteOptions
     -- ^ Test-suite to grade.
     , testTimeout :: Timeout
@@ -83,7 +83,7 @@ options =
 
         gradeParser =
             Grade
-                <$> (   CommandGrade
+                <$> (   GradeCommand
                     <$> testSuiteOptionParser
                     <*> (Timeout <$> option
                             auto
