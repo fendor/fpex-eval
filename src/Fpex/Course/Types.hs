@@ -10,7 +10,6 @@ data Course = Course
     { courseName :: Text
     -- | The root-directory of the course. Contains home-dirs of the users and the `admin` directory
     , courseRootDir :: FilePath
-    , courseUserPrefix :: Text
     , courseParticipants :: [Student]
     , courseGhciOptions :: [String]
     , courseGhciDependencies :: [Text]
@@ -31,7 +30,7 @@ instance ToJSON Course where
         genericToJSON defaultOptions { fieldLabelModifier = courseJsonModifier }
 
 newtype Student = Student
-    { matrNr :: Text
+    { studentId :: Text
     }
     deriving (Ord, Eq, Show, Generic)
     deriving newtype (FromJSON, ToJSON, FromJSONKey, ToJSONKey)
@@ -44,5 +43,5 @@ ghciEnvironmentLocation c@Course { courseGhciEnvironment } =
     courseAdminDir c </> courseGhciEnvironment
 
 studentDir :: Course -> Student -> FilePath
-studentDir Course { courseRootDir, courseUserPrefix } Student { matrNr } =
-    courseRootDir </> T.unpack (courseUserPrefix <> matrNr)
+studentDir Course { courseRootDir } Student { studentId } =
+    courseRootDir </> T.unpack studentId

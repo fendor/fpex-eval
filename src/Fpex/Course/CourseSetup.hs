@@ -6,8 +6,7 @@ import qualified Data.Text                     as T
 import qualified Data.ByteString.Lazy          as BL
 import           Control.Monad                  ( when )
 import qualified Data.Aeson.Encode.Pretty      as Aeson
-import           Data.Maybe                     ( listToMaybe
-                                                , mapMaybe
+import           Data.Maybe                     ( mapMaybe
                                                 )
 
 import           System.Directory               ( getCurrentDirectory
@@ -16,6 +15,7 @@ import           System.Directory               ( getCurrentDirectory
 import           System.FilePath                ( splitPath
                                                 , joinPath
                                                 , takeFileName
+                                                , dropTrailingPathSeparator
                                                 )
 import           Text.Regex.TDFA
 
@@ -30,23 +30,11 @@ courseSetup
     :: (Member (Error Text) r, Member (Embed IO) r) => SetupCommand -> Sem r ()
 courseSetup SetupCommand {..} = do
 
-    -- check if in correct directory
-    currentDir <- embed getCurrentDirectory
-    when (takeFileName currentDir /= "admin")
-        $ throw ("setup should be called from admin directory" :: Text)
-
-    a <- embed ancestors
-    when (length a < 2)
-        $ throw ("setup should be called from admin directory" :: Text)
-    let courseDir  = a !! 1
-    let courseName = takeFileName courseDir
-
-    studentDirs <- embed $ listDirectory courseDir
-    let students = mapMaybe (parseStudentDir $ T.pack prefix) studentDirs
-
-    let course = Course { courseName             = T.pack courseName
+    courseDir <- findCourseRoot SetupCommand {..}
+    let courseName = takeFileName $ dropTrailingPathSeparator courseDir
+    students <- findParticipants SetupCommand {..} courseDir
+    let course = Course { courseName             = T.pack $ courseName
                         , courseRootDir          = courseDir
-                        , courseUserPrefix       = T.pack prefix
                         , courseParticipants     = students
                         , courseGhciOptions      = ["+RTS", "-M500M", "-K10M", "-RTS"]
                         , courseGhciDependencies = ["base", "array"]
@@ -55,11 +43,29 @@ courseSetup SetupCommand {..} = do
     embed $ BL.writeFile "course.json" $ Aeson.encodePretty course
 
 
-ancestors :: IO [FilePath]
-ancestors = map joinPath . reverse . inits . splitPath <$> getCurrentDirectory
+findParticipants :: Member (Embed IO) r => SetupCommand -> FilePath -> Sem r [Student]
+findParticipants SetupCommand {..} courseDir = do  
+    studentDirs <- embed $ listDirectory courseDir
+    return $ mapMaybe (parseStudentDir setupUserRegex) studentDirs
 
-parseStudentDir :: Text -> FilePath -> Maybe Student
-parseStudentDir userPrefix dir =
-    let (_, _, _, mNr) :: (Text, Text, Text, [Text]) =
-                T.pack dir =~ (userPrefix <> "([0-9]{8})")
-    in  Student <$> listToMaybe mNr
+findCourseRoot :: Members [Error Text, Embed IO] r => SetupCommand -> Sem r FilePath
+findCourseRoot SetupCommand {..} = 
+    case setupCourseRootDir of 
+        Nothing -> do 
+            -- check if in correct directory
+            currentDir <- embed getCurrentDirectory
+            let a = ancestors currentDir
+            when (length a < 2)
+                $ throw ("setup should be called from admin directory" :: Text)
+            let courseDir  = a !! 1
+            return courseDir
+
+        Just dir -> return dir
+
+ancestors :: FilePath -> [FilePath]
+ancestors = map joinPath . reverse . inits . splitPath
+
+parseStudentDir :: String -> FilePath -> Maybe Student
+parseStudentDir userRegex dir 
+    | dir =~ userRegex = Just $ Student $ T.pack dir
+    | otherwise = Nothing

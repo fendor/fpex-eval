@@ -42,7 +42,7 @@ runSubmission sid course testSuite student = do
     unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
 
     procRes <- embed $ do
-        T.putStrLn $ "run testsuite for student " <> matrNr student
+        T.putStrLn $ "run testsuite for student " <> studentId student
         let procConfig = (  Proc.proc "ghci"
                          $  [ "../Main.hs"
                             , "-package-env"

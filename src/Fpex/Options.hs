@@ -27,8 +27,8 @@ data TestSuiteOptions = TestSuiteOptions
     deriving (Show, Eq)
 
 data SetupCommand = SetupCommand
-    { useGroups :: Bool
-    , prefix :: String
+    { setupCourseRootDir :: Maybe FilePath 
+    , setupUserRegex :: String
     }
     deriving (Show, Eq)
 
@@ -43,12 +43,12 @@ data GradeCommand = GradeCommand
 data CollectCommand = CollectCommand
     { collectTestSuiteOptions :: TestSuiteOptions
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data PublishCommand = PublishCommand
     { publishTestSuiteOptions :: TestSuiteOptions
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data StatCommand = StatCommand
     { statTestSuiteOptions :: TestSuiteOptions
@@ -98,18 +98,22 @@ options =
         setupParser =
             Setup
                 <$> (   SetupCommand
-                    <$> flag
-                            True
-                            False
-                            (long "--use-groups" <> short 'g' <> help
-                                "Course participants are working in groups"
+                    <$> optional 
+                            ( option str 
+                                (  long "course-dir"
+                                <> help 
+                                    ( "Root directory of the course. It is"
+                                    <> " expected that the name of the participants"
+                                    <> " are described by the flag '--user-regex'"
+                                    )
+                                )
                             )
                     <*> option
-                            str
-                            (  long "prefix"
+                        str
+                            (  long "user-regex"
                             <> help
-                                   "Name prefix of participants. Applies to groups and students."
-                            <> value "f"
+                                    "Regex to use to find course participants"
+                            <> value "f[0-9]{8}"
                             )
                     )
         collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)

@@ -90,7 +90,7 @@ assignmentCollectDir sid course assignmentName =
 assignmentCollectStudentDir
     :: SubmissionId -> Course -> String -> Student -> FilePath
 assignmentCollectStudentDir sid course assignmentName student =
-    assignmentCollectDir sid course assignmentName </> T.unpack (matrNr student)
+    assignmentCollectDir sid course assignmentName </> T.unpack (studentId student)
 
 assignmentCollectStudentFile :: SubmissionId -> Course -> String -> Student -> FilePath
 assignmentCollectStudentFile sid course assignmentFile student =

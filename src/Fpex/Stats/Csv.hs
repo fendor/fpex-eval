@@ -26,7 +26,7 @@ collectData sid Course {..} testSuite = forM courseParticipants $ \student -> do
 csvLineString :: StatsCsvLine -> Text
 csvLineString StatsCsvLine {..} = T.intercalate
     ";"
-    [ matrNr statsStudent
+    [ studentId statsStudent
     , T.pack $ show statsPoints
     , T.pack $ show statsMaxPoints
     ]
