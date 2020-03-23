@@ -160,10 +160,10 @@ getCourseConfig
 getCourseConfig courseOption = do
     courseFile <- getCourseFile courseOption >>= \case
         Just c  -> return c
-        Nothing -> throw ("course.json not found" :: Text)
+        Nothing -> throw "course.json not found"
     embed (Aeson.decodeFileStrict courseFile) >>= \case
         Just c  -> return c
-        Nothing -> throw ("course.json invalid format" :: Text)
+        Nothing -> throw "course.json invalid format"
 
 checkTestSuiteExists :: Members [Error Text, Embed IO] r => FilePath -> Sem r ()
 checkTestSuiteExists testSuite = 

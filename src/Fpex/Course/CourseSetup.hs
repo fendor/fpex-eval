@@ -5,12 +5,15 @@ import           Data.List                      ( inits )
 import qualified Data.Text                     as T
 import qualified Data.ByteString.Lazy          as BL
 import           Control.Monad                  ( when )
+import           Control.Monad.Extra            ( unlessM )
 import qualified Data.Aeson.Encode.Pretty      as Aeson
 import           Data.Maybe                     ( mapMaybe
                                                 )
 
 import           System.Directory               ( getCurrentDirectory
                                                 , listDirectory
+                                                , canonicalizePath
+                                                , doesDirectoryExist
                                                 )
 import           System.FilePath                ( splitPath
                                                 , joinPath
@@ -31,8 +34,22 @@ courseSetup
 courseSetup SetupCommand {..} = do
 
     courseDir <- findCourseRoot SetupCommand {..}
+    unlessM (embed $ doesDirectoryExist courseDir) 
+        $  throw 
+        $ "The course root directory \"" 
+            <> T.pack courseDir 
+            <> "\" does not exist."
+
     let courseName = takeFileName $ dropTrailingPathSeparator courseDir
     students <- findParticipants SetupCommand {..} courseDir
+    when (null students) 
+        $ throw 
+        $ "No student can be found for this course\n" 
+            <> "\tDirectory: "
+            <> T.pack courseDir 
+            <> "\n\tregex: "
+            <> T.pack setupUserRegex 
+
     let course = Course { courseName             = T.pack $ courseName
                         , courseRootDir          = courseDir
                         , courseParticipants     = students
@@ -49,7 +66,7 @@ findParticipants SetupCommand {..} courseDir = do
     return $ mapMaybe (parseStudentDir setupUserRegex) studentDirs
 
 findCourseRoot :: Members [Error Text, Embed IO] r => SetupCommand -> Sem r FilePath
-findCourseRoot SetupCommand {..} = 
+findCourseRoot SetupCommand {..} =
     case setupCourseRootDir of 
         Nothing -> do 
             -- check if in correct directory
@@ -60,7 +77,7 @@ findCourseRoot SetupCommand {..} =
             let courseDir  = a !! 1
             return courseDir
 
-        Just dir -> return dir
+        Just dir -> embed $ canonicalizePath dir
 
 ancestors :: FilePath -> [FilePath]
 ancestors = map joinPath . reverse . inits . splitPath
