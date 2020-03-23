@@ -6,7 +6,7 @@ import qualified Data.Text                     as T
 import qualified Data.Aeson                    as Aeson
 import           Data.List                      ( inits )
 import           Control.Monad                  ( forM_ )
-import           Control.Monad.Extra            ( findM )
+import           Control.Monad.Extra            (unlessM,  findM )
 
 import           Options.Applicative
 
@@ -50,14 +50,16 @@ defaultMain' = do
             course@Course {..} <- getCourseConfig optionCourseFile
 
             runReader course $ do
-                let testSuiteName = optionTestSuiteSpecification
+                let testSuiteSpecification = optionTestSuiteSpecification
                 let students      = maybe courseStudents pure optionStudent
+
+                checkTestSuiteExists testSuiteSpecification
 
                 (compileFailTestSuite, noSubmissionTestSuite) <-
                     Grade.runGradeError
                             (Grade.createEmptyStudent optionSubmissionId
                                                       course
-                                                      testSuiteName
+                                                      testSuiteSpecification
                             )
                         >>= \case
                                 Right (a, b) -> return (a, b)
@@ -67,12 +69,12 @@ defaultMain' = do
                     let targetFile = Eval.reportSourceJsonFile
                             optionSubmissionId
                             course
-                            testSuiteName
+                            testSuiteSpecification
                             student
                     Grade.runGradeError
                             (Grade.runSubmission optionSubmissionId
                                                  course
-                                                 testSuiteName
+                                                 testSuiteSpecification
                                                  student
                             )
                         >>= \case
@@ -93,37 +95,44 @@ defaultMain' = do
         Collect CollectCommand {..} -> do
             let TestSuiteOptions {..} = collectTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
-            let testSuiteName = optionTestSuiteSpecification
-            let students      = maybe courseStudents pure optionStudent
+            let testSuiteSpecification = optionTestSuiteSpecification
+            let students = maybe courseStudents pure optionStudent
+
+            checkTestSuiteExists testSuiteSpecification
 
             embed $ Collect.prepareSubmissionFolder optionSubmissionId
                                                     course
-                                                    testSuiteName
+                                                    testSuiteSpecification
 
             forM_ students $ \student -> do
                 embed $ Collect.collectSubmission optionSubmissionId
                                                   course
-                                                  testSuiteName
+                                                  testSuiteSpecification
                                                   student
                 return ()
         Publish PublishCommand {..} -> do
             let TestSuiteOptions {..} = publishTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
-            let testSuiteName = optionTestSuiteSpecification
+            let testSuiteSpecification = optionTestSuiteSpecification
             let students      = maybe courseStudents pure optionStudent
+
+            checkTestSuiteExists testSuiteSpecification
 
             forM_ students $ \student -> do
                 embed $ Publish.publishTestResult optionSubmissionId
                                                   course
-                                                  testSuiteName
+                                                  testSuiteSpecification
                                                   student
                 return ()
         Stats StatCommand {..} -> do
             let TestSuiteOptions {..} = statTestSuiteOptions
             course@Course {..} <- getCourseConfig optionCourseFile
-            let testSuiteName = optionTestSuiteSpecification
+            let testSuiteSpecification = optionTestSuiteSpecification
+
+            checkTestSuiteExists testSuiteSpecification
+
             stats <- embed
-                (Stats.collectData optionSubmissionId course testSuiteName)
+                (Stats.collectData optionSubmissionId course testSuiteSpecification)
             case statOutputKind of
                 StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
                 StatsOutputGrades ->
@@ -156,3 +165,9 @@ getCourseConfig courseOption = do
         Just c  -> return c
         Nothing -> throw ("course.json invalid format" :: Text)
 
+checkTestSuiteExists :: Members [Error Text, Embed IO] r => FilePath -> Sem r ()
+checkTestSuiteExists testSuite = 
+    unlessM (embed $ doesFileExist testSuite) 
+        $ throw $ "Test-Suite specification \"" 
+            <> T.pack testSuite 
+            <> "\" does not exist"

@@ -10,7 +10,7 @@ import           Fpex.Course.Types
 import           Fpex.Eval.Types
 
 
-prepareSubmissionFolder :: SubmissionId -> Course -> String -> IO ()
+prepareSubmissionFolder :: SubmissionId -> Course -> FilePath -> IO ()
 prepareSubmissionFolder sid course testSuite = do
 
     let targetDir = assignmentCollectDir sid course testSuite
