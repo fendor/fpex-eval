@@ -11,10 +11,10 @@ library
     , aeson-pretty
     , base
     , bytestring
+    , clock
     , deepseq
     , pretty
     , template-haskell
     , uniplate
-    , clock
 
   default-language: Haskell2010

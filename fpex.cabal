@@ -1,39 +1,66 @@
-cabal-version: 1.12
+cabal-version:      1.12
 
--- This file has been generated from package.yaml by hpack version 0.32.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: d1b3b722db72ac509041f617db174904198d6deef652d3ec6c5943fe112f05fe
-
-name:           fpex
-version:        0.0.0
-build-type:     Simple
+-- This file has been generated from package.yaml by hpack version 0.32.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: d1b3b722db72ac509041f617db174904198d6deef652d3ec6c5943fe112f05fe
+name:               fpex
+version:            0.0.0
+build-type:         Simple
 extra-source-files:
-    package.yaml
-    README.md
-    stack.yaml
+  package.yaml
+  README.md
+  stack.yaml
 
 library
   exposed-modules:
-      Fpex.Collect
-      Fpex.Course.CourseSetup
-      Fpex.Course.Types
-      Fpex.Eval.Types
-      Fpex.Grade
-      Fpex.Main
-      Fpex.Options
-      Fpex.Publish
-      Fpex.Publish.Pretty
-      Fpex.Stats.Csv
-      Fpex.Stats.Grade
-      Fpex.Stats.Histogram
-  other-modules:
-      Paths_fpex
-  hs-source-dirs:
-      src
-  default-extensions: DeriveGeneric GeneralizedNewtypeDeriving DerivingStrategies DeriveAnyClass NamedFieldPuns DataKinds OverloadedStrings ScopedTypeVariables RecordWildCards LambdaCase FlexibleContexts FlexibleInstances BangPatterns TypeOperators TypeFamilies InstanceSigs PatternGuards PolyKinds TupleSections DataKinds GADTs RankNTypes TypeApplications NumericUnderscores QuasiQuotes
-  ghc-options: -Wall -O2 -flate-specialise -fspecialise-aggressively -fplugin=Polysemy.Plugin
+    Fpex.Collect
+    Fpex.Course.CourseSetup
+    Fpex.Course.Types
+    Fpex.Eval.Types
+    Fpex.Grade
+    Fpex.Main
+    Fpex.Options
+    Fpex.Publish
+    Fpex.Publish.Pretty
+    Fpex.Stats.Csv
+    Fpex.Stats.Grade
+    Fpex.Stats.Histogram
+
+  other-modules:      Paths_fpex
+  hs-source-dirs:     src
+  default-extensions:
+    BangPatterns
+    DataKinds
+    DataKinds
+    DeriveAnyClass
+    DeriveGeneric
+    DerivingStrategies
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    LambdaCase
+    NamedFieldPuns
+    NumericUnderscores
+    OverloadedStrings
+    PatternGuards
+    PolyKinds
+    QuasiQuotes
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+
+  ghc-options:
+    -Wall -O2 -flate-specialise -fspecialise-aggressively
+    -fplugin=Polysemy.Plugin
+
   build-depends:
       aeson
     , aeson-pretty
@@ -50,38 +77,91 @@ library
     , regex-tdfa
     , temporary
     , text
-  default-language: Haskell2010
+
+  default-language:   Haskell2010
 
 executable fpex
-  main-is: Main.hs
-  other-modules:
-      Paths_fpex
-  hs-source-dirs:
-      app
-  default-extensions: DeriveGeneric GeneralizedNewtypeDeriving DerivingStrategies DeriveAnyClass NamedFieldPuns DataKinds OverloadedStrings ScopedTypeVariables RecordWildCards LambdaCase FlexibleContexts FlexibleInstances BangPatterns TypeOperators TypeFamilies InstanceSigs PatternGuards PolyKinds TupleSections DataKinds GADTs RankNTypes TypeApplications NumericUnderscores QuasiQuotes
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  main-is:            Main.hs
+  other-modules:      Paths_fpex
+  hs-source-dirs:     app
+  default-extensions:
+    BangPatterns
+    DataKinds
+    DataKinds
+    DeriveAnyClass
+    DeriveGeneric
+    DerivingStrategies
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    LambdaCase
+    NamedFieldPuns
+    NumericUnderscores
+    OverloadedStrings
+    PatternGuards
+    PolyKinds
+    QuasiQuotes
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+
+  ghc-options:        -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:
       base
     , fpex
-  default-language: Haskell2010
+
+  default-language:   Haskell2010
 
 test-suite fpex-test
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      Paths_fpex
-  hs-source-dirs:
-      tests
-  default-extensions: DeriveGeneric GeneralizedNewtypeDeriving DerivingStrategies DeriveAnyClass NamedFieldPuns DataKinds OverloadedStrings ScopedTypeVariables RecordWildCards LambdaCase FlexibleContexts FlexibleInstances BangPatterns TypeOperators TypeFamilies InstanceSigs PatternGuards PolyKinds TupleSections DataKinds GADTs RankNTypes TypeApplications NumericUnderscores QuasiQuotes
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N -fplugin=Polysemy.Plugin
+  type:               exitcode-stdio-1.0
+  main-is:            Main.hs
+  other-modules:      Paths_fpex
+  hs-source-dirs:     tests
+  default-extensions:
+    BangPatterns
+    DataKinds
+    DataKinds
+    DeriveAnyClass
+    DeriveGeneric
+    DerivingStrategies
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    LambdaCase
+    NamedFieldPuns
+    NumericUnderscores
+    OverloadedStrings
+    PatternGuards
+    PolyKinds
+    QuasiQuotes
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+
+  ghc-options:
+    -Wall -rtsopts -threaded -with-rtsopts=-N -fplugin=Polysemy.Plugin
+
   build-depends:
-      HUnit
-    , aeson
+      aeson
     , base
     , fpex
+    , HUnit
     , polysemy
     , polysemy-plugin
     , tasty
     , tasty-hspec
     , text
-  default-language: Haskell2010
+
+  default-language:   Haskell2010
