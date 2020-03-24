@@ -7,7 +7,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-
 module TestSpec where
 
 import qualified Data.Generics.Uniplate.Operations
@@ -25,8 +24,8 @@ import           Data.Aeson                     ( FromJSON
 import           Control.Exception             as E
 import           Control.Monad                  ( unless )
 import           Data.Typeable                  ( Typeable )
-import qualified Data.Aeson.Encode.Pretty      as Aeson
-import qualified Data.ByteString.Lazy          as BL
+import qualified Data.Aeson                    as Aeson
+import qualified Data.ByteString.Lazy.Char8    as BL
 import           Control.DeepSeq                ( deepseq )
 
 import           Language.Haskell.TH           as TH
@@ -195,4 +194,4 @@ runTestSuite :: TimeoutSecs -> TestSuite -> IO ()
 runTestSuite timeoutSecs TestSuite {..} = do
     testGroupResults <- mapM (runTestGroup timeoutSecs) testSuiteGroups
     let testSuitePoints = sum . map testGroupPoints $ testGroupResults
-    BL.writeFile "report.json" $ Aeson.encodePretty TestSuiteResults { .. }
+    BL.putStrLn $ Aeson.encode TestSuiteResults { .. }

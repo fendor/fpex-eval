@@ -8,7 +8,6 @@ library
   hs-source-dirs:   .
   build-depends:
       aeson
-    , aeson-pretty
     , base
     , bytestring
     , clock

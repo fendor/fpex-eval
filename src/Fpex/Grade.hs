@@ -58,7 +58,7 @@ runSubmission sid testSuite student = do
         let procConfig = Proc.proc "ghci" procArgs  
                         & Proc.setWorkingDir targetDir 
         (r, sout, serr) <- Proc.readProcess procConfig
-        LBS.writeFile (targetDir </> "stdout.log") sout
+        LBS.writeFile (targetDir </> "report.json") sout
         LBS.writeFile (targetDir </> "stderr.log") serr
         return r
 
