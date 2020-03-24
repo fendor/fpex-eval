@@ -4,7 +4,6 @@ import qualified Data.Text.IO                  as T
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
 import qualified Data.Aeson                    as Aeson
-import           Data.List                      ( inits )
 import           Control.Monad                  ( forM_ )
 import           Control.Monad.Extra            (unlessM,  findM )
 
@@ -28,9 +27,7 @@ import           System.Directory               ( getCurrentDirectory
                                                 , setCurrentDirectory
                                                 , doesFileExist
                                                 )
-import           System.FilePath                ( splitPath
-                                                , joinPath
-                                                , (</>)
+import           System.FilePath                ( (</>)
                                                 , takeDirectory
                                                 )
 
@@ -142,9 +139,8 @@ defaultMain' = do
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)
 getDefaultCourseFile = do
-    ancestors <-
-        map joinPath . reverse . inits . splitPath <$> getCurrentDirectory
-    let possibleCourseJsonFiles = map (</> "course.json") ancestors
+    cwd <- getCurrentDirectory
+    let possibleCourseJsonFiles = map (</> "course.json") (Setup.ancestors cwd)
     findM doesFileExist possibleCourseJsonFiles
 
 getCourseFile
