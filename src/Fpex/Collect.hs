@@ -10,10 +10,10 @@ import           Fpex.Course.Types
 import           Fpex.Eval.Types
 
 
-prepareSubmissionFolder :: SubmissionId -> Course -> FilePath -> IO ()
-prepareSubmissionFolder sid course testSuite = do
+prepareSubmissionFolder :: SubmissionId -> FilePath -> IO ()
+prepareSubmissionFolder sid testSuite = do
 
-    let targetDir = assignmentCollectDir sid course testSuite
+    let targetDir = assignmentCollectDir sid testSuite
     createDirectoryIfMissing True targetDir
 
     -- copy assignment main
@@ -22,15 +22,15 @@ prepareSubmissionFolder sid course testSuite = do
     copyFile testSuite testSuiteTarget
 
     -- copy test-spec file
-    copyFile (courseAdminDir course </> "TestSpec.hs") (targetDir </> "TestSpec.hs")
+    copyFile "TestSpec.hs" (targetDir </> "TestSpec.hs")
 
     return ()
 
 collectSubmission :: SubmissionId -> Course -> String -> Student -> IO ()
 collectSubmission sid course testSuite student = do
     let sourceFile = studentSourceFile course testSuite student
-    let targetDir  = assignmentCollectStudentDir sid course testSuite student
-    let targetFile = assignmentCollectStudentFile sid course testSuite student
+    let targetDir  = assignmentCollectStudentDir sid testSuite student
+    let targetFile = assignmentCollectStudentFile sid testSuite student
     -- create submission dir even if there is no submission
     createDirectoryIfMissing True targetDir
 

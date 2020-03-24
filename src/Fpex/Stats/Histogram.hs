@@ -15,7 +15,7 @@ compute sid Course {..} testSuite = do
 
     points <- forM courseParticipants $ \student -> do
         let reportJson =
-                reportSourceJsonFile sid Course { .. } testSuite student
+                reportSourceJsonFile sid testSuite student
         Just TestSuiteResults {..} <- Aeson.decodeFileStrict reportJson
         return (testSuitePoints, maxScore TestSuiteResults { .. })
 

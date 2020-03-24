@@ -28,32 +28,31 @@ runGradeError = runError
 runSubmission
     :: Members '[Embed IO, Error RunnerError, Reader Course] r
     => SubmissionId
-    -> Course
     -> String
     -> Student
     -> Sem r ()
-runSubmission sid course testSuite student = do
-    let targetDir  = assignmentCollectStudentDir sid course testSuite student
-    let targetFile = assignmentCollectStudentFile sid course testSuite student
+runSubmission sid testSuite student = do
+    let targetDir  = assignmentCollectStudentDir sid testSuite student
+    let targetFile = assignmentCollectStudentFile sid testSuite student
 
     ghciOptions <- asks courseGhciOptions
-    ghciEnv     <- asks ghciEnvironmentLocation
-
+    ghciEnv'    <- asks ghciEnvironmentLocation
+    ghciEnv     <- embed $ makeAbsolute ghciEnv'
     unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
 
     procRes <- embed $ do
         T.putStrLn $ "run testsuite for student " <> studentId student
-        let procConfig = (  Proc.proc "ghci"
-                         $  [ "../Main.hs"
-                            , "-package-env"
-                            , ghciEnv
-                            , "-i"
-                            , "-i."
-                            , "-i.."
-                            , "-e"
-                            , "Main.main"
-                            ]
-                         ++ ghciOptions
+        let procArgs =  [ "../Main.hs"
+                        , "-package-env"
+                        , ghciEnv
+                        , "-i"
+                        , "-i."
+                        , "-i.."
+                        , "-e"
+                        , "Main.main"
+                        ]
+                        ++ ghciOptions
+        let procConfig = (  Proc.proc "ghci" procArgs
                          ) { Proc.cwd = Just targetDir
                            }
         (_, _, _, procHandle) <- Proc.createProcess procConfig
@@ -67,22 +66,21 @@ runSubmission sid course testSuite student = do
 createEmptyStudent
     :: Members '[Embed IO, Error RunnerError, Reader Course] r
     => SubmissionId
-    -> Course
     -> FilePath
     -> Sem r (Eval.TestSuiteResults, Eval.TestSuiteResults)
-createEmptyStudent sid course testsuite = do
+createEmptyStudent sid testsuite = do
     let errorStudent = Student "errorStudent"
     let targetDir =
-            Eval.assignmentCollectStudentDir sid course testsuite errorStudent
+            Eval.assignmentCollectStudentDir sid testsuite errorStudent
     let targetFile =
-            Eval.assignmentCollectStudentFile sid course testsuite errorStudent
+            Eval.assignmentCollectStudentFile sid testsuite errorStudent
     let moduleName = T.pack $ dropExtension $ takeFileName testsuite
     let resultSourceFile =
-            Eval.reportSourceJsonFile sid course testsuite errorStudent
+            Eval.reportSourceJsonFile sid testsuite errorStudent
     embed $ createDirectoryIfMissing True targetDir
     embed $ T.writeFile targetFile ("module " <> moduleName <> " where\n")
 
-    runSubmission sid course testsuite errorStudent
+    runSubmission sid testsuite errorStudent
 
     testSuiteResults <-
         embed (Aeson.eitherDecodeFileStrict resultSourceFile) >>= \case

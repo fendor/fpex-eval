@@ -25,11 +25,13 @@ import qualified Fpex.Stats.Grade              as Stats
 import           System.IO                      ( stderr )
 import           System.Exit                    ( exitFailure )
 import           System.Directory               ( getCurrentDirectory
+                                                , setCurrentDirectory
                                                 , doesFileExist
                                                 )
 import           System.FilePath                ( splitPath
                                                 , joinPath
                                                 , (</>)
+                                                , takeDirectory
                                                 )
 
 
@@ -45,11 +47,12 @@ defaultMain' = do
     Options {..} <- embed $ execParser options
 
     case optionCommand of
+        Setup   setupCommand        -> Setup.courseSetup setupCommand
         Grade GradeCommand {..} -> do
             let TestSuiteOptions {..} = gradeTestSuiteOptions
-            course@Course {..} <- getCourseConfig optionCourseFile
-
-            runReader course $ do
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
+            runReader Course {..} $ do
                 let testSuiteSpecification = optionTestSuiteSpecification
                 let students      = maybe courseParticipants pure optionStudent
 
@@ -58,7 +61,6 @@ defaultMain' = do
                 (compileFailTestSuite, noSubmissionTestSuite) <-
                     Grade.runGradeError
                             (Grade.createEmptyStudent optionSubmissionId
-                                                      course
                                                       testSuiteSpecification
                             )
                         >>= \case
@@ -68,12 +70,10 @@ defaultMain' = do
                 forM_ students $ \student -> do
                     let targetFile = Eval.reportSourceJsonFile
                             optionSubmissionId
-                            course
                             testSuiteSpecification
                             student
                     Grade.runGradeError
                             (Grade.runSubmission optionSubmissionId
-                                                 course
                                                  testSuiteSpecification
                                                  student
                             )
@@ -91,28 +91,28 @@ defaultMain' = do
                                             noSubmissionTestSuite
                     return ()
 
-        Setup   setupCommand        -> Setup.courseSetup setupCommand
         Collect CollectCommand {..} -> do
             let TestSuiteOptions {..} = collectTestSuiteOptions
-            course@Course {..} <- getCourseConfig optionCourseFile
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
             let testSuiteSpecification = optionTestSuiteSpecification
             let students = maybe courseParticipants pure optionStudent
 
             checkTestSuiteExists testSuiteSpecification
 
             embed $ Collect.prepareSubmissionFolder optionSubmissionId
-                                                    course
                                                     testSuiteSpecification
 
             forM_ students $ \student -> do
                 embed $ Collect.collectSubmission optionSubmissionId
-                                                  course
+                                                  Course {..}
                                                   testSuiteSpecification
                                                   student
                 return ()
         Publish PublishCommand {..} -> do
             let TestSuiteOptions {..} = publishTestSuiteOptions
-            course@Course {..} <- getCourseConfig optionCourseFile
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
             let testSuiteSpecification = optionTestSuiteSpecification
             let students      = maybe courseParticipants pure optionStudent
 
@@ -120,19 +120,20 @@ defaultMain' = do
 
             forM_ students $ \student -> do
                 embed $ Publish.publishTestResult optionSubmissionId
-                                                  course
+                                                  Course {..}
                                                   testSuiteSpecification
                                                   student
                 return ()
         Stats StatCommand {..} -> do
             let TestSuiteOptions {..} = statTestSuiteOptions
-            course@Course {..} <- getCourseConfig optionCourseFile
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
             let testSuiteSpecification = optionTestSuiteSpecification
 
             checkTestSuiteExists testSuiteSpecification
 
             stats <- embed
-                (Stats.collectData optionSubmissionId course testSuiteSpecification)
+                (Stats.collectData optionSubmissionId Course {..} testSuiteSpecification)
             case statOutputKind of
                 StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
                 StatsOutputGrades ->
@@ -156,13 +157,13 @@ getCourseFile Nothing  = embed getDefaultCourseFile
 getCourseConfig
     :: (Member (Error Text) r, Member (Embed IO) r)
     => Maybe FilePath
-    -> Sem r Course
+    -> Sem r (Course, FilePath)
 getCourseConfig courseOption = do
     courseFile <- getCourseFile courseOption >>= \case
         Just c  -> return c
         Nothing -> throw "course.json not found"
     embed (Aeson.decodeFileStrict courseFile) >>= \case
-        Just c  -> return c
+        Just c  -> return (c, takeDirectory courseFile)
         Nothing -> throw "course.json invalid format"
 
 checkTestSuiteExists :: Members [Error Text, Embed IO] r => FilePath -> Sem r ()

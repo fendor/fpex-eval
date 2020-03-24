@@ -35,12 +35,8 @@ newtype Student = Student
     deriving (Ord, Eq, Show, Generic)
     deriving newtype (FromJSON, ToJSON, FromJSONKey, ToJSONKey)
 
-courseAdminDir :: Course -> FilePath
-courseAdminDir Course { courseRootDir } = courseRootDir </> "admin"
-
 ghciEnvironmentLocation :: Course -> FilePath
-ghciEnvironmentLocation c@Course { courseGhciEnvironment } =
-    courseAdminDir c </> courseGhciEnvironment
+ghciEnvironmentLocation Course { courseGhciEnvironment } = courseGhciEnvironment
 
 studentDir :: Course -> Student -> FilePath
 studentDir Course { courseRootDir } Student { studentId } =

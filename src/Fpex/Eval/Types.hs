@@ -74,32 +74,31 @@ newtype SubmissionId = SubmissionId { getSubmissionId :: Int }
     deriving (Show, Generic)
     deriving newtype (Eq, Num, Ord)
 
--- filename of the submission file
+-- | Filename of the submission file
 studentSourceFile :: Course -> String -> Student -> FilePath
 studentSourceFile course assignmentFile student =
     studentDir course student </> assignmentFile
 
-assignmentCollectDir :: SubmissionId -> Course -> String -> FilePath
-assignmentCollectDir sid course assignmentName =
-    courseAdminDir course
-        </> (  fromMaybe assignmentName (stripSuffix ".hs" assignmentName)
-            <> "-"
-            <> show (getSubmissionId sid)
-            )
+assignmentCollectDir :: SubmissionId -> String -> FilePath
+assignmentCollectDir sid assignmentName =
+    (  fromMaybe assignmentName (stripSuffix ".hs" assignmentName)
+    <> "-"
+    <> show (getSubmissionId sid)
+    )
 
 assignmentCollectStudentDir
-    :: SubmissionId -> Course -> String -> Student -> FilePath
-assignmentCollectStudentDir sid course assignmentName student =
-    assignmentCollectDir sid course assignmentName </> T.unpack (studentId student)
+    :: SubmissionId -> String -> Student -> FilePath
+assignmentCollectStudentDir sid assignmentName student =
+    assignmentCollectDir sid assignmentName </> T.unpack (studentId student)
 
-assignmentCollectStudentFile :: SubmissionId -> Course -> String -> Student -> FilePath
-assignmentCollectStudentFile sid course assignmentFile student =
-    assignmentCollectStudentDir sid course assignmentFile student
+assignmentCollectStudentFile :: SubmissionId -> String -> Student -> FilePath
+assignmentCollectStudentFile sid assignmentFile student =
+    assignmentCollectStudentDir sid assignmentFile student
         </> assignmentFile
 
-reportSourceJsonFile :: SubmissionId -> Course -> String -> Student -> FilePath
-reportSourceJsonFile sid course testSuite student =
-    assignmentCollectStudentDir sid course testSuite student </> "report.json"
+reportSourceJsonFile :: SubmissionId -> String -> Student -> FilePath
+reportSourceJsonFile sid testSuite student =
+    assignmentCollectStudentDir sid testSuite student </> "report.json"
 
 reportPublishFile :: SubmissionId -> Course -> String -> Student -> FilePath
 reportPublishFile sid course assignmentName student =

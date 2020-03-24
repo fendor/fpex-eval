@@ -15,7 +15,7 @@ import qualified Fpex.Publish.Pretty as Publish
 publishTestResult :: SubmissionId -> Course -> String -> Student -> IO ()
 publishTestResult sid course testSuite student = do
 
-    let sourceFile = reportSourceJsonFile sid course testSuite student
+    let sourceFile = reportSourceJsonFile sid testSuite student
     let targetFile = reportPublishFile sid course testSuite student
 
     whenM (doesFileExist sourceFile) $ do
