@@ -1,13 +1,16 @@
 module Fpex.Grade where
 
 import qualified Data.Aeson                    as Aeson
-import qualified System.Process                as Proc
+import qualified Data.ByteString.Lazy          as LBS
+import           Data.Function
+import qualified System.Process.Typed          as Proc
 import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
 import           System.Exit                    ( ExitCode(..) )
 import           System.Directory
 import           System.FilePath                ( dropExtension
                                                 , takeFileName
+                                                , (</>)
                                                 )
 import           Control.Monad.Extra            ( unlessM )
 
@@ -52,11 +55,12 @@ runSubmission sid testSuite student = do
                         , "Main.main"
                         ]
                         ++ ghciOptions
-        let procConfig = (  Proc.proc "ghci" procArgs
-                         ) { Proc.cwd = Just targetDir
-                           }
-        (_, _, _, procHandle) <- Proc.createProcess procConfig
-        Proc.waitForProcess procHandle
+        let procConfig = Proc.proc "ghci" procArgs  
+                        & Proc.setWorkingDir targetDir 
+        (r, sout, serr) <- Proc.readProcess procConfig
+        LBS.writeFile (targetDir </> "stdout.log") sout
+        LBS.writeFile (targetDir </> "stderr.log") serr
+        return r
 
     case procRes of
         ExitSuccess   -> return ()

@@ -1,10 +1,15 @@
 cabal-version:      1.12
 
--- This file has been generated from package.yaml by hpack version 0.32.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: d1b3b722db72ac509041f617db174904198d6deef652d3ec6c5943fe112f05fe
+-- This file has been generated from package.yaml by hpack version 0.32.0.
+
+--
+
+-- see: https://github.com/sol/hpack
+
+--
+
+-- hash: d1b3b722db72ac509041f617db174904198d6deef652d3ec6c5943fe112f05fe
+
 name:               fpex
 version:            0.0.0
 build-type:         Simple
@@ -73,7 +78,7 @@ library
     , optparse-applicative
     , polysemy
     , polysemy-plugin
-    , process
+    , typed-process
     , regex-tdfa
     , temporary
     , text
