@@ -77,7 +77,7 @@ defaultMain' = do
                         >>= \case
                                 Right ()  -> return ()
                                 Left  err -> embed $ do
-                                    T.putStrLn (T.pack $ show err)
+                                    T.putStrLn ("\t" <> T.pack (show err))
                                     case err of
                                         Grade.RunnerFailedToCompile ->
                                             Aeson.encodeFile

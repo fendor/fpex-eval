@@ -41,10 +41,10 @@ runSubmission sid testSuite student = do
     ghciOptions <- asks courseGhciOptions
     ghciEnv'    <- asks ghciEnvironmentLocation
     ghciEnv     <- embed $ makeAbsolute ghciEnv'
+    
+    embed $ T.putStrLn $ "run testsuite for student " <> studentId student
     unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
-
     procRes <- embed $ do
-        T.putStrLn $ "run testsuite for student " <> studentId student
         let procArgs =  [ "../Main.hs"
                         , "-package-env"
                         , ghciEnv
