@@ -1,3 +1,4 @@
 packages:
     ./
     ./fpex-test-spec
+    ./test-nursery

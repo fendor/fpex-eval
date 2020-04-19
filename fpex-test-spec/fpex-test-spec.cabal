@@ -1,13 +1,13 @@
+cabal-version: 2.2
 name:          fpex-test-spec
 version:       0.0.0
 build-type:    Simple
-cabal-version: 2
 
 library
   exposed-modules:  TestSpec
   hs-source-dirs:   .
   build-depends:
-      aeson
+    , aeson
     , base
     , bytestring
     , clock

@@ -1,0 +1,17 @@
+cabal-version: 2.2
+name:          test-nursery
+version:       0.0.0
+build-type:    Simple
+
+library
+  exposed-modules:
+    Assignment0
+    Assignment1
+    TestSuite0
+    TestSuite1
+
+  build-depends:
+    , base
+    , fpex-test-spec
+
+  default-language: Haskell2010
