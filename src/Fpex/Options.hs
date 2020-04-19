@@ -14,12 +14,17 @@ data Options = Options
     deriving (Show)
 
 data OptionCommand
-    = Grade GradeCommand
-    | Setup SetupCommand
-    | Collect CollectCommand
+    = Setup SetupCommand
+    | Lc TestSuiteOptions LifeCycle
+    deriving (Show)
+
+data LifeCycle
+    = Collect CollectCommand
+    | Grade GradeCommand
     | Publish PublishCommand
     | Stats StatCommand
     deriving (Show)
+
 
 data TestSuiteOptions = TestSuiteOptions
     { optionSubmissionId :: SubmissionId
@@ -35,26 +40,19 @@ data SetupCommand = SetupCommand
     deriving (Show, Eq)
 
 data GradeCommand = GradeCommand
-    { gradeTestSuiteOptions :: TestSuiteOptions
-    -- ^ Test-suite to grade.
-    , testTimeout :: Timeout
+    { testTimeout :: Timeout
     -- ^ Time in seconds each test may at most run before abort.
     }
     deriving (Show, Eq)
 
 data CollectCommand = CollectCommand
-    { collectTestSuiteOptions :: TestSuiteOptions
-    }
     deriving (Show, Eq)
 
 data PublishCommand = PublishCommand
-    { publishTestSuiteOptions :: TestSuiteOptions
-    }
     deriving (Show, Eq)
 
 data StatCommand = StatCommand
-    { statTestSuiteOptions :: TestSuiteOptions
-    , statOutputKind :: StatCommandOutputKind
+    { statOutputKind :: StatCommandOutputKind
     }
     deriving (Show, Eq)
 
@@ -91,8 +89,7 @@ options =
         gradeParser =
             Grade
                 <$> (   GradeCommand
-                    <$> testSuiteOptionParser
-                    <*> (Timeout <$> option
+                    <$> (Timeout <$> option
                             auto
                             (  long "timeout"
                             <> short 't'
@@ -102,6 +99,7 @@ options =
                             )
                         )
                     )
+
         setupParser =
             Setup
                 <$> (   SetupCommand
@@ -123,23 +121,23 @@ options =
                             <> value "f[0-9]{8}"
                             )
                     )
-        collectParser = Collect <$> (CollectCommand <$> testSuiteOptionParser)
-        publishParser = Publish <$> (PublishCommand <$> testSuiteOptionParser)
+        collectParser = Collect <$> pure CollectCommand
+        publishParser = Publish <$> pure PublishCommand
         statParser =
             Stats
                 <$> (   StatCommand
-                    <$> testSuiteOptionParser
-                    <*> (   flag' StatsOutputCsv    (long "csv")
+                    <$> (   flag' StatsOutputCsv    (long "csv")
                         <|> flag' StatsOutputGrades (long "grades")
                         )
                     )
+        withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
 
         commandParser = hsubparser
             (  command "setup"   (info setupParser fullDesc)
-            <> command "collect" (info collectParser fullDesc)
-            <> command "grade"   (info gradeParser fullDesc)
-            <> command "publish" (info publishParser fullDesc)
-            <> command "stats"   (info statParser fullDesc)
+            <> command "collect" (info (withOptions collectParser) fullDesc)
+            <> command "grade"   (info (withOptions gradeParser) fullDesc)
+            <> command "publish" (info (withOptions publishParser) fullDesc)
+            <> command "stats"   (info (withOptions statParser) fullDesc)
             )
 
         courseOption = optional $ option str (long "course")
