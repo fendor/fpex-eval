@@ -4,33 +4,41 @@ import           System.FilePath
 import           System.Directory
 import           System.IO
 import qualified Data.ByteString               as BS
+import qualified Data.Text as T
 import           Control.Monad.Extra            ( whenM )
 
 import           Fpex.Course.Types
 import           Fpex.Eval.Types
 
 
-prepareSubmissionFolder :: SubmissionId -> FilePath -> IO ()
-prepareSubmissionFolder sid testSuite = do
+data FailureReason = NoSubmission
+    deriving (Show, Eq, Read)
 
-    let targetDir = assignmentCollectDir sid testSuite
+
+prepareSubmissionFolder :: SubmissionId -> T.Text -> FilePath -> IO ()
+prepareSubmissionFolder sid suiteName testSuite = do
+
+    let targetDir = assignmentCollectDir sid suiteName
     createDirectoryIfMissing True targetDir
 
     -- copy assignment main
     let testSuiteTarget = targetDir </> "Main.hs"
-    putStrLn $ "copy " <> testSuite
+    putStrLn $ "copy " <> testSuite <> " to " <> targetDir
     copyFile testSuite testSuiteTarget
 
     -- copy test-spec file
-    copyFile "TestSpec.hs" (targetDir </> "TestSpec.hs")
+    let testSpecTargetDir = targetDir </> "TestSpec.hs"
+    testSpecFile <- makeAbsolute "TestSpec.hs"
+    putStrLn $ "copy " <> testSpecFile <> " to " <> testSpecTargetDir
+    copyFile testSpecFile testSpecTargetDir
 
     return ()
 
-collectSubmission :: SubmissionId -> Course -> String -> Student -> IO (Either FailureReason FilePath)
-collectSubmission sid course testSuite student = do
-    let sourceFile = studentSourceFile course testSuite student
-    let targetDir  = assignmentCollectStudentDir sid testSuite student
-    let targetFile = assignmentCollectStudentFile sid testSuite student
+collectSubmission :: SubmissionId -> Course -> T.Text -> Student -> IO (Either FailureReason FilePath)
+collectSubmission sid course suiteName student = do
+    let sourceFile = studentSourceFile course suiteName student
+    let targetDir  = assignmentCollectStudentDir sid suiteName student
+    let targetFile = assignmentCollectStudentFile sid suiteName student
     -- create submission dir even if there is no submission
     createDirectoryIfMissing True targetDir
 

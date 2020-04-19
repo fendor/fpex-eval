@@ -4,18 +4,19 @@ module Fpex.Stats.Histogram where
 import           Fpex.Eval.Types
 import qualified Data.Aeson                    as Aeson
 import           Data.Array
+import qualified Data.Text as T
 import           Data.Function                  ( (&) )
 import           Data.List                      ( transpose )
 import           Fpex.Course.Types
 import           Control.Monad                  ( forM )
 import           Text.Printf                    ( printf )
 
-compute :: SubmissionId -> Course -> FilePath -> IO [(Int, Double)]
-compute sid Course {..} testSuite = do
+compute :: SubmissionId -> Course -> T.Text -> IO [(Int, Double)]
+compute sid Course {..} suiteName = do
 
     points <- forM courseParticipants $ \student -> do
         let reportJson =
-                reportSourceJsonFile sid testSuite student
+                reportSourceJsonFile sid suiteName student
         Just TestSuiteResults {..} <- Aeson.decodeFileStrict reportJson
         return (testSuitePoints, maxScore TestSuiteResults { .. })
 

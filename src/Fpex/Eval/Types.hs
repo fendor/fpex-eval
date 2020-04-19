@@ -7,8 +7,6 @@ import           Data.Aeson                     ( FromJSON
                                                 )
 import           System.FilePath
 import qualified Data.Text                     as T
-import           Data.Maybe                     ( fromMaybe )
-import           Data.List.Extra                ( stripSuffix )
 
 import           Fpex.Course.Types
 
@@ -75,32 +73,32 @@ newtype SubmissionId = SubmissionId { getSubmissionId :: Int }
     deriving newtype (Eq, Num, Ord)
 
 -- | Filename of the submission file
-studentSourceFile :: Course -> String -> Student -> FilePath
-studentSourceFile course assignmentFile student =
-    studentDir course student </> assignmentFile
+studentSourceFile :: Course -> T.Text -> Student -> FilePath
+studentSourceFile course suiteName student =
+    studentDir course student </> T.unpack suiteName
 
-assignmentCollectDir :: SubmissionId -> String -> FilePath
-assignmentCollectDir sid assignmentName =
-    (  fromMaybe assignmentName (stripSuffix ".hs" assignmentName)
+assignmentCollectDir :: SubmissionId -> T.Text -> FilePath
+assignmentCollectDir sid suiteName =
+    (  T.unpack suiteName
     <> "-"
     <> show (getSubmissionId sid)
     )
 
 assignmentCollectStudentDir
-    :: SubmissionId -> String -> Student -> FilePath
-assignmentCollectStudentDir sid assignmentName student =
-    assignmentCollectDir sid assignmentName </> T.unpack (studentId student)
+    :: SubmissionId -> T.Text -> Student -> FilePath
+assignmentCollectStudentDir sid suiteName student =
+    assignmentCollectDir sid suiteName </> T.unpack (studentId student)
 
-assignmentCollectStudentFile :: SubmissionId -> String -> Student -> FilePath
-assignmentCollectStudentFile sid assignmentFile student =
-    assignmentCollectStudentDir sid assignmentFile student
-        </> assignmentFile
+assignmentCollectStudentFile :: SubmissionId -> T.Text -> Student -> FilePath
+assignmentCollectStudentFile sid suiteName student =
+    assignmentCollectStudentDir sid suiteName student
+        </> T.unpack suiteName
 
-reportSourceJsonFile :: SubmissionId -> String -> Student -> FilePath
-reportSourceJsonFile sid testSuite student =
-    assignmentCollectStudentDir sid testSuite student </> "report.json"
+reportSourceJsonFile :: SubmissionId -> T.Text -> Student -> FilePath
+reportSourceJsonFile sid suiteName student =
+    assignmentCollectStudentDir sid suiteName student </> "report.json"
 
-reportPublishFile :: SubmissionId -> Course -> String -> Student -> FilePath
-reportPublishFile sid course assignmentName student =
-    studentDir course student </> assignmentName <.> ("out_" <> show (getSubmissionId sid))
+reportPublishFile :: SubmissionId -> Course -> T.Text -> Student -> FilePath
+reportPublishFile sid course suiteName student =
+    studentDir course student </> T.unpack suiteName <.> ("out_" <> show (getSubmissionId sid))
 

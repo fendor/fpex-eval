@@ -1,5 +1,6 @@
 module Fpex.Options where
 
+import qualified Data.Text as T
 import           Options.Applicative
 import           Fpex.Course.Types
 import           Fpex.Eval.Types
@@ -22,12 +23,13 @@ data OptionCommand
 
 data TestSuiteOptions = TestSuiteOptions
     { optionSubmissionId :: SubmissionId
+    , optionTestSuiteName :: Maybe T.Text
     , optionTestSuiteSpecification :: FilePath
     }
     deriving (Show, Eq)
 
 data SetupCommand = SetupCommand
-    { setupCourseRootDir :: Maybe FilePath 
+    { setupCourseRootDir :: Maybe FilePath
     , setupUserRegex :: String
     }
     deriving (Show, Eq)
@@ -66,7 +68,12 @@ options =
     let
         testSuiteParser = option
             str
-            (long "test-suite" <> help "Test-suite specification (Haskell file)"
+            (long "test-suite" <> action "file" <> help "Test-suite specification (Haskell file)"
+            )
+
+        testSuiteNameParser = option
+            str
+            (long "name" <> help "Name of the test-suite. If empty, takes name of the test-suite."
             )
 
         submissionIdParser = SubmissionId <$> option
@@ -79,7 +86,7 @@ options =
             )
 
         testSuiteOptionParser =
-            TestSuiteOptions <$> submissionIdParser <*> testSuiteParser
+            TestSuiteOptions <$> submissionIdParser <*> optional testSuiteNameParser <*> testSuiteParser
 
         gradeParser =
             Grade
@@ -98,10 +105,10 @@ options =
         setupParser =
             Setup
                 <$> (   SetupCommand
-                    <$> optional 
-                            ( option str 
+                    <$> optional
+                            ( option str
                                 (  long "course-dir"
-                                <> help 
+                                <> help
                                     ( "Root directory of the course. It is"
                                     <> " expected that the name of the participants"
                                     <> " are described by the flag '--user-regex'"

@@ -8,9 +8,7 @@ import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
 import           System.Exit                    ( ExitCode(..) )
 import           System.Directory
-import           System.FilePath                ( dropExtension
-                                                , takeFileName
-                                                , (</>)
+import           System.FilePath                ( (</>)
                                                 )
 import           Control.Monad.Extra            ( unlessM )
 
@@ -31,17 +29,17 @@ runGradeError = runError
 runSubmission
     :: Members '[Embed IO, Error RunnerError, Reader Course] r
     => SubmissionId
-    -> String
+    -> T.Text
     -> Student
     -> Sem r ()
-runSubmission sid testSuite student = do
-    let targetDir  = assignmentCollectStudentDir sid testSuite student
-    let targetFile = assignmentCollectStudentFile sid testSuite student
+runSubmission sid suiteName student = do
+    let targetDir  = assignmentCollectStudentDir sid suiteName student
+    let targetFile = assignmentCollectStudentFile sid suiteName student
 
     ghciOptions <- asks courseGhciOptions
     ghciEnv'    <- asks ghciEnvironmentLocation
     ghciEnv     <- embed $ makeAbsolute ghciEnv'
-    
+
     embed $ T.putStrLn $ "run testsuite for student " <> studentId student
     unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
     procRes <- embed $ do
@@ -55,8 +53,8 @@ runSubmission sid testSuite student = do
                         , "Main.main"
                         ]
                         ++ ghciOptions
-        let procConfig = Proc.proc "ghci" procArgs  
-                        & Proc.setWorkingDir targetDir 
+        let procConfig = Proc.proc "ghci" procArgs
+                        & Proc.setWorkingDir targetDir
         (r, sout, serr) <- Proc.readProcess procConfig
         LBS.writeFile (targetDir </> "report.json") sout
         LBS.writeFile (targetDir </> "stderr.log") serr
@@ -70,21 +68,20 @@ runSubmission sid testSuite student = do
 createEmptyStudent
     :: Members '[Embed IO, Error RunnerError, Reader Course] r
     => SubmissionId
-    -> FilePath
+    -> T.Text
     -> Sem r (Eval.TestSuiteResults, Eval.TestSuiteResults)
-createEmptyStudent sid testsuite = do
+createEmptyStudent sid suiteName = do
     let errorStudent = Student "errorStudent"
     let targetDir =
-            Eval.assignmentCollectStudentDir sid testsuite errorStudent
+            Eval.assignmentCollectStudentDir sid suiteName errorStudent
     let targetFile =
-            Eval.assignmentCollectStudentFile sid testsuite errorStudent
-    let moduleName = T.pack $ dropExtension $ takeFileName testsuite
+            Eval.assignmentCollectStudentFile sid suiteName errorStudent
     let resultSourceFile =
-            Eval.reportSourceJsonFile sid testsuite errorStudent
+            Eval.reportSourceJsonFile sid suiteName errorStudent
     embed $ createDirectoryIfMissing True targetDir
-    embed $ T.writeFile targetFile ("module " <> moduleName <> " where\n")
+    embed $ T.writeFile targetFile ("module " <> suiteName <> " where\n")
 
-    runSubmission sid testsuite errorStudent
+    runSubmission sid suiteName errorStudent
 
     testSuiteResults <-
         embed (Aeson.eitherDecodeFileStrict resultSourceFile) >>= \case

@@ -14,9 +14,9 @@ data StatsCsvLine = StatsCsvLine
     , statsMaxPoints :: Points
     }
 
-collectData :: SubmissionId -> Course -> FilePath -> IO [StatsCsvLine]
-collectData sid Course {..} testSuite = forM courseParticipants $ \student -> do
-    let reportJson = reportSourceJsonFile sid testSuite student
+collectData :: SubmissionId -> Course -> T.Text -> IO [StatsCsvLine]
+collectData sid Course {..} suiteName = forM courseParticipants $ \student -> do
+    let reportJson = reportSourceJsonFile sid suiteName student
     Just results@TestSuiteResults {..} <- Aeson.decodeFileStrict reportJson
     let statsStudent   = student
     let statsPoints    = testSuitePoints
