@@ -9,6 +9,7 @@ import Control.Monad.Extra
     unlessM,
   )
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Either
 import Data.Maybe
 import Data.Text (Text)
@@ -39,7 +40,7 @@ import System.FilePath
     takeDirectory,
     takeFileName,
   )
-import System.IO (stderr)
+import System.IO (hPutStrLn, stderr)
 
 defaultMain :: IO ()
 defaultMain = (runM . runError $ defaultMain') >>= \case
@@ -82,7 +83,13 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
           )
           >>= \case
             Right (a, b) -> return (a, b)
-            Left err -> throw (T.pack $ show err)
+            Left err -> do
+              case err of
+                Grade.RunnerError msg serr -> embed $ do
+                  T.putStrLn "Failed to execute neutral student"
+                  T.putStrLn msg
+                  LBS.putStrLn $ "Stderr: " <> serr
+              throw $ T.pack $ show err
       forM_ students $ \student -> do
         let targetFile =
               Eval.reportSourceJsonFile
@@ -100,10 +107,12 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
             Left err -> embed $ do
               T.putStrLn ("\t" <> T.pack (show err))
               case err of
-                Grade.RunnerFailedToCompile ->
+                Grade.RunnerError _ _ ->
                   Aeson.encodeFile
                     targetFile
                     compileFailTestSuite
+                Grade.FailedToDecodeJsonResult msg ->
+                  hPutStrLn stderr msg
                 Grade.NoSubmission ->
                   Aeson.encodeFile
                     targetFile

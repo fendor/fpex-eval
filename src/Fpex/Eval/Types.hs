@@ -75,7 +75,7 @@ newtype SubmissionId = SubmissionId { getSubmissionId :: Int }
 -- | Filename of the submission file
 studentSourceFile :: Course -> T.Text -> Student -> FilePath
 studentSourceFile course suiteName student =
-    studentDir course student </> T.unpack suiteName
+    studentDir course student </> T.unpack suiteName <.> "hs"
 
 assignmentCollectDir :: SubmissionId -> T.Text -> FilePath
 assignmentCollectDir sid suiteName =
@@ -92,7 +92,7 @@ assignmentCollectStudentDir sid suiteName student =
 assignmentCollectStudentFile :: SubmissionId -> T.Text -> Student -> FilePath
 assignmentCollectStudentFile sid suiteName student =
     assignmentCollectStudentDir sid suiteName student
-        </> T.unpack suiteName
+        </> T.unpack suiteName <.> "hs"
 
 reportSourceJsonFile :: SubmissionId -> T.Text -> Student -> FilePath
 reportSourceJsonFile sid suiteName student =
