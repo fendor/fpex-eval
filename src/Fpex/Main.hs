@@ -1,10 +1,11 @@
 module Fpex.Main where
 
+import Data.Either
 import qualified Data.Text.IO                  as T
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
 import qualified Data.Aeson                    as Aeson
-import           Control.Monad                  ( forM_ )
+import           Control.Monad                  ( forM_, forM )
 import           Control.Monad.Extra            (unlessM,  findM )
 
 import           Options.Applicative
@@ -100,12 +101,17 @@ defaultMain' = do
             embed $ Collect.prepareSubmissionFolder optionSubmissionId
                                                     testSuiteSpecification
 
-            forM_ students $ \student -> do
+            collectResults <- forM students $ \student -> do
                 embed $ Collect.collectSubmission optionSubmissionId
                                                   Course {..}
                                                   testSuiteSpecification
                                                   student
-                return ()
+
+            let (_errs, collected) = partitionEithers collectResults
+
+            embed $ putStrLn $ "Collected " <> show (length collected) <> "/" <> show (length students) <> " submissions."
+
+
         Publish PublishCommand {..} -> do
             let TestSuiteOptions {..} = publishTestSuiteOptions
             (Course {..}, courseDir) <- getCourseConfig optionCourseFile
