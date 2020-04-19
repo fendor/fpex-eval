@@ -5,17 +5,20 @@ import           Data.List                      ( inits )
 import qualified Data.Text                     as T
 import qualified Data.ByteString.Lazy          as BL
 import           Control.Monad                  ( when )
+import           Control.Monad.Extra            ( unlessM )
 import qualified Data.Aeson.Encode.Pretty      as Aeson
-import           Data.Maybe                     ( listToMaybe
-                                                , mapMaybe
+import           Data.Maybe                     ( mapMaybe
                                                 )
 
 import           System.Directory               ( getCurrentDirectory
                                                 , listDirectory
+                                                , canonicalizePath
+                                                , doesDirectoryExist
                                                 )
 import           System.FilePath                ( splitPath
                                                 , joinPath
                                                 , takeFileName
+                                                , dropTrailingPathSeparator
                                                 )
 import           Text.Regex.TDFA
 
@@ -23,41 +26,63 @@ import           Polysemy
 import           Polysemy.Error
 
 import           Fpex.Course.Types
+import           Fpex.Options
 
 -- |To be called from the courses admin folder
-courseSetup :: (Member (Error Text) r, Member (Embed IO) r) => Sem r ()
-courseSetup = do
+courseSetup
+    :: (Member (Error Text) r, Member (Embed IO) r) => SetupCommand -> Sem r ()
+courseSetup SetupCommand {..} = do
 
-    -- check if in correct directory
-    currentDir <- embed getCurrentDirectory
-    when (takeFileName currentDir /= "admin")
-        $ throw ("setup should be called from admin directly" :: Text)
+    courseDir <- findCourseRoot SetupCommand {..}
+    unlessM (embed $ doesDirectoryExist courseDir) 
+        $  throw 
+        $ "The course root directory \"" 
+            <> T.pack courseDir 
+            <> "\" does not exist."
 
-    a <- embed ancestors
-    when (length a < 2)
-        $ throw ("setup should be called from admin directory" :: Text)
-    let courseDir  = a !! 1
-    let courseName = takeFileName courseDir
+    let courseName = takeFileName $ dropTrailingPathSeparator courseDir
+    students <- findParticipants SetupCommand {..} courseDir
+    when (null students) 
+        $ throw 
+        $ "No student can be found for this course\n" 
+            <> "\tDirectory: "
+            <> T.pack courseDir 
+            <> "\n\tregex: "
+            <> T.pack setupUserRegex 
 
-    let userPrefix = "f"
-    studentDirs <- embed $ listDirectory courseDir
-    let students = mapMaybe (parseStudentDir userPrefix) studentDirs
-
-    let course = Course { courseName       = T.pack courseName
-                        , courseRootDir    = courseDir
-                        , courseGroups     = []
-                        , courseUserPrefix = userPrefix
-                        , courseStudents   = students
+    let course = Course { courseName             = T.pack $ courseName
+                        , courseRootDir          = courseDir
+                        , courseParticipants     = students
+                        , courseGhciOptions      = ["+RTS", "-M500M", "-K10M", "-RTS"]
+                        , courseGhciDependencies = ["base", "array"]
+                        , courseGhciEnvironment  = ".ghc.environment.fpex"
                         }
     embed $ BL.writeFile "course.json" $ Aeson.encodePretty course
 
 
+findParticipants :: Member (Embed IO) r => SetupCommand -> FilePath -> Sem r [Student]
+findParticipants SetupCommand {..} courseDir = do  
+    studentDirs <- embed $ listDirectory courseDir
+    return $ mapMaybe (parseStudentDir setupUserRegex) studentDirs
 
-ancestors :: IO [FilePath]
-ancestors = map joinPath . reverse . inits . splitPath <$> getCurrentDirectory
+findCourseRoot :: Members [Error Text, Embed IO] r => SetupCommand -> Sem r FilePath
+findCourseRoot SetupCommand {..} =
+    case setupCourseRootDir of 
+        Nothing -> do 
+            -- check if in correct directory
+            currentDir <- embed getCurrentDirectory
+            let a = ancestors currentDir
+            when (length a < 2)
+                $ throw ("setup should be called from admin directory" :: Text)
+            let courseDir  = a !! 1
+            return courseDir
 
-parseStudentDir :: Text -> FilePath -> Maybe Student
-parseStudentDir userPrefix dir =
-    let (_, _, _, mNr) :: (Text, Text, Text, [Text]) =
-                T.pack dir =~ (userPrefix <> "([0-9]{8})")
-    in  Student <$> listToMaybe mNr
+        Just dir -> embed $ canonicalizePath dir
+
+ancestors :: FilePath -> [FilePath]
+ancestors = map joinPath . reverse . inits . splitPath
+
+parseStudentDir :: String -> FilePath -> Maybe Student
+parseStudentDir userRegex dir 
+    | dir =~ userRegex = Just $ Student $ T.pack dir
+    | otherwise = Nothing

@@ -1,41 +1,36 @@
 module Fpex.Main where
 
 import qualified Data.Text.IO                  as T
-import qualified Data.Text                     as T
 import           Data.Text                      ( Text )
+import qualified Data.Text                     as T
 import qualified Data.Aeson                    as Aeson
-import           Data.List                      ( inits )
 import           Control.Monad                  ( forM_ )
-import           Control.Monad.Extra            ( findM )
+import           Control.Monad.Extra            (unlessM,  findM )
 
 import           Options.Applicative
 
 import           Polysemy
-import           Polysemy.Reader                ( runReader )
+import           Polysemy.Error
+import           Polysemy.Reader
 import           Fpex.Options
 import           Fpex.Course.Types
-import qualified Fpex.Eval.Main                as Eval
-import qualified Fpex.Eval.Types               as Eval
-import           Fpex.Eval.Types                ( TestSuite(..) )
-import qualified Fpex.Eval.Effect              as Eval
-import qualified Fpex.Eval.Pretty              as Eval
-import qualified Fpex.EdslGrade                as EdslGrade
-import qualified Fpex.Log.Effect               as Log
+import qualified Fpex.Grade                    as Grade
 import qualified Fpex.Course.CourseSetup       as Setup
 import qualified Fpex.Collect                  as Collect
 import qualified Fpex.Publish                  as Publish
-import qualified Fpex.Parse.Input              as Parser
+import qualified Fpex.Eval.Types               as Eval
+import qualified Fpex.Stats.Csv                as Stats
+import qualified Fpex.Stats.Grade              as Stats
 import           System.IO                      ( stderr )
 import           System.Exit                    ( exitFailure )
 import           System.Directory               ( getCurrentDirectory
+                                                , setCurrentDirectory
                                                 , doesFileExist
                                                 )
-import           System.FilePath                ( splitPath
-                                                , joinPath
-                                                , (</>)
+import           System.FilePath                ( (</>)
+                                                , takeDirectory
                                                 )
 
-import           Polysemy.Error
 
 defaultMain :: IO ()
 defaultMain = (runM . runError $ defaultMain') >>= \case
@@ -49,106 +44,103 @@ defaultMain' = do
     Options {..} <- embed $ execParser options
 
     case optionCommand of
-        EdslGrade TestSuiteOptions {..} -> do
-            course@Course {..} <- getCourseConfig optionCourseFile
-            let EdslSpec testSuiteName = optionTestSuiteSpecification
-            let students               = maybe courseStudents pure optionStudent
+        Setup   setupCommand        -> Setup.courseSetup setupCommand
+        Grade GradeCommand {..} -> do
+            let TestSuiteOptions {..} = gradeTestSuiteOptions
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
+            runReader Course {..} $ do
+                let testSuiteSpecification = optionTestSuiteSpecification
+                let students      = maybe courseParticipants pure optionStudent
 
-            embed $ EdslGrade.prepareSubmissionFolder optionSubmissionId
-                                                      course
-                                                      testSuiteName
+                checkTestSuiteExists testSuiteSpecification
+
+                (compileFailTestSuite, noSubmissionTestSuite) <-
+                    Grade.runGradeError
+                            (Grade.createEmptyStudent optionSubmissionId
+                                                      testSuiteSpecification
+                            )
+                        >>= \case
+                                Right (a, b) -> return (a, b)
+                                Left  err    -> throw (T.pack $ show err)
+
+                forM_ students $ \student -> do
+                    let targetFile = Eval.reportSourceJsonFile
+                            optionSubmissionId
+                            testSuiteSpecification
+                            student
+                    Grade.runGradeError
+                            (Grade.runSubmission optionSubmissionId
+                                                 testSuiteSpecification
+                                                 student
+                            )
+                        >>= \case
+                                Right ()  -> return ()
+                                Left  err -> embed $ do
+                                    T.putStrLn ("\t" <> T.pack (show err))
+                                    case err of
+                                        Grade.RunnerFailedToCompile ->
+                                            Aeson.encodeFile
+                                                targetFile
+                                                compileFailTestSuite
+                                        Grade.NoSubmission -> Aeson.encodeFile
+                                            targetFile
+                                            noSubmissionTestSuite
+                    return ()
+
+        Collect CollectCommand {..} -> do
+            let TestSuiteOptions {..} = collectTestSuiteOptions
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
+            let testSuiteSpecification = optionTestSuiteSpecification
+            let students = maybe courseParticipants pure optionStudent
+
+            checkTestSuiteExists testSuiteSpecification
+
+            embed $ Collect.prepareSubmissionFolder optionSubmissionId
+                                                    testSuiteSpecification
 
             forM_ students $ \student -> do
-                embed $ EdslGrade.collectSubmission optionSubmissionId
-                                                    course
-                                                    testSuiteName
-                                                    student
+                embed $ Collect.collectSubmission optionSubmissionId
+                                                  Course {..}
+                                                  testSuiteSpecification
+                                                  student
                 return ()
+        Publish PublishCommand {..} -> do
+            let TestSuiteOptions {..} = publishTestSuiteOptions
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
+            let testSuiteSpecification = optionTestSuiteSpecification
+            let students      = maybe courseParticipants pure optionStudent
+
+            checkTestSuiteExists testSuiteSpecification
+
             forM_ students $ \student -> do
-                embed $ EdslGrade.runSubmission optionSubmissionId
-                                                course
-                                                testSuiteName
-                                                student
+                embed $ Publish.publishTestResult optionSubmissionId
+                                                  Course {..}
+                                                  testSuiteSpecification
+                                                  student
                 return ()
+        Stats StatCommand {..} -> do
+            let TestSuiteOptions {..} = statTestSuiteOptions
+            (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+            embed $ setCurrentDirectory courseDir
+            let testSuiteSpecification = optionTestSuiteSpecification
 
-        Grade CommandGrade {..} -> do
-            course@Course {..} <- getCourseConfig optionCourseFile
-            let students = maybe courseStudents pure optionStudent
+            checkTestSuiteExists testSuiteSpecification
 
-            testSuite <- getTestSuiteFile
-                $ optionTestSuiteSpecification gradeTestSuiteOptions
-            forM_ students $ \student -> do
-                testReport <-
-                    Log.runLog
-                    $ runReader (optionSubmissionId gradeTestSuiteOptions)
-                    $ runReader testTimeout
-                    $ Eval.runGrade gradeRunner
-                    $ Eval.runStudentData
-                    $ Eval.evalStudent course testSuite student
-
-                -- TODO: move this into grade-function?
-                embed
-                    $ T.writeFile
-                          (Eval.reportCollectFile
-                              (optionSubmissionId gradeTestSuiteOptions)
-                              course
-                              testSuite
-                              student
-                          )
-                    $ Eval.prettyTestReport testReport
-
-                embed $ Aeson.encodeFile
-                    (Eval.reportJsonFile
-                        (optionSubmissionId gradeTestSuiteOptions)
-                        course
-                        testSuite
-                        student
-                    )
-                    testReport
-
-        Setup -> Setup.courseSetup
-        Collect CollectCommand { collectTestSuiteOptions } -> do
-            course@Course {..} <- getCourseConfig optionCourseFile
-            let students = maybe courseStudents pure optionStudent
-
-            testSuite <- getTestSuiteFile
-                $ optionTestSuiteSpecification collectTestSuiteOptions
-            embed $ forM_ students $ Collect.collectAssignment
-                (optionSubmissionId collectTestSuiteOptions)
-                course
-                testSuite
-        Publish PublishCommand { publishTestSuiteOptions } -> do
-            course@Course {..} <- getCourseConfig optionCourseFile
-            let students = maybe courseStudents pure optionStudent
-
-            testSuite <- getTestSuiteFile
-                $ optionTestSuiteSpecification publishTestSuiteOptions
-            embed $ forM_ students $ Publish.publishTestResult
-                (optionSubmissionId publishTestSuiteOptions)
-                course
-                testSuite
-
-
-getTestSuiteFile
-    :: (Member (Error Text) r, Member (Embed IO) r)
-    => TestSuiteSpecification
-    -> Sem r TestSuite
-getTestSuiteFile (Legacy fp ass) =
-    embed (Parser.parseTestSpecification' fp) >>= \case
-        Left  err -> throw $ T.pack $ show err
-        Right s   -> return $ TestSuite ass s
-getTestSuiteFile (Json fp) = embed (Aeson.decodeFileStrict' fp) >>= \case
-    Just s  -> return s
-    Nothing -> throw ("unable to read test suite file" :: Text)
-
-
+            stats <- embed
+                (Stats.collectData optionSubmissionId Course {..} testSuiteSpecification)
+            case statOutputKind of
+                StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
+                StatsOutputGrades ->
+                    embed (T.putStrLn $ Stats.statsGrade stats)
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)
 getDefaultCourseFile = do
-    ancestors <-
-        map joinPath . reverse . inits . splitPath <$> getCurrentDirectory
-    let possibleCourseJsonFiles = map (</> "course.json") ancestors
+    cwd <- getCurrentDirectory
+    let possibleCourseJsonFiles = map (</> "course.json") (Setup.ancestors cwd)
     findM doesFileExist possibleCourseJsonFiles
 
 getCourseFile
@@ -161,12 +153,18 @@ getCourseFile Nothing  = embed getDefaultCourseFile
 getCourseConfig
     :: (Member (Error Text) r, Member (Embed IO) r)
     => Maybe FilePath
-    -> Sem r Course
+    -> Sem r (Course, FilePath)
 getCourseConfig courseOption = do
     courseFile <- getCourseFile courseOption >>= \case
         Just c  -> return c
-        Nothing -> throw ("course.json not found" :: Text)
+        Nothing -> throw "course.json not found"
     embed (Aeson.decodeFileStrict courseFile) >>= \case
-        Just c  -> return c
-        Nothing -> throw ("course.json invalid format" :: Text)
+        Just c  -> return (c, takeDirectory courseFile)
+        Nothing -> throw "course.json invalid format"
 
+checkTestSuiteExists :: Members [Error Text, Embed IO] r => FilePath -> Sem r ()
+checkTestSuiteExists testSuite = 
+    unlessM (embed $ doesFileExist testSuite) 
+        $ throw $ "Test-Suite specification \"" 
+            <> T.pack testSuite 
+            <> "\" does not exist"
