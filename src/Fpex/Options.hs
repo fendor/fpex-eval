@@ -14,12 +14,17 @@ data Options = Options
     deriving (Show)
 
 data OptionCommand
-    = Grade GradeCommand
-    | Setup SetupCommand
-    | Collect CollectCommand
+    = Setup SetupCommand
+    | Lc TestSuiteOptions LifeCycle
+    deriving (Show)
+
+data LifeCycle
+    = Collect CollectCommand
+    | Grade GradeCommand
     | Publish PublishCommand
     | Stats StatCommand
     deriving (Show)
+
 
 data TestSuiteOptions = TestSuiteOptions
     { optionSubmissionId :: SubmissionId
