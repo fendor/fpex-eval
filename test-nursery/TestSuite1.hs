@@ -6,8 +6,8 @@ import           Assignment1 hiding (main)
 main =
     T.runTestSuite 5 $ T.testSuite
         [ T.group (T.TestGroupProps "Stirling numbers" 5 0 20)
-            [ $(T.testcase [e| take 5 st `T.assertEqual` 1 |])
-            , $(T.testcase [e| head (drop 3 st) `T.assertEqual` [1,7,6,1] |])
+            [ $(T.testcase [e| (take 5 st) `T.assertEqual` 1 |])
+            , $(T.testcase [e| (head (drop 3 st)) `T.assertEqual` [1,7,6,1] |])
             , $(T.testcase [e| [rs | rs <- st, mod (length rs) 2 /= 0] `T.assertEqual`
                                [ [1], [1,3,1], [1,16,25,10,1]
                                , [1,63,301,350,140,21,1]
@@ -19,9 +19,9 @@ main =
             , $(T.testcase [e| length (take 10000 st) `T.assertEqual` 10000|])
             ]
         , T.group (T.TestGroupProps "Bell numbers" 5 0 20)
-            [ $(T.testcase [e| take 5 bn `T.assertEqual` [1,2,5,15,52] |])
-            , $(T.testcase [e| head (drop 3 bn) `T.assertEqual` 15 |])
-            , $(T.testcase [e| take 5 [n | n <- bn, mod rs 2 /= 0] `T.assertEqual` [1,5,52,877,21147] |])
+            [ $(T.testcase [e| (take 5 bn) `T.assertEqual` [1,2,5,15,52] |])
+            , $(T.testcase [e| (head (drop 3 bn)) `T.assertEqual` 15 |])
+            , $(T.testcase [e| (take 5 [n | n <- bn, mod rs 2 /= 0]) `T.assertEqual` [1,5,52,877,21147] |])
             -- Sufficiently infinite
             , $(T.testcase [e| length (take 10000 bn) `T.assertEqual` 10000|])
             ]
