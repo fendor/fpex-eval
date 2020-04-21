@@ -1,104 +1,124 @@
 module Fpex.Eval.Types where
 
-
-import           GHC.Generics                   ( Generic )
-import           Data.Aeson                     ( FromJSON
-                                                , ToJSON
-                                                )
-import           System.FilePath
-import qualified Data.Text                     as T
-
-import           Fpex.Course.Types
+import Data.Aeson
+  ( FromJSON,
+    ToJSON,
+  )
+import qualified Data.Text as T
+import Fpex.Course.Types
+import GHC.Generics (Generic)
+import System.FilePath
 
 -- | Types mirroring the types from fpex-test-spec
 -- For backwards and forward compatibility.
-
 type Points = Int
 
-data TestGroupProps = TestGroupProps
-    { label :: T.Text
-    , pointsPerTest :: !Points
-    , penalty :: !Points
-    , upperBound :: !Points
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+data TestGroupProps
+  = TestGroupProps
+      { label :: T.Text,
+        pointsPerTest :: !Points,
+        penalty :: !Points,
+        upperBound :: !Points
+      }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
 
 data ExpectedButGot = ExpectedButGot T.Text T.Text
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
 
-data TestSuiteResults = TestSuiteResults
-    { testGroupResults :: [TestGroupResults]
-    , testSuitePoints :: Points
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+data TestSuiteResults
+  = TestSuiteResults
+      { testGroupResults :: [TestGroupResults],
+        testSuitePoints :: Points
+      }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
 
 data TestCaseResult
-    = TestCaseResultOk
-    | TestCaseResultExpectedButGot ExpectedButGot
-    | TestCaseResultException T.Text
-    | TestCaseResultTimeout
-    | TestCaseResultNotSubmitted
-    | TestCaseResultCompileFail
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+  = TestCaseResultOk
+  | TestCaseResultExpectedButGot ExpectedButGot
+  | TestCaseResultException T.Text
+  | TestCaseResultTimeout
+  | TestCaseResultNotSubmitted
+  | TestCaseResultCompileFail
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
 
-data TestCaseReport = TestCaseReport
-    { testCaseReportLabel :: T.Text
-    , testCaseReportResult :: TestCaseResult
-    , testCaseReportTimeNs :: Integer
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+data TestCaseReport
+  = TestCaseReport
+      { testCaseReportLabel :: T.Text,
+        testCaseReportResult :: TestCaseResult,
+        testCaseReportTimeNs :: Integer
+      }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
 
-data TestGroupResults = TestGroupResults
-    { testGroupReports :: [TestCaseReport]
-    , testGroupPoints :: Points
-    , testGroupResultProps :: TestGroupProps
-    }
-    deriving (Eq, Show, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+data TestGroupResults
+  = TestGroupResults
+      { testGroupReports :: [TestCaseReport],
+        testGroupPoints :: Points,
+        testGroupResultProps :: TestGroupProps
+      }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
 
 maxScore :: TestSuiteResults -> Points
 maxScore TestSuiteResults {..} = sum (map (upperBound . testGroupResultProps) testGroupResults)
 
-newtype Timeout = Timeout { getTimeout :: Float }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
+-- TODO: refactor these accessor functions
 
-newtype SubmissionId = SubmissionId { getSubmissionId :: Int }
-    deriving (Show, Generic)
-    deriving newtype (Eq, Num, Ord)
+correctTests :: TestSuiteResults -> Int
+correctTests TestSuiteResults {..} = length $ concatMap (filter ((== TestCaseResultOk) . testCaseReportResult) . testGroupReports) testGroupResults
+
+notSubmittedTests :: TestSuiteResults -> Int
+notSubmittedTests TestSuiteResults {..} = length $ concatMap (filter ((== TestCaseResultNotSubmitted) . testCaseReportResult) . testGroupReports) testGroupResults
+
+failedTests :: TestSuiteResults -> Int
+failedTests TestSuiteResults {..} = length $ concatMap (filter (isFailedTestCaseResult . testCaseReportResult) . testGroupReports) testGroupResults
+
+timeoutTests :: TestSuiteResults -> Int
+timeoutTests TestSuiteResults {..} = length $ concatMap (filter ((== TestCaseResultTimeout) . testCaseReportResult) . testGroupReports) testGroupResults
+
+isFailedTestCaseResult :: TestCaseResult -> Bool
+isFailedTestCaseResult (TestCaseResultExpectedButGot _) = True
+isFailedTestCaseResult (TestCaseResultException _) = True
+isFailedTestCaseResult _ = False
+
+newtype Timeout = Timeout {getTimeout :: Float}
+  deriving (Show, Generic)
+  deriving newtype (Eq, Num, Ord)
+
+newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
+  deriving (Show, Generic)
+  deriving newtype (Eq, Num, Ord)
 
 -- | Filename of the submission file
 studentSourceFile :: Course -> T.Text -> Student -> FilePath
 studentSourceFile course suiteName student =
-    studentDir course student </> T.unpack suiteName <.> "hs"
+  studentDir course student </> T.unpack suiteName <.> "hs"
 
 assignmentCollectDir :: SubmissionId -> T.Text -> FilePath
 assignmentCollectDir sid suiteName =
-    (  T.unpack suiteName
-    <> "-"
-    <> show (getSubmissionId sid)
-    )
+  ( T.unpack suiteName
+      <> "-"
+      <> show (getSubmissionId sid)
+  )
 
-assignmentCollectStudentDir
-    :: SubmissionId -> T.Text -> Student -> FilePath
+assignmentCollectStudentDir ::
+  SubmissionId -> T.Text -> Student -> FilePath
 assignmentCollectStudentDir sid suiteName student =
-    assignmentCollectDir sid suiteName </> T.unpack (studentId student)
+  assignmentCollectDir sid suiteName </> T.unpack (studentId student)
 
 assignmentCollectStudentFile :: SubmissionId -> T.Text -> Student -> FilePath
 assignmentCollectStudentFile sid suiteName student =
-    assignmentCollectStudentDir sid suiteName student
-        </> T.unpack suiteName <.> "hs"
+  assignmentCollectStudentDir sid suiteName student
+    </> T.unpack suiteName <.> "hs"
 
 reportSourceJsonFile :: SubmissionId -> T.Text -> Student -> FilePath
 reportSourceJsonFile sid suiteName student =
-    assignmentCollectStudentDir sid suiteName student </> "report.json"
+  assignmentCollectStudentDir sid suiteName student </> "report.json"
 
 reportPublishFile :: SubmissionId -> Course -> T.Text -> Student -> FilePath
 reportPublishFile sid course suiteName student =
-    studentDir course student </> T.unpack suiteName <.> ("out_" <> show (getSubmissionId sid))
-
+  studentDir course student </> T.unpack suiteName <.> ("out_" <> show (getSubmissionId sid))

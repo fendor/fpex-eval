@@ -32,14 +32,13 @@ runSubmission ::
   SubmissionId ->
   T.Text ->
   Student ->
-  Sem r ()
+  Sem r Eval.TestSuiteResults
 runSubmission sid suiteName student = do
   let targetDir = assignmentCollectStudentDir sid suiteName student
   let targetFile = assignmentCollectStudentFile sid suiteName student
   ghciOptions <- asks courseGhciOptions
   ghciEnv' <- asks ghciEnvironmentLocation
   ghciEnv <- embed $ makeAbsolute ghciEnv'
-  embed $ T.putStrLn $ "run testsuite for student " <> studentId student
   unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
   let procArgs =
         [ "../Main.hs",
@@ -55,13 +54,16 @@ runSubmission sid suiteName student = do
       procConfig =
         Proc.proc "ghci" procArgs
           & Proc.setWorkingDir targetDir
-  (procRes, _, serr) <- embed $ do
+  (procRes, sout, serr) <- embed $ do
     (r, sout, serr) <- Proc.readProcess procConfig
     LBS.writeFile (targetDir </> "report.json") sout
     LBS.writeFile (targetDir </> "stderr.log") serr
     return (r, sout, serr)
+  testSuiteResults <- case Aeson.eitherDecode sout of
+    Left msg -> throw $ FailedToDecodeJsonResult msg
+    Right s -> pure s
   case procRes of
-    ExitSuccess -> return ()
+    ExitSuccess -> return testSuiteResults
     ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
 
 -- | Create a directory
@@ -76,15 +78,9 @@ createEmptyStudent sid suiteName = do
         Eval.assignmentCollectStudentDir sid suiteName errorStudent
   let targetFile =
         Eval.assignmentCollectStudentFile sid suiteName errorStudent
-  let resultSourceFile =
-        Eval.reportSourceJsonFile sid suiteName errorStudent
   embed $ createDirectoryIfMissing True targetDir
   embed $ T.writeFile targetFile ("module " <> suiteName <> " where\n")
-  runSubmission sid suiteName errorStudent
-  testSuiteResults <-
-    embed (Aeson.eitherDecodeFileStrict resultSourceFile) >>= \case
-      Right (r :: Eval.TestSuiteResults) -> return r
-      Left msg -> throw $ FailedToDecodeJsonResult msg
+  testSuiteResults <- runSubmission sid suiteName errorStudent
   let modifyTestCaseResult report =
         report {testCaseReportResult = Eval.TestCaseResultCompileFail}
       modifyTestGroup Eval.TestGroupResults {..} =

@@ -89,8 +89,13 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
                   T.putStrLn "Failed to execute neutral student"
                   T.putStrLn msg
                   LBS.putStrLn $ "Stderr: " <> serr
+                Grade.FailedToDecodeJsonResult msg ->
+                  embed $ hPutStrLn stderr msg
+                Grade.NoSubmission ->
+                  error "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
               throw $ T.pack $ show err
       forM_ students $ \student -> do
+        embed $ T.putStrLn $ "run testsuite for student " <> studentId student
         let targetFile =
               Eval.reportSourceJsonFile
                 optionSubmissionId
@@ -103,7 +108,25 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
               student
           )
           >>= \case
-            Right () -> return ()
+            Right testResult -> do
+              embed $ T.putStrLn "\tTest Report:"
+              embed $ T.putStrLn $
+                "\t\tPoints: "
+                  <> T.pack (show $ Eval.testSuitePoints testResult)
+                  <> "/"
+                  <> T.pack (show $ Eval.maxScore testResult)
+              embed $ T.putStrLn $
+                "\t\t"
+                  <> T.concat
+                    [ "Correct: ",
+                      T.pack . show $ Eval.correctTests testResult,
+                      ", Incorrect: ",
+                      T.pack . show $ Eval.failedTests testResult,
+                      ", Not submitted: ",
+                      T.pack . show $ Eval.notSubmittedTests testResult,
+                      ", Timeout: ",
+                      T.pack . show $ Eval.timeoutTests testResult
+                    ]
             Left err -> embed $ do
               T.putStrLn ("\t" <> T.pack (show err))
               case err of
