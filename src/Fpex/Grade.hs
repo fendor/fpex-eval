@@ -2,6 +2,7 @@ module Fpex.Grade where
 
 import Control.Monad.Extra (unlessM)
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import Data.Function
 import qualified Data.Text as T
@@ -54,19 +55,17 @@ runSubmission sid suiteName student = do
       procConfig =
         Proc.proc "ghci" procArgs
           & Proc.setWorkingDir targetDir
-  (procRes, sout, serr) <- embed $ do
-    (r, sout, serr) <- Proc.readProcess procConfig
-    LBS.writeFile (targetDir </> "report.json") sout
-    LBS.writeFile (targetDir </> "stderr.log") serr
-    return (r, sout, serr)
-
+  (procRes, sout, serr) <- Proc.readProcess procConfig
+  embed $ LBS.writeFile (targetDir </> "stderr.log") serr
   case procRes of
     ExitSuccess -> return ()
     ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
 
   case Aeson.eitherDecode sout of
     Left msg -> throw $ FailedToDecodeJsonResult msg
-    Right s -> pure s
+    Right s -> do
+      embed $ LBS.writeFile (targetDir </> "report.json") (Aeson.encodePretty s)
+      pure s
 
 -- | Create a directory
 createEmptyStudent ::
