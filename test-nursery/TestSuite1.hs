@@ -21,7 +21,7 @@ main =
         , T.group (T.TestGroupProps "Bell numbers" 5 0 20)
             [ $(T.testcase [e| (take 5 bn) `T.assertEqual` [1,2,5,15,52] |])
             , $(T.testcase [e| (head (drop 3 bn)) `T.assertEqual` 15 |])
-            , $(T.testcase [e| (take 5 [n | n <- bn, mod rs 2 /= 0]) `T.assertEqual` [1,5,52,877,21147] |])
+            , $(T.testcase [e| (take 5 [n | n <- bn, mod n 2 /= 0]) `T.assertEqual` [1,5,52,877,21147] |])
             -- Sufficiently infinite
             , $(T.testcase [e| length (take 10000 bn) `T.assertEqual` 10000|])
             ]
@@ -36,7 +36,7 @@ main =
         , T.group (T.TestGroupProps "Binom wih stream programming" 2 0 10)
             [ $(T.testcase [e| binom_stpg (10, 10) `T.assertEqual` 1 |])
             , $(T.testcase [e| binom_stpg (10, 9) `T.assertEqual` 10 |])
-            , $(T.testcase [e| binom_stpg (10, 5) `T.assertEqual` 255 |])
+            , $(T.testcase [e| binom_stpg (10, 5) `T.assertEqual` 252 |])
             , $(T.testcase [e| binom_stpg (10, 1) `T.assertEqual` 10 |])
             , $(T.testcase [e| binom_stpg (10, 0) `T.assertEqual` 1 |])
             ]
@@ -46,7 +46,7 @@ main =
         , T.group (T.TestGroupProps "Binom wih memoization" 2 0 10)
             [ $(T.testcase [e| binom_memo (10, 10) `T.assertEqual` 1 |])
             , $(T.testcase [e| binom_memo (10, 9)  `T.assertEqual` 10 |])
-            , $(T.testcase [e| binom_memo (10, 5) `T.assertEqual` 255 |])
+            , $(T.testcase [e| binom_memo (10, 5) `T.assertEqual` 252 |])
             , $(T.testcase [e| binom_memo (10, 1) `T.assertEqual` 10 |])
             , $(T.testcase [e| binom_memo (10, 0) `T.assertEqual` 1 |])
             ]
