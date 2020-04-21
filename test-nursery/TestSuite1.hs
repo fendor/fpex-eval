@@ -20,18 +20,18 @@ main =
             ]
         , T.group (T.TestGroupProps "Bell numbers" 5 0 20)
             [ $(T.testcase [e| take 5 bn `T.assertEqual` [1,2,5,15,52] |])
-            , $(T.testcase [e| head (drop 3 bn) `T.assertEqual` [1,5,52,877,21147] |])
+            , $(T.testcase [e| head (drop 3 bn) `T.assertEqual` 15 |])
             , $(T.testcase [e| take 5 [n | n <- bn, mod rs 2 /= 0] `T.assertEqual` [1,5,52,877,21147] |])
             -- Sufficiently infinite
             , $(T.testcase [e| length (take 10000 bn) `T.assertEqual` 10000|])
             ]
         , T.group (T.TestGroupProps "Test 'f'" 5 0 10)
-            [ $(T.testcase [e| abs ((f 10 10) - 11008.615520898074) < 0.001 `T.assertEqual` True |])
-            , $(T.testcase [e| abs ((f 1 1)   - 1.1666666666666667) < 0.001 `T.assertEqual` True |])
+            [ $(T.testcase [e| (abs ((f 10 10) - 11008.615520898074) < 0.001) `T.assertEqual` True |])
+            , $(T.testcase [e| (abs ((f 1 1)   - 1.1666666666666667) < 0.001) `T.assertEqual` True |])
             ]
         , T.group (T.TestGroupProps "Test 'f_mt'" 5 0 10)
-            [ $(T.testcase [e| abs ((f_mt 10 10) - 11008.615520898074) < 0.001 `T.assertEqual` True |])
-            , $(T.testcase [e| abs ((f_mt 1 1) -   1.1666666666666667) < 0.001 `T.assertEqual` True |])
+            [ $(T.testcase [e| (abs ((f_mt 10 10) - 11008.615520898074) < 0.001) `T.assertEqual` True |])
+            , $(T.testcase [e| (abs ((f_mt 1 1) -   1.1666666666666667) < 0.001) `T.assertEqual` True |])
             ]
         , T.group (T.TestGroupProps "Binom wih stream programming" 2 0 10)
             [ $(T.testcase [e| binom_stpg (10, 10) `T.assertEqual` 1 |])
