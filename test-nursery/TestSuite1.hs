@@ -8,7 +8,7 @@ main =
         [ T.group (T.TestGroupProps "Stirling numbers" 5 0 20)
             [ $(T.testcase [e| (take 5 st) `T.assertEqual` [[1],[1,1],[1,3,1],[1,7,6,1],[1,15,25,10,1]] |])
             , $(T.testcase [e| (head (drop 3 st)) `T.assertEqual` [1,7,6,1] |])
-            , $(T.testcase [e| [rs | rs <- st, mod (length rs) 2 /= 0] `T.assertEqual`
+            , $(T.testcase [e| take 5 [rs | rs <- st, mod (length rs) 2 /= 0] `T.assertEqual`
                                [ [1], [1,3,1], [1,16,25,10,1]
                                , [1,63,301,350,140,21,1]
                                , [1,255,3025,7770,6951,2646,462,36,1]
@@ -21,7 +21,7 @@ main =
         , T.group (T.TestGroupProps "Bell numbers" 5 0 20)
             [ $(T.testcase [e| (take 5 bn) `T.assertEqual` [1,2,5,15,52] |])
             , $(T.testcase [e| (head (drop 3 bn)) `T.assertEqual` 15 |])
-            , $(T.testcase [e| (take 5 [n | n <- bn, mod n 2 /= 0]) `T.assertEqual` [1,5,52,877,21147] |])
+            , $(T.testcase [e| (take 5 [n | n <- bn, mod n 2 /= 0]) `T.assertEqual` [1,5,15,203,877] |])
             -- Sufficiently infinite
             , $(T.testcase [e| length (take 10000 bn) `T.assertEqual` 10000|])
             ]
