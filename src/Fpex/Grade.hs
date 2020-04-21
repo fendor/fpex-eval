@@ -59,12 +59,14 @@ runSubmission sid suiteName student = do
     LBS.writeFile (targetDir </> "report.json") sout
     LBS.writeFile (targetDir </> "stderr.log") serr
     return (r, sout, serr)
-  testSuiteResults <- case Aeson.eitherDecode sout of
+
+  case procRes of
+    ExitSuccess -> return ()
+    ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
+
+  case Aeson.eitherDecode sout of
     Left msg -> throw $ FailedToDecodeJsonResult msg
     Right s -> pure s
-  case procRes of
-    ExitSuccess -> return testSuiteResults
-    ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
 
 -- | Create a directory
 createEmptyStudent ::

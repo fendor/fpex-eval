@@ -128,15 +128,18 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
                       T.pack . show $ Eval.timeoutTests testResult
                     ]
             Left err -> embed $ do
-              T.putStrLn ("\t" <> T.pack (show err))
+              T.putStr "\t"
               case err of
-                Grade.RunnerError _ _ ->
+                Grade.RunnerError _ serr -> do
+                  T.putStrLn "Runner Error"
+                  LBS.putStrLn serr
                   Aeson.encodeFile
                     targetFile
                     compileFailTestSuite
                 Grade.FailedToDecodeJsonResult msg ->
-                  hPutStrLn stderr msg
-                Grade.NoSubmission ->
+                  T.putStrLn $ T.pack msg
+                Grade.NoSubmission -> do
+                  T.putStrLn "No Submission"
                   Aeson.encodeFile
                     targetFile
                     noSubmissionTestSuite
