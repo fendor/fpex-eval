@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module TestSuite1 where
 import qualified TestSpec as T
-import           Assignment0 hiding (main)
+import           Assignment1 hiding (main)
 
 main =
     T.runTestSuite 5 $ T.testSuite
