@@ -6,7 +6,7 @@ import           Assignment1 hiding (main)
 main =
     T.runTestSuite 5 $ T.testSuite
         [ T.group (T.TestGroupProps "Stirling numbers" 5 0 20)
-            [ $(T.testcase [e| (take 5 st) `T.assertEqual` 1 |])
+            [ $(T.testcase [e| (take 5 st) `T.assertEqual` [[1],[1,1],[1,3,1],[1,7,6,1],[1,15,25,10,1]] |])
             , $(T.testcase [e| (head (drop 3 st)) `T.assertEqual` [1,7,6,1] |])
             , $(T.testcase [e| [rs | rs <- st, mod (length rs) 2 /= 0] `T.assertEqual`
                                [ [1], [1,3,1], [1,16,25,10,1]
