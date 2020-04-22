@@ -9,7 +9,7 @@ main =
             [ $(T.testcase [e| (take 5 st) `T.assertEqual` [[1],[1,1],[1,3,1],[1,7,6,1],[1,15,25,10,1]] |])
             , $(T.testcase [e| (head (drop 3 st)) `T.assertEqual` [1,7,6,1] |])
             , $(T.testcase [e| take 5 [rs | rs <- st, mod (length rs) 2 /= 0] `T.assertEqual`
-                               [ [1], [1,3,1], [1,16,25,10,1]
+                               [ [1], [1,3,1], [1,15,25,10,1]
                                , [1,63,301,350,140,21,1]
                                , [1,255,3025,7770,6951,2646,462,36,1]
                                ]
