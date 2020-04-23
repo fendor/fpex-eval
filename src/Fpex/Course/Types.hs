@@ -37,7 +37,3 @@ newtype Student = Student
 
 ghciEnvironmentLocation :: Course -> FilePath
 ghciEnvironmentLocation Course { courseGhciEnvironment } = courseGhciEnvironment
-
-studentDir :: Course -> Student -> FilePath
-studentDir Course { courseRootDir } Student { studentId } =
-    courseRootDir </> T.unpack studentId

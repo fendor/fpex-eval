@@ -15,16 +15,21 @@ data FailureReason = NoSubmission
     deriving (Show, Eq, Read)
 
 
-prepareSubmissionFolder :: SubmissionId -> T.Text -> FilePath -> IO ()
-prepareSubmissionFolder sid suiteName testSuite = do
+setTestSuite :: SubmissionId -> T.Text -> FilePath -> IO ()
+setTestSuite sid suiteName testSuite = do
+  let targetDir = assignmentCollectDir sid suiteName
+  createDirectoryIfMissing True targetDir
+
+  -- copy assignment main
+  let testSuiteTarget = targetDir </> "Main.hs"
+  putStrLn $ "copy " <> testSuite <> " to " <> targetDir
+  copyFile testSuite testSuiteTarget
+
+prepareSubmissionFolder :: SubmissionId -> T.Text -> IO ()
+prepareSubmissionFolder sid suiteName = do
 
     let targetDir = assignmentCollectDir sid suiteName
     createDirectoryIfMissing True targetDir
-
-    -- copy assignment main
-    let testSuiteTarget = targetDir </> "Main.hs"
-    putStrLn $ "copy " <> testSuite <> " to " <> targetDir
-    copyFile testSuite testSuiteTarget
 
     -- copy test-spec file
     let testSpecTargetDir = targetDir </> "TestSpec.hs"

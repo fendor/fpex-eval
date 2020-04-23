@@ -93,6 +93,10 @@ newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
   deriving (Show, Generic)
   deriving newtype (Eq, Num, Ord)
 
+studentDir :: Course -> Student -> FilePath
+studentDir Course { courseRootDir } Student { studentId } =
+    courseRootDir </> T.unpack studentId
+
 -- | Filename of the submission file
 studentSourceFile :: Course -> T.Text -> Student -> FilePath
 studentSourceFile course suiteName student =
