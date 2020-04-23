@@ -14,6 +14,8 @@ cradle:
               component: test:fpex-test
             - path: ./fpex-test-spec
               component: lib:fpex-test-spec
+            - path: ./test-nursery
+              component: lib:test-nursery
     - path: ./testdata
       config:
         cradle:
