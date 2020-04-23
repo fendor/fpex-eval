@@ -23,13 +23,18 @@ data LifeCycle
     | Grade GradeCommand
     | Publish PublishCommand
     | Stats StatCommand
+    | SetTestSuite SetTestSuiteCommand
     deriving (Show)
 
 
 data TestSuiteOptions = TestSuiteOptions
     { optionSubmissionId :: SubmissionId
-    , optionTestSuiteName :: Maybe T.Text
-    , optionTestSuiteSpecification :: FilePath
+    , optionTestSuiteName :: T.Text
+    }
+    deriving (Show, Eq)
+
+data SetTestSuiteCommand = SetTestSuiteCommand
+    { setTestSuiteSpecification :: FilePath
     }
     deriving (Show, Eq)
 
@@ -84,7 +89,7 @@ options =
             )
 
         testSuiteOptionParser =
-            TestSuiteOptions <$> submissionIdParser <*> optional testSuiteNameParser <*> testSuiteParser
+            TestSuiteOptions <$> submissionIdParser <*> testSuiteNameParser
 
         gradeParser =
             Grade
@@ -123,6 +128,7 @@ options =
                     )
         collectParser = Collect <$> pure CollectCommand
         publishParser = Publish <$> pure PublishCommand
+        setTestSuiteParser = SetTestSuite <$> (SetTestSuiteCommand <$> testSuiteParser)
         statParser =
             Stats
                 <$> (   StatCommand
@@ -133,11 +139,12 @@ options =
         withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
 
         commandParser = hsubparser
-            (  command "setup"   (info setupParser fullDesc)
-            <> command "collect" (info (withOptions collectParser) fullDesc)
-            <> command "grade"   (info (withOptions gradeParser) fullDesc)
-            <> command "publish" (info (withOptions publishParser) fullDesc)
-            <> command "stats"   (info (withOptions statParser) fullDesc)
+            (  command "setup"     (info setupParser fullDesc)
+            <> command "collect"   (info (withOptions collectParser) fullDesc)
+            <> command "grade"     (info (withOptions gradeParser) fullDesc)
+            <> command "publish"   (info (withOptions publishParser) fullDesc)
+            <> command "stats"     (info (withOptions statParser) fullDesc)
+            <> command "set-tests" (info (withOptions setTestSuiteParser) fullDesc)
             )
 
         courseOption = optional $ option str (long "course")

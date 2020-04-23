@@ -11,7 +11,6 @@ import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Either
-import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -29,17 +28,8 @@ import Polysemy
 import Polysemy.Error
 import Polysemy.Reader
 import System.Directory
-  ( doesFileExist,
-    getCurrentDirectory,
-    setCurrentDirectory,
-  )
 import System.Exit (exitFailure)
 import System.FilePath
-  ( (</>),
-    dropExtension,
-    takeDirectory,
-    takeFileName,
-  )
 import System.IO (hPutStrLn, stderr)
 
 defaultMain :: IO ()
@@ -64,15 +54,10 @@ dispatchLifeCycle ::
   LifeCycle ->
   Sem r ()
 dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
-  let testSuiteName =
-        fromMaybe
-          (T.pack $ takeFileName (dropExtension optionTestSuiteSpecification))
-          optionTestSuiteName
-  let testSuiteSpecification = optionTestSuiteSpecification
+  let testSuiteName = optionTestSuiteName
   (Course {..}, courseDir) <- getCourseConfig optionCourseFile
   let students = maybe courseParticipants pure optionStudent
   embed $ setCurrentDirectory courseDir
-  checkTestSuiteExists testSuiteSpecification
   case lifecycle of
     Grade GradeCommand {..} -> runReader Course {..} $ do
       (compileFailTestSuite, noSubmissionTestSuite) <-
@@ -149,7 +134,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         Collect.prepareSubmissionFolder
           optionSubmissionId
           testSuiteName
-          testSuiteSpecification
+
       collectResults <- forM students $ \student -> do
         embed $
           Collect.collectSubmission
@@ -186,6 +171,10 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
+    SetTestSuite SetTestSuiteCommand {..} -> do
+      testSuiteSpecification <- embed $ makeAbsolute setTestSuiteSpecification
+      checkTestSuiteExists testSuiteSpecification
+      embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)

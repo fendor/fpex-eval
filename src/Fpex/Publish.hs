@@ -9,12 +9,12 @@ import Fpex.Course.Types
 import Fpex.Eval.Types
 import qualified Fpex.Publish.Pretty as Publish
 import System.Directory
+import System.FilePath
 
--- | collect assignment of single student
+-- | Publish assignment of single student
 publishTestResult :: SubmissionId -> Course -> T.Text -> Student -> IO ()
 publishTestResult sid course suiteName student = do
   let sourceFile = reportSourceJsonFile sid suiteName student
-  -- let sourceDir =
   let targetFile = reportPublishFile sid course suiteName student
   whenM (doesFileExist sourceFile) $ do
     putStrLn $ "publish " <> sourceFile
@@ -24,4 +24,9 @@ publishTestResult sid course suiteName student = do
         Left msg -> errorIO $ "Could not decode \"" ++ sourceFile ++ "\": " ++ msg
     let prettyTextReport = Publish.prettyTestReport testSuiteResults
     T.writeFile targetFile prettyTextReport
---   whenM
+  let sourceDir = assignmentCollectStudentDir sid suiteName student
+  let targetDir = studentDir course student
+  let feedbackFile = sourceDir </> "Feedback.md"
+  let feedbackTarget = targetDir </> (T.unpack suiteName <> "_Feedback") <.> "md"
+  whenM (doesFileExist feedbackFile) $ do
+    copyFile feedbackFile feedbackTarget
