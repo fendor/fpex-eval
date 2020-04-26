@@ -7,11 +7,26 @@ library
   exposed-modules:
     Assignment0
     Assignment1
-    TestSuite0
-    TestSuite1
-
+    Assignment2
+  hs-source-dirs: .
   build-depends:
     , base
     , fpex-test-spec
+    , array
 
+  default-language: Haskell2010
+
+executable ass0
+  main-is: TestSuite0.hs
+  build-depends: base, fpex-test-spec, test-nursery
+  default-language: Haskell2010
+
+executable ass1
+  main-is: TestSuite1.hs
+  build-depends: base, fpex-test-spec, test-nursery
+  default-language: Haskell2010
+
+executable ass2
+  main-is: TestSuite2.hs
+  build-depends: base, fpex-test-spec, array, test-nursery
   default-language: Haskell2010

@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module TestSuite1 where
+
 import qualified TestSpec as T
 import           Assignment1 hiding (main)
 
