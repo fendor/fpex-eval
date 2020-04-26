@@ -13,12 +13,12 @@ main =
                 [e| (take 4 sta) `T.assertEqual`
                     [ A.array (0,0) [(0, Just 1)]
                     , A.array (-1,1) [(-1, Just 1), (0, Nothing), (1, Just 1)]
-                    , A.array (-2,2) [(-2, Just 1), (-1, Nothing), (0, Just 3), (1, Nothing), (2, Just 2)]
+                    , A.array (-2,2) [(-2, Just 1), (-1, Nothing), (0, Just 3), (1, Nothing), (2, Just 1)]
                     , A.array (-3,3) [(-3, Just 1), (-2, Nothing), (-1, Just 7), (0, Nothing), (1, Just 6), (2, Nothing), (3, Just 1)]
                     ]
                 |])
             , $(T.testcase [e| (sta !! 6) A.! 0 `T.assertEqual` Just 350|])
-            , $(T.testcase [e| (sta !! 10) A.! (-6) `T.assertEqual` Just 1|])
+            , $(T.testcase [e| (sta !! 10) A.! (-10) `T.assertEqual` Just 1|])
             , $(T.testcase [e| sum (fmap (M.fromMaybe 0) (sta !! 7)) `T.assertEqual` 4140|])
             ]
         , T.group (T.TestGroupProps "Conversion" 5 0 15)
@@ -46,6 +46,6 @@ main =
 
             , $(T.testcase [e|mcpc_le (["00","1","1"],["0","01","01"]) 2 `T.assertEqual` Just [1] |])
             , $(T.testcase [e|mcpc_le (["00","1","1","11"],["0","0","11","011"]) 2 `T.assertEqual` Just [3] |])
-            , $(T.testcase [e|mcpc_le (["111111", "0", "0", "0", "0", "0", "0"], ["1", "1110", "1", "00", "1", "000", "1"]) 7 `T.assertEqual` Just [2,4,6,1,3,5] |])
+            , $(T.testcase [e|mcpc_le (["111111", "0", "0", "0", "0", "0", "0"], ["1", "1110", "1", "00", "1", "000", "1"]) 5 `T.assertEqual` Just [2,4,1,5] |])
             ]
         ]
