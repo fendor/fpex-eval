@@ -42,7 +42,7 @@ main =
         , T.group (T.TestGroupProps "Modified Post's Correspondence Problem(MPCP)" 5 0 30)
             [ $(T.testcase [e|mcpc_eq (["00","11","010"],["11","00","010"]) 0 `T.assertEqual` Nothing |])
             , $(T.testcase [e|mcpc_eq (["00","11","010"],["0","1011","00"]) 2 `T.assertEqual` Just [2,1] |])
-            , $(T.testcase [e|mcpc_eq (["0","11","11","11","11","01"],["00","11","11","11","1","11"]) 5 `T.assertEqual` Just [5,1,2,3,4] |])
+            , $(T.testcase [e|mcpc_eq (["0","1","11","111","1111","011"],["00","1111","111","11","1","11"]) 5 `T.assertEqual` Just [5,1,2,3,4] |])
 
             , $(T.testcase [e|mcpc_le (["00","1","1"],["0","01","01"]) 2 `T.assertEqual` Just [1] |])
             , $(T.testcase [e|mcpc_le (["00","1","1","11"],["0","0","11","011"]) 2 `T.assertEqual` Just [3] |])
