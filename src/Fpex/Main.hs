@@ -11,6 +11,7 @@ import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Either
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -134,7 +135,6 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         Collect.prepareSubmissionFolder
           optionSubmissionId
           testSuiteName
-
       collectResults <- forM students $ \student -> do
         embed $
           Collect.collectSubmission
@@ -175,6 +175,51 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
       testSuiteSpecification <- embed $ makeAbsolute setTestSuiteSpecification
       checkTestSuiteExists testSuiteSpecification
       embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
+    DiffResults DiffResultsCommand {..} -> do
+      let oldSid = diffResultSid
+      let currentSid = optionSubmissionId
+      let suiteName = optionTestSuiteName
+      embed $ T.putStrLn $
+        "Show Difference between " <> T.pack (show $ Eval.getSubmissionId currentSid)
+          <> " and "
+          <> T.pack (show $ Eval.getSubmissionId oldSid)
+      forM_ students $ \student -> embed $ do
+        moldReport <- Aeson.decodeFileStrict $ Eval.reportSourceJsonFile oldSid suiteName student
+        mnewReport <- Aeson.decodeFileStrict $ Eval.reportSourceJsonFile currentSid suiteName student
+        let oldReport = fromMaybe (error "TODO") moldReport
+        let newReport = fromMaybe (error "TODO") mnewReport
+        let oldSubmission = Eval.assignmentCollectStudentFile oldSid suiteName student
+        let newSubmission = Eval.assignmentCollectStudentFile currentSid suiteName student
+        let correctTests = Eval.correctTests newReport - Eval.correctTests oldReport
+        let failedTests = Eval.failedTests newReport - Eval.failedTests oldReport
+        let notSubmittedTests = Eval.notSubmittedTests newReport - Eval.notSubmittedTests oldReport
+        let timeoutTests = Eval.timeoutTests newReport - Eval.timeoutTests oldReport
+        let oldScore = Eval.testSuitePoints oldReport
+        let newScore = Eval.testSuitePoints newReport
+        if oldScore /= newScore || any (/= 0) [correctTests, failedTests, notSubmittedTests, timeoutTests]
+          then do
+            T.putStrLn $ "Difference for " <> studentId student
+            T.putStrLn $ "  Old: " <> T.pack oldSubmission <> " -- Points: " <> T.pack (show oldScore)
+            T.putStrLn $ "  New: " <> T.pack newSubmission <> " -- Points: " <> T.pack (show newScore)
+            T.putStrLn $ "  ---"
+            T.putStrLn $
+                "  "
+                  <> T.concat
+                    [ "Correct: ",
+                      T.pack $ show correctTests,
+                      ", Incorrect: ",
+                      T.pack $ show failedTests,
+                      ", Not submitted: ",
+                      T.pack $ show notSubmittedTests,
+                      ", Timeout: ",
+                      T.pack $ show timeoutTests
+                    ]
+
+          else T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
+        return ()
+      return ()
+
+-------------------------------------------------------------------------------------
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)
