@@ -27,7 +27,8 @@ library
     Fpex.Main
     Fpex.Options
     Fpex.Publish
-    Fpex.Publish.Pretty
+    Fpex.Publish.Markdown
+    Fpex.Publish.Plain
     Fpex.Stats.Csv
     Fpex.Stats.Grade
     Fpex.Stats.Histogram

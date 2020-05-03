@@ -1,4 +1,4 @@
-module Fpex.Publish.Pretty where
+module Fpex.Publish.Plain where
 
 import           Fpex.Eval.Types
 import qualified Data.Text as T

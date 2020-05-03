@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Fpex.Course.Types
 import Fpex.Eval.Types
-import qualified Fpex.Publish.Pretty as Publish
+import qualified Fpex.Publish.Plain as Publish
 import System.Directory
 import System.FilePath
 
