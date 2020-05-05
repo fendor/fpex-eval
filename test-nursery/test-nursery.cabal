@@ -3,7 +3,11 @@ name:          test-nursery
 version:       0.0.0
 build-type:    Simple
 
+common warnings
+  ghc-options: -Wall -Wunused-function
+
 library
+  import: warnings
   exposed-modules:
     Assignment0
     Assignment1
@@ -19,6 +23,7 @@ library
   default-language: Haskell2010
 
 executable ass0
+  import: warnings
   main-is:          TestSuite0.hs
   build-depends:
     , base
@@ -28,6 +33,7 @@ executable ass0
   default-language: Haskell2010
 
 executable ass1
+  import: warnings
   main-is:          TestSuite1.hs
   build-depends:
     , base
@@ -37,6 +43,7 @@ executable ass1
   default-language: Haskell2010
 
 executable ass2
+  import: warnings
   main-is:          TestSuite2.hs
   build-depends:
     , array
@@ -47,6 +54,7 @@ executable ass2
   default-language: Haskell2010
 
 executable ass3
+  import: warnings
   main-is:          TestSuite3.hs
   build-depends:
     , array

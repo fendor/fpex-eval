@@ -2,7 +2,6 @@
 
 import Assignment3 hiding (main)
 import qualified Data.Array as A
-import qualified Data.Maybe as M
 import qualified TestSpec as T
 import Prelude hiding (Ordering (..))
 
@@ -219,105 +218,6 @@ t3_solved =
     [C, T, S, S, T, S]
   ]
 
-t4 :: T_Puzzle
-t4 = LT
-  [ [T, B, B, B, C, B],
-    [B, B, B, C, B, B],
-    [B, C, B, B, B, C],
-    [B, T, B, B, B, T],
-    [B, B, B, T, B, B],
-    [S, B, B, B, C, B]
-  ]
-  $ \box -> case box of
-    1 -> [(One, One), (One, Two), (Two, Two)]
-    2 -> [(One, Three), (One, Four), (Two, Three)]
-    3 -> [(One, Five), (Two, Five), (Three, Five)]
-    4 -> [(One, Six), (Two, Six), (Three, Six)]
-    5 -> [(Two, One), (Three, One), (Three, Two)]
-    6 -> [(Two, Four), (Three, Four), (Five, Four)]
-    7 -> [(Three, Three), (Four, Two), (Four, Three)]
-    8 -> [(Four, One), (Five, One), (Six, One)]
-    9 -> [(Four, Five), (Five, Five), (Six, Five)]
-    10 -> [(Four, Six), (Five, Six), (Six, Six)]
-    11 -> [(Five, Two), (Five, Three), (Six, Two)]
-    12 -> [(Five, Four), (Six, Three), (Six, Four)]
-
-t4_solved :: T_Puzzle_Solved
-t4_solved =
-  [ [T, C, T, T, C, T],
-    [C, S, T, C, T, S],
-    [C, C, S, T, S, C],
-    [S, T, C, S, C, T],
-    [S, C, S, T, C, T],
-    [S, T, C, S, C, T]
-  ]
-
-t5 :: T_Puzzle
-t5 = LT
-  [ [B, B, B, B, B, B],
-    [T, B, T, S, B, T],
-    [B, T, B, B, S, B],
-    [B, B, B, B, B, B],
-    [S, B, B, B, B, C],
-    [B, B, T, S, B, B]
-  ]
-  $ \box -> case box of
-    1 -> [(One, One), (One, Two), (Two, One)]
-    2 -> [(One, Three), (Two, Two), (Two, Three)]
-    3 -> [(One, Four), (One, Five), (Two, Four)]
-    4 -> [(One, Six), (Two, Six), (Three, Six)]
-    5 -> [(Two, Five), (Three, Five), (Four, Five)]
-    6 -> [(Three, One), (Three, Two), (Four, One)]
-    7 -> [(Three, Three), (Four, Three), (Five, Three)]
-    8 -> [(Three, Four), (Four, Four), (Five, Four)]
-    9 -> [(Four, Two), (Five, One), (Five, Two)]
-    10 -> [(Four, Six), (Five, Five), (Five, Six)]
-    11 -> [(Six, One), (Six, Two), (Six, Three)]
-    12 -> [(Six, Four), (Six, Five), (Six, Six)]
-
-t5_solved :: T_Puzzle_Solved
-t5_solved =
-  [ [T, T, C, S, S, T],
-    [T, S, T, S, C, T],
-    [S, T, S, C, S, T],
-    [C, S, T, S, T, C],
-    [S, S, C, T, C, C],
-    [T, T, T, S, S, S]
-  ]
-
-t6 :: T_Puzzle
-t6 = LT
-  [ [B, B, B, T, B, T],
-    [C, B, B, B, B, B],
-    [B, S, B, C, B, B],
-    [B, B, T, B, T, B],
-    [B, B, B, B, B, T],
-    [S, B, C, B, B, B]
-  ]
-  $ \box -> case box of
-    1 -> [(One, One), (Two, One), (Three, One)]
-    2 -> [(One, Two), (Two, Two), (Three, Two)]
-    3 -> [(One, Three), (Two, Three), (Two, Four)]
-    4 -> [(One, Four), (One, Five), (Two, Five)]
-    5 -> [(One, Six), (Two, Six), (Three, Six)]
-    6 -> [(Three, Three), (Four, Three), (Five, Three)]
-    7 -> [(Three, Four), (Four, Four), (Five, Four)]
-    8 -> [(Three, Five), (Four, Five), (Five, Six)]
-    9 -> [(Four, One), (Four, Two), (Five, Two)]
-    10 -> [(Five, One), (Six, One), (Six, Two)]
-    11 -> [(Five, Five), (Five, Six), (Six, Six)]
-    12 -> [(Six, Three), (Six, Four), (Six, Five)]
-
-t6_solved :: T_Puzzle_Solved
-t6_solved =
-  [ [S, C, S, T, S, T],
-    [C, T, S, S, C, T],
-    [T, S, T, C, S, T],
-    [C, C, T, C, T, C],
-    [S, C, T, C, S, T],
-    [S, S, C, S, T, C]
-  ]
-
 at_trivial :: AT_Puzzle
 at_trivial = AT
   ( A.listArray ((One,One),(Six,Six))
@@ -454,37 +354,6 @@ at3_solved = A.listArray ((One,One),(Six,Six))
                         S,C,S,C,S,C,
                         C,T,S,S,T,S]
 
-at4 :: AT_Puzzle
-at4 = AT (A.listArray ((One,One),(Six,Six))
-                   [T,B,B,B,C,B,
-                    B,B,B,C,B,B,
-                    B,C,B,B,B,C,
-                    B,T,B,B,B,T,
-                    B,B,B,T,B,B,
-                    S,B,B,B,C,B])
-
-  $ \box -> case box of
-    1 -> [(One,One),(One,Two),(Two,Two)]
-    2 -> [(One,Three),(One,Four),(Two,Three)]
-    3 -> [(One,Five),(Two,Five),(Three,Five)]
-    4 -> [(One,Six),(Two,Six),(Three,Six)]
-    5 -> [(Two,One),(Three,One),(Three,Two)]
-    6 -> [(Two,Four),(Three,Four),(Five,Four)]
-    7 -> [(Three,Three),(Four,Two),(Four,Three)]
-    8 -> [(Four,One),(Five,One),(Six,One)]
-    9 -> [(Four,Five),(Five,Five),(Six,Five)]
-    10 -> [(Four,Six),(Five,Six),(Six,Six)]
-    11 -> [(Five,Two),(Five,Three),(Six,Two)]
-    12 -> [(Five,Four),(Six,Three),(Six,Four)]
-
-at4_solved :: AT_Puzzle_Solved
-at4_solved = A.listArray ((One,One),(Six,Six))
-                       [T,C,T,T,C,T,
-                        C,S,T,C,T,S,
-                        C,C,S,T,S,C,
-                        S,T,C,S,C,T,
-                        S,C,S,T,C,T,
-                        S,T,C,S,C,T]
 p_trivial :: P_Puzzle
 p_trivial = LP
   [ [C, S, B, S],
@@ -554,30 +423,6 @@ p2_solved = [ [S,C,S,C],
               [S,C,S,C],
               [C,S,C,S] ]
 
-p3 :: P_Puzzle
-p3 = LP [ [B,B,B,C],
-          [C,B,B,B],
-          [B,B,S,B],
-          [B,B,B,B] ]
-
-  $ \box -> case box of
-    1 -> [(One,One),(One,Two)]
-    2 -> [(One,Three),(Two,Three)]
-    3 -> [(One,Four),(Two,Four)]
-    4 -> [(Two,One),(Two,Two)]
-    5 -> [(Three,One),(Four,One)]
-    6 -> [(Three,Two),(Three,Three)]
-    7 -> [(Three,Four),(Four,Four)]
-    8 -> [(Four,Two),(Four,Three)]
-
-p3_solved :: P_Puzzle_Solved
-p3_solved = [ [S,C,S,C],
-              [C,S,C,S],
-              [S,C,S,C],
-              [C,S,C,S] ]
-
-
-
 ap_trivial:: AP_Puzzle
 ap_trivial = AP (A.listArray ((One,One),(Four,Four))
                    [C,S,C,B,
@@ -595,8 +440,8 @@ ap_trivial = AP (A.listArray ((One,One),(Four,Four))
     7 -> [(Three,Three),(Three,Four)]
     8 -> [(Four,Three),(Four,Four)]
 
-ap1_trivial_solved :: AP_Puzzle_Solved
-ap1_trivial_solved = A.listArray ((One,One),(Four,Four))
+ap_trivial_solved :: AP_Puzzle_Solved
+ap_trivial_solved = A.listArray ((One,One),(Four,Four))
                        [C,S,C,S,
                         S,C,S,C,
                         C,S,C,S,
