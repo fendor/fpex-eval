@@ -13,13 +13,12 @@ import System.FilePath
 -- For backwards and forward compatibility.
 type Points = Int
 
-data TestGroupProps
-  = TestGroupProps
-      { label :: T.Text,
-        pointsPerTest :: !Points,
-        penalty :: !Points,
-        upperBound :: !Points
-      }
+data TestGroupProps = TestGroupProps
+  { label :: T.Text,
+    pointsPerTest :: !Points,
+    penalty :: !Points,
+    upperBound :: !Points
+  }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
@@ -27,11 +26,11 @@ data ExpectedButGot = ExpectedButGot T.Text T.Text
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
-data TestSuiteResults
-  = TestSuiteResults
-      { testGroupResults :: [TestGroupResults],
-        testSuitePoints :: Points
-      }
+data TestSuiteResults = TestSuiteResults
+  { testGroupResults :: [TestGroupResults],
+    testSuitePoints :: Points,
+    testSuiteData :: Maybe [T.Text]
+  }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
@@ -45,21 +44,19 @@ data TestCaseResult
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
-data TestCaseReport
-  = TestCaseReport
-      { testCaseReportLabel :: T.Text,
-        testCaseReportResult :: TestCaseResult,
-        testCaseReportTimeNs :: Integer
-      }
+data TestCaseReport = TestCaseReport
+  { testCaseReportLabel :: T.Text,
+    testCaseReportResult :: TestCaseResult,
+    testCaseReportTimeNs :: Integer
+  }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
-data TestGroupResults
-  = TestGroupResults
-      { testGroupReports :: [TestCaseReport],
-        testGroupPoints :: Points,
-        testGroupResultProps :: TestGroupProps
-      }
+data TestGroupResults = TestGroupResults
+  { testGroupReports :: [TestCaseReport],
+    testGroupPoints :: Points,
+    testGroupResultProps :: TestGroupProps
+  }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
@@ -94,8 +91,8 @@ newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
   deriving newtype (Eq, Num, Ord)
 
 studentDir :: Course -> Student -> FilePath
-studentDir Course { courseRootDir } Student { studentId } =
-    courseRootDir </> T.unpack studentId
+studentDir Course {courseRootDir} Student {studentId} =
+  courseRootDir </> T.unpack studentId
 
 -- | Filename of the submission file
 studentSourceFile :: Course -> T.Text -> Student -> FilePath

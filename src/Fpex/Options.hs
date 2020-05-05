@@ -5,13 +5,12 @@ import Fpex.Course.Types
 import Fpex.Eval.Types
 import Options.Applicative
 
-data Options
-  = Options
-      { optionCommand :: OptionCommand,
-        optionCourseFile :: Maybe FilePath,
-        optionStudent :: Maybe Student
-        -- , optionSubmissionId :: SubmissionId
-      }
+data Options = Options
+  { optionCommand :: OptionCommand,
+    optionCourseFile :: Maybe FilePath,
+    optionStudent :: Maybe Student
+    -- , optionSubmissionId :: SubmissionId
+  }
   deriving (Show)
 
 data OptionCommand
@@ -28,31 +27,27 @@ data LifeCycle
   | DiffResults DiffResultsCommand
   deriving (Show)
 
-data TestSuiteOptions
-  = TestSuiteOptions
-      { optionSubmissionId :: SubmissionId,
-        optionTestSuiteName :: T.Text
-      }
+data TestSuiteOptions = TestSuiteOptions
+  { optionSubmissionId :: SubmissionId,
+    optionTestSuiteName :: T.Text
+  }
   deriving (Show, Eq)
 
-data SetTestSuiteCommand
-  = SetTestSuiteCommand
-      { setTestSuiteSpecification :: FilePath
-      }
+data SetTestSuiteCommand = SetTestSuiteCommand
+  { setTestSuiteSpecification :: FilePath
+  }
   deriving (Show, Eq)
 
-data SetupCommand
-  = SetupCommand
-      { setupCourseRootDir :: Maybe FilePath,
-        setupUserRegex :: String
-      }
+data SetupCommand = SetupCommand
+  { setupCourseRootDir :: Maybe FilePath,
+    setupUserRegex :: String
+  }
   deriving (Show, Eq)
 
-data GradeCommand
-  = GradeCommand
-      { -- | Time in seconds each test may at most run before abort.
-        testTimeout :: Timeout
-      }
+data GradeCommand = GradeCommand
+  { -- | Time in seconds each test may at most run before abort.
+    testTimeout :: Timeout
+  }
   deriving (Show, Eq)
 
 data CollectCommand = CollectCommand
@@ -61,10 +56,9 @@ data CollectCommand = CollectCommand
 data PublishCommand = PublishCommand
   deriving (Show, Eq)
 
-data StatCommand
-  = StatCommand
-      { statOutputKind :: StatCommandOutputKind
-      }
+data StatCommand = StatCommand
+  { statOutputKind :: StatCommandOutputKind
+  }
   deriving (Show, Eq)
 
 data StatCommandOutputKind
@@ -72,10 +66,9 @@ data StatCommandOutputKind
   | StatsOutputGrades
   deriving (Show, Eq)
 
-data DiffResultsCommand
-  = DiffResultsCommand
-      { diffResultSid :: SubmissionId
-      }
+data DiffResultsCommand = DiffResultsCommand
+  { diffResultSid :: SubmissionId
+  }
   deriving (Show, Eq)
 
 options :: ParserInfo Options
@@ -101,7 +94,13 @@ options =
                       <> " Submission id is added as a suffix to the submission folder."
                   )
             )
-      oldSubmissionIdParser = SubmissionId <$> option auto (long "old" <> short 'o' <> help "Old Submission Id to compare the current submission to.")
+      oldSubmissionIdParser =
+        SubmissionId
+          <$> option
+            auto
+            ( long "old" <> short 'o'
+                <> help "Old Submission Id to compare the current submission to."
+            )
       testSuiteOptionParser =
         TestSuiteOptions <$> submissionIdParser <*> testSuiteNameParser
       gradeParser =

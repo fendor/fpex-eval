@@ -135,6 +135,11 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         Collect.prepareSubmissionFolder
           optionSubmissionId
           testSuiteName
+      _ <-
+        embed $
+          Collect.createEmptyStudent
+            optionSubmissionId
+            testSuiteName
       collectResults <- forM students $ \student -> do
         embed $
           Collect.collectSubmission
@@ -203,18 +208,17 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
             T.putStrLn $ "  New: " <> T.pack newSubmission <> " -- Points: " <> T.pack (show newScore)
             T.putStrLn $ "  ---"
             T.putStrLn $
-                "  "
-                  <> T.concat
-                    [ "Correct: ",
-                      T.pack $ show correctTests,
-                      ", Incorrect: ",
-                      T.pack $ show failedTests,
-                      ", Not submitted: ",
-                      T.pack $ show notSubmittedTests,
-                      ", Timeout: ",
-                      T.pack $ show timeoutTests
-                    ]
-
+              "  "
+                <> T.concat
+                  [ "Correct: ",
+                    T.pack $ show correctTests,
+                    ", Incorrect: ",
+                    T.pack $ show failedTests,
+                    ", Not submitted: ",
+                    T.pack $ show notSubmittedTests,
+                    ", Timeout: ",
+                    T.pack $ show timeoutTests
+                  ]
           else T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
         return ()
       return ()

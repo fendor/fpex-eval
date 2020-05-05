@@ -6,7 +6,6 @@ import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import Data.Function
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Fpex.Course.Types
 import Fpex.Eval.Types as Eval
 import Polysemy
@@ -75,12 +74,6 @@ createEmptyStudent ::
   Sem r (Eval.TestSuiteResults, Eval.TestSuiteResults)
 createEmptyStudent sid suiteName = do
   let errorStudent = Student "errorStudent"
-  let targetDir =
-        Eval.assignmentCollectStudentDir sid suiteName errorStudent
-  let targetFile =
-        Eval.assignmentCollectStudentFile sid suiteName errorStudent
-  embed $ createDirectoryIfMissing True targetDir
-  embed $ T.writeFile targetFile ("module " <> suiteName <> " where\n")
   testSuiteResults <- runSubmission sid suiteName errorStudent
   let modifyTestCaseResult report =
         report {testCaseReportResult = Eval.TestCaseResultCompileFail}
