@@ -1,9 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Assignment3 where
 
-import Data.Array
-import Data.Function
-import Data.List
 import Data.Array
 
 data Symbol = C | S | T | B deriving (Eq,Ord,Enum,Show)

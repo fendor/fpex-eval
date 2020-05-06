@@ -4,7 +4,7 @@ version:       0.0.0
 build-type:    Simple
 
 common warnings
-  ghc-options: -Wall -Wunused-function
+  ghc-options: -Wall
 
 library
   import: warnings
@@ -56,6 +56,7 @@ executable ass2
 executable ass3
   import: warnings
   main-is:          TestSuite3.hs
+  ghc-options: -fdefer-type-errors
   build-depends:
     , array
     , base
