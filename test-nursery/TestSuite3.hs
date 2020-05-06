@@ -85,7 +85,7 @@ main =
           ],
         T.group
           (T.TestGroupProps "Smart predicates" 1 0 20)
-          [ $(T.testcase [e|t_sound (LT [[S, C, S]] (const [(One, One), (Two, One), (Three, One)])) `T.assertEqual` False|]),
+          [ $(T.testcase [e|t_sound (LT [[S, C, S]] (const [(One, One), (One, Two), (One, Three)])) `T.assertEqual` False|]),
             $(T.testcase [e|
                    let t1 = LT [ [B, T, T, C, S, B],[S, T, C, S, T, C],[T, C, T, C, S, C],[C, T, S, T, S, T],[C, S, T, C, S, C],[B, T, T, S, T, B]]
                            $ \box -> case box of 1 -> [(One, One), (Two, One), (Three, One)];2 -> [(One, Two), (One, Three), (Two, Two)];3 -> [(One, Four), (One, Five), (Two, Five)];4 -> [(One, Six), (Two, Six), (Three, Six)];5 -> [(Two, Three), (Three, Three), (Four, Three)];6 -> [(Two, Four), (Three, Four), (Four, Four)];7 -> [(Three, Two), (Four, Two), (Five, Two)];8 -> [(Three, Five), (Four, Five), (Five, Five)];9 -> [(Four, One), (Five, One), (Six, One)];10 -> [(Four, Six), (Five, Six), (Six, Six)];11 -> [(Five, Three), (Six, Two), (Six, Three)];12 -> [(Five, Four), (Six, Four), (Six, Five)]
@@ -106,7 +106,7 @@ main =
                    let t1_box = \box -> case box of 1 -> [(One, One), (Two, One), (Three, One)];2 -> [(One, Two), (One, Three), (Two, Two)];3 -> [(One, Four), (One, Five), (Two, Five)];4 -> [(One, Six), (Two, Six), (Three, Six)];5 -> [(Two, Three), (Three, Three), (Four, Three)];6 -> [(Two, Four), (Three, Four), (Four, Four)];7 -> [(Three, Two), (Four, Two), (Five, Two)];8 -> [(Three, Five), (Four, Five), (Five, Five)];9 -> [(Four, One), (Five, One), (Six, One)];10 -> [(Four, Six), (Five, Six), (Six, Six)];11 -> [(Five, Three), (Six, Two), (Six, Three)];12 -> [(Five, Four), (Six, Four), (Six, Five)]
                        t1_solved = [[C, S, C, S], [S, C, S, C], [C, S, C, S], [S, C, S, C]]
                     in t_correct (LT t1_solved t1_box) `T.assertEqual` True|]),
-            $(T.testcase [e|p_sound (LP [[S,C,S]] (const [(One, One), (Two, One), (Three, One)])) `T.assertEqual` False|]),
+            $(T.testcase [e|p_sound (LP [[S,C,S]] (const [(One, One), (One, Two), (One, Three)])) `T.assertEqual` False|]),
             $( T.testcase
                  [e|
                    let p1 = LP [ [C, B, B, B],[B, B, S, B],[B, B, B, B],[B, B, B, C]] p1_box
