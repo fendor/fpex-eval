@@ -7,7 +7,7 @@ import Prelude hiding (Ordering (..))
 
 main :: IO ()
 main =
-  T.runTestSuiteWithTestdata 5 [] $
+  T.runTestSuite 5 $
     T.testSuite
       [ T.group
           (T.TestGroupProps "Naive solvers" 5 0 10)
