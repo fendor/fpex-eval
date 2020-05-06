@@ -85,7 +85,7 @@ main =
           ],
         T.group
           (T.TestGroupProps "Smart predicates" 1 0 20)
-          [ $(T.testcase [e|t_sound (LT [[B]] (const [])) `T.assertEqual` False|]),
+          [ $(T.testcase [e|t_sound (LT [[S, C, S]] (const [(One, One), (Two, One), (Three, One)])) `T.assertEqual` False|]),
             $(T.testcase [e|
                    let t1 = LT [ [B, T, T, C, S, B],[S, T, C, S, T, C],[T, C, T, C, S, C],[C, T, S, T, S, T],[C, S, T, C, S, C],[B, T, T, S, T, B]]
                            $ \box -> case box of 1 -> [(One, One), (Two, One), (Three, One)];2 -> [(One, Two), (One, Three), (Two, Two)];3 -> [(One, Four), (One, Five), (Two, Five)];4 -> [(One, Six), (Two, Six), (Three, Six)];5 -> [(Two, Three), (Three, Three), (Four, Three)];6 -> [(Two, Four), (Three, Four), (Four, Four)];7 -> [(Three, Two), (Four, Two), (Five, Two)];8 -> [(Three, Five), (Four, Five), (Five, Five)];9 -> [(Four, One), (Five, One), (Six, One)];10 -> [(Four, Six), (Five, Six), (Six, Six)];11 -> [(Five, Three), (Six, Two), (Six, Three)];12 -> [(Five, Four), (Six, Four), (Six, Five)]
@@ -96,7 +96,7 @@ main =
                     in t_complete t1 `T.assertEqual` False|]),
             $(T.testcase [e|
                    let t1_box = \box -> case box of 1 -> [(One, One), (Two, One), (Three, One)];2 -> [(One, Two), (One, Three), (Two, Two)];3 -> [(One, Four), (One, Five), (Two, Five)];4 -> [(One, Six), (Two, Six), (Three, Six)];5 -> [(Two, Three), (Three, Three), (Four, Three)];6 -> [(Two, Four), (Three, Four), (Four, Four)];7 -> [(Three, Two), (Four, Two), (Five, Two)];8 -> [(Three, Five), (Four, Five), (Five, Five)];9 -> [(Four, One), (Five, One), (Six, One)];10 -> [(Four, Six), (Five, Six), (Six, Six)];11 -> [(Five, Three), (Six, Two), (Six, Three)];12 -> [(Five, Four), (Six, Four), (Six, Five)]
-                       t1_solved = [[C, S, C, S], [S, C, S, C], [C, S, C, S], [S, C, S, C]]
+                       t1_solved = [ [C,T,T,C,S,C],[S,T,C,S,T,C],[T,C,T,C,S,C],[C,T,S,T,S,T],[C,S,T,C,S,C],[C,T,T,S,T,S] ]
                     in t_complete (LT t1_solved t1_box) `T.assertEqual` True|]),
             $(T.testcase [e|
                    let t1 = LT [ [B, T, T, C, S, B],[S, T, C, S, T, C],[T, C, T, C, S, C],[C, T, S, T, S, T],[C, S, T, C, S, C],[B, T, T, S, T, B]]
@@ -106,7 +106,7 @@ main =
                    let t1_box = \box -> case box of 1 -> [(One, One), (Two, One), (Three, One)];2 -> [(One, Two), (One, Three), (Two, Two)];3 -> [(One, Four), (One, Five), (Two, Five)];4 -> [(One, Six), (Two, Six), (Three, Six)];5 -> [(Two, Three), (Three, Three), (Four, Three)];6 -> [(Two, Four), (Three, Four), (Four, Four)];7 -> [(Three, Two), (Four, Two), (Five, Two)];8 -> [(Three, Five), (Four, Five), (Five, Five)];9 -> [(Four, One), (Five, One), (Six, One)];10 -> [(Four, Six), (Five, Six), (Six, Six)];11 -> [(Five, Three), (Six, Two), (Six, Three)];12 -> [(Five, Four), (Six, Four), (Six, Five)]
                        t1_solved = [[C, S, C, S], [S, C, S, C], [C, S, C, S], [S, C, S, C]]
                     in t_correct (LT t1_solved t1_box) `T.assertEqual` True|]),
-            $(T.testcase [e|p_sound (LP [[B]] (const [])) `T.assertEqual` False|]),
+            $(T.testcase [e|p_sound (LP [[S,C,S]] (const [(One, One), (Two, One), (Three, One)])) `T.assertEqual` False|]),
             $( T.testcase
                  [e|
                    let p1 = LP [ [C, B, B, B],[B, B, S, B],[B, B, B, B],[B, B, B, C]] p1_box
@@ -142,7 +142,7 @@ main =
                     in p_correct (LP p1_solved p1_box) `T.assertEqual` True
                    |]
              ),
-            $(T.testcase [e|at_sound (AT (A.listArray ((One, One), (One, One)) [B]) (const [])) `T.assertEqual` False|]),
+            $(T.testcase [e|at_sound (AT (A.listArray ((One, One), (Three, One)) [S,C,S]) (const [(One, One), (Two, One), (Three, One)])) `T.assertEqual` False|]),
             $(T.testcase [e|
                 let
                   at1 = AT( A.listArray ((One, One), (Six, Six)) [ C,T,B,C,B,B,B,B,B,B,B,C,B,B,B,C,B,B,B,B,S,B,B,B,C,B,B,B,B,B,B,B,T,B,T,S]) at1_box
@@ -168,7 +168,7 @@ main =
                   at1_box = \box -> case box of 1 -> [(One, One), (Two, One), (Three, One)];2 -> [(One, Two), (One, Three), (Two, Two)];3 -> [(One, Four), (One, Five), (Two, Five)];4 -> [(One, Six), (Two, Six), (Three, Six)];5 -> [(Two, Three), (Three, Three), (Four, Three)];6 -> [(Two, Four), (Three, Four), (Four, Four)];7 -> [(Three, Two), (Four, Two), (Five, Two)];8 -> [(Three, Five), (Four, Five), (Five, Five)];9 -> [(Four, One), (Five, One), (Six, One)];10 -> [(Four, Six), (Five, Six), (Six, Six)];11 -> [(Five, Three), (Six, Two), (Six, Three)];12 -> [(Five, Four), (Six, Four), (Six, Five)]
                   at1_solved = A.listArray ((One, One), (Six, Six)) [ C,T,T,C,S,C,S,T,C,S,T,C,T,C,T,C,S,C,C,T,S,T,S,T,C,S,T,C,S,C,C,T,T,S,T,S]
                 in at_correct (AT at1_solved at1_box) `T.assertEqual` True|]),
-            $(T.testcase [e|ap_sound (AP (A.listArray ((One, One), (Six, Six)) (cycle [S, T])) (const [])) `T.assertEqual` False|]),
+            $(T.testcase [e|ap_sound (AP (A.listArray ((One, One), (Six, Six)) (cycle [S, T])) (const [(One, One), (Two, One), (Three, One)])) `T.assertEqual` False|]),
             $(T.testcase [e|
               let
                 ap1 = AP ( A.listArray ((One, One), (Four, Four))[ C,B,B,B,B,B,S,B,B,B,B,B,B,B,B,B]) ap1_box
