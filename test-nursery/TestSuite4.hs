@@ -71,7 +71,7 @@ main =
       , T.group
           (T.TestGroupProps "Largest denominator" 5 0 15)
           [ $(T.testcase [|gs2 (1, 2) 10 `T.assertEqual` Just [2]|])
-          , $(T.testcase [|gs2 (5, 31) 4200 `T.assertEqual` Just [8,31,248]|])
+          , $(T.testcase [|gs2 (5, 31) 250 `T.assertEqual` Just [8,31,248]|])
           , $(T.testcase [|gs2 (5, 31) 42 `T.assertEqual` Nothing|])
           ]
       , T.group
@@ -92,8 +92,8 @@ main =
                   (map (sum . map (1 R.%)) $ take 2 query)
               in allValid && (not $ null query)
                   `T.assertEqual` True|])
-          , $(T.testcase [|null (bt1 (5, 31) 3721 42) `T.assertEqual` True|])
-          , $(T.testcase [|bt1 (5, 31) 4200 250 `T.assertEqual` [[8,31,248]]|])
+          , $(T.testcase [|null (bt1 (5, 31) 50 42) `T.assertEqual` True|])
+          , $(T.testcase [|bt1 (5, 31) 300 250 `T.assertEqual` [[8,31,248]]|])
           ]
       , T.group
           (T.TestGroupProps "Backtracking search (Largest Denominator)" 5 0 20)
@@ -103,15 +103,16 @@ main =
                 query = bt2 (n, d) 10 5
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) query)
-              in allValid && all ((== 1) . length) query && (not $ null query)
+              in allValid && all ((<= 2) . length) query && (not $ null query)
                   `T.assertEqual` True|])
           , $(T.testcase [|
               let
                 (n, d) = (5,6)
-                query = bt2 (n, d) 100 20
+                query = bt2 (n, d) 100 4
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) $ take 2 query)
-              in allValid && (not $ null query)
+                allSmaller = all ((< 4) . length) take 2 query
+              in allValid && (not $ null query) && allSmaller
                   `T.assertEqual` True|])
           , $(T.testcase [|
               let
@@ -119,9 +120,10 @@ main =
                 query = bt2 (n, d) 3721 3
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) $ take 2 query)
-              in allValid && (not $ null query)
+                allSmaller = all ((< 3) . length) take 2 query
+              in allValid && allSmaller && (not $ null query)
                   `T.assertEqual` True|])
-          , $(T.testcase [|bt2 (5, 31) 4200 2 `T.assertEqual` []|])
+          , $(T.testcase [|bt2 (5, 31) 60 2 `T.assertEqual` []|])
           ]
       ]
 
