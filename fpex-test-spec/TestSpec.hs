@@ -35,6 +35,8 @@ import System.IO (FilePath)
 import System.Timeout
 import qualified Text.PrettyPrint as Pretty
 
+infix 1 `assertEqual`
+
 group :: TestGroupProps -> [TestCase] -> TestGroup
 group = TestGroup
 
@@ -68,23 +70,6 @@ simplifyNames = Uniplate.transformBi simplifyName
 unbound :: Exp -> Bool
 unbound m = not $ null [() | TH.UnboundVarE {} <- Uniplate.universe m]
 
-testdata :: Q Exp -> Q Exp
-testdata e = do
-  expr <- runQ e
-
-  let prettyExpr :: Exp -> Exp
-      prettyExpr e =
-        let simplified = simplifyNames expr
-            simplDoc = TH.to_HPJ_Doc (pprExp 0 simplified)
-            customStyle = Pretty.Style Pretty.OneLineMode 200 2.0
-         in LitE $ StringL $ Pretty.renderStyle customStyle simplDoc
-
-  generatedExpr <-
-    if unbound expr
-      then [e|evaluate (throw NotSubmitted)|]
-      else pure expr
-
-  tupE [pure generatedExpr]
 
 assertEqual :: (Show a, Eq a) => a -> a -> IO ()
 assertEqual left right =
@@ -154,8 +139,7 @@ data TestGroupResults = TestGroupResults
 
 data TestSuiteResults = TestSuiteResults
   { testGroupResults :: [TestGroupResults],
-    testSuitePoints :: Points,
-    testSuiteData :: Maybe [String]
+    testSuitePoints :: Points
   }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
@@ -223,19 +207,5 @@ runTestSuite timeoutSecs TestSuite {..} = do
   BL.putStrLn $
     Aeson.encode
       TestSuiteResults
-        { testGroupResults,
-          testSuitePoints,
-          testSuiteData = Nothing
-        }
-
-runTestSuiteWithTestdata :: TimeoutSecs -> [String] -> TestSuite -> IO ()
-runTestSuiteWithTestdata timeoutSecs testData TestSuite {..} = do
-  testGroupResults <- mapM (runTestGroup timeoutSecs) testSuiteGroups
-  let testSuitePoints = sum . map testGroupPoints $ testGroupResults
-  BL.putStrLn $
-    Aeson.encode
-      TestSuiteResults
-        { testGroupResults,
-          testSuitePoints,
-          testSuiteData = Just testData
+        { ..
         }
