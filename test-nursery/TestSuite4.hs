@@ -111,7 +111,7 @@ main =
                 query = bt2 (n, d) 100 4
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) $ take 2 query)
-                allSmaller = all ((< 4) . length) take 2 query
+                allSmaller = all ((< 4) . length) $ take 2 query
               in allValid && (not $ null query) && allSmaller
                   `T.assertEqual` True|])
           , $(T.testcase [|
@@ -120,7 +120,7 @@ main =
                 query = bt2 (n, d) 3721 3
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) $ take 2 query)
-                allSmaller = all ((< 3) . length) take 2 query
+                allSmaller = all ((< 3) . length) $ take 2 query
               in allValid && allSmaller && (not $ null query)
                   `T.assertEqual` True|])
           , $(T.testcase [|bt2 (5, 31) 60 2 `T.assertEqual` []|])
