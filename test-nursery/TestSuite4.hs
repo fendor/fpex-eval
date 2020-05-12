@@ -93,7 +93,7 @@ main =
               in allValid && (not $ null query)
                   `T.assertEqual` True|])
           , $(T.testcase [|null (bt1 (5, 31) 3721 42) `T.assertEqual` True|])
-          , $(T.testcase [|bt1 (5, 31) 4200 250 `T.assertEqual` Just [8,31,248]|])
+          , $(T.testcase [|bt1 (5, 31) 4200 250 `T.assertEqual` [[8,31,248]]|])
           ]
       , T.group
           (T.TestGroupProps "Backtracking search (Largest Denominator)" 5 0 20)
@@ -113,8 +113,15 @@ main =
                   (map (sum . map (1 R.%)) $ take 2 query)
               in allValid && (not $ null query)
                   `T.assertEqual` True|])
-          , $(T.testcase [|bt2 (5, 31) 3721 3 `T.assertEqual` Just [8,31,248]|])
-          , $(T.testcase [|bt2 (5, 31) 4200 2 `T.assertEqual` Nothing|])
+          , $(T.testcase [|
+              let
+                (n, d) = (5, 31)
+                query = bt2 (n, d) 3721 3
+                allValid = all (== (n R.% d))
+                  (map (sum . map (1 R.%)) $ take 2 query)
+              in allValid && (not $ null query)
+                  `T.assertEqual` True|])
+          , $(T.testcase [|bt2 (5, 31) 4200 2 `T.assertEqual` []|])
           ]
       ]
 
