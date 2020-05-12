@@ -47,6 +47,7 @@ data SetupCommand = SetupCommand
 data GradeCommand = GradeCommand
   { -- | Time in seconds each test may at most run before abort.
     testTimeout :: Timeout
+  , gradeTestSuite :: Maybe FilePath -- ^ Set the test-suite for the grading cycle.
   }
   deriving (Show, Eq)
 
@@ -116,6 +117,7 @@ options =
                                 <> value 5.0
                             )
                       )
+                  <*> optional testSuiteParser
               )
       setupParser =
         Setup

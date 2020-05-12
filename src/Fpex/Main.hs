@@ -15,6 +15,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Control.Monad.Extra
 import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
 import Fpex.Course.Types
@@ -61,6 +62,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
   embed $ setCurrentDirectory courseDir
   case lifecycle of
     Grade GradeCommand {..} -> runReader Course {..} $ do
+      whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
       (compileFailTestSuite, noSubmissionTestSuite) <-
         Grade.runGradeError
           ( Grade.createEmptyStudent
@@ -176,10 +178,8 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
-    SetTestSuite SetTestSuiteCommand {..} -> do
-      testSuiteSpecification <- embed $ makeAbsolute setTestSuiteSpecification
-      checkTestSuiteExists testSuiteSpecification
-      embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
+    SetTestSuite SetTestSuiteCommand {..} ->
+      setTestSuite optionSubmissionId testSuiteName setTestSuiteSpecification
     DiffResults DiffResultsCommand {..} -> do
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
@@ -222,6 +222,13 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
           else T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
         return ()
       return ()
+
+-------------------------------------------------------------------------------------
+
+setTestSuite optionSubmissionId testSuiteName testSuiteSpec = do
+  testSuiteSpecification <- embed $ makeAbsolute testSuiteSpec
+  checkTestSuiteExists testSuiteSpecification
+  embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
 
 -------------------------------------------------------------------------------------
 
