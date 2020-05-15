@@ -93,7 +93,7 @@ main =
               in allValid && (not $ null query)
                   `T.assertEqual` True|])
           , $(T.testcase [|null (bt1 (5, 31) 40 30) `T.assertEqual` True|])
-          , $(T.testcase [|bt1 (4, 5) 20 8 `T.assertEqual` [[3,5,6,10]]|])
+          , $(T.testcase [|bt1 (4, 5) 20 7 `T.assertEqual` [[3,5,6,10]]|])
           ]
       , T.group
           (T.TestGroupProps "Backtracking search (Largest Denominator)" 5 0 20)
