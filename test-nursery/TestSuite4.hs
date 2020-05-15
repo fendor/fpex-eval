@@ -54,7 +54,7 @@ main =
           , $(T.testcase [|
               let
                 (n, d) = (5,6)
-                query = gs1 (n, d) 100
+                query = gs1 (n, d) 20
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) $ take 2 query)
               in allValid && (not $ null query)
@@ -62,7 +62,7 @@ main =
           , $(T.testcase [|
               let
                 (n, d) = (5,31)
-                query = gs1 (n, d) 3721
+                query = gs1 (n, d) 250
                 allValid = all (== (n R.% d))
                   (map (sum . map (1 R.%)) $ take 2 query)
               in allValid && all ((== 3) . length) query
