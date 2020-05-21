@@ -33,3 +33,5 @@ report.json
 course.json
 
 testdata/course4/admin/Assignment*-1/
+
+.envrc/
