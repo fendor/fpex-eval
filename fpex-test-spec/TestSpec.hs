@@ -81,6 +81,11 @@ assertEqual left right =
     leftStr = show left
     rightStr = show right
 
+assertEqualIO :: (Show a, Eq a) => IO a -> a -> IO ()
+assertEqualIO leftIO right = do
+  left <- leftIO
+  assertEqual left right
+
 type Points = Int
 
 type TimeoutSecs = Int
