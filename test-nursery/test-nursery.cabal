@@ -14,11 +14,13 @@ library
     Assignment2
     Assignment3
     Assignment4
+    Assignment5
 
   hs-source-dirs:   .
   build-depends:
     , array
     , base
+    , QuickCheck
     , fpex-test-spec
 
   default-language: Haskell2010
@@ -71,6 +73,17 @@ executable ass4
   main-is:          TestSuite4.hs
   build-depends:
     , array
+    , base
+    , fpex-test-spec
+    , test-nursery
+
+  default-language: Haskell2010
+
+executable ass5
+  import: warnings
+  main-is:          TestSuite5.hs
+  build-depends:
+    , QuickCheck
     , base
     , fpex-test-spec
     , test-nursery
