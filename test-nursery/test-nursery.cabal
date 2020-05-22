@@ -81,6 +81,7 @@ executable ass4
 
 executable ass5
   import: warnings
+  ghc-options: -fdefer-type-errors
   main-is:          TestSuite5.hs
   build-depends:
     , QuickCheck
