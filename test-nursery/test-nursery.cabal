@@ -7,7 +7,7 @@ common warnings
   ghc-options: -Wall
 
 library
-  import: warnings
+  import:           warnings
   exposed-modules:
     Assignment0
     Assignment1
@@ -15,18 +15,19 @@ library
     Assignment3
     Assignment4
     Assignment5
+    Assignment6
 
   hs-source-dirs:   .
   build-depends:
     , array
     , base
-    , QuickCheck
     , fpex-test-spec
+    , QuickCheck
 
   default-language: Haskell2010
 
 executable ass0
-  import: warnings
+  import:           warnings
   main-is:          TestSuite0.hs
   build-depends:
     , base
@@ -36,7 +37,7 @@ executable ass0
   default-language: Haskell2010
 
 executable ass1
-  import: warnings
+  import:           warnings
   main-is:          TestSuite1.hs
   build-depends:
     , base
@@ -46,7 +47,7 @@ executable ass1
   default-language: Haskell2010
 
 executable ass2
-  import: warnings
+  import:           warnings
   main-is:          TestSuite2.hs
   build-depends:
     , array
@@ -57,9 +58,9 @@ executable ass2
   default-language: Haskell2010
 
 executable ass3
-  import: warnings
+  import:           warnings
   main-is:          TestSuite3.hs
-  ghc-options: -fdefer-type-errors
+  ghc-options:      -fdefer-type-errors
   build-depends:
     , array
     , base
@@ -69,7 +70,7 @@ executable ass3
   default-language: Haskell2010
 
 executable ass4
-  import: warnings
+  import:           warnings
   main-is:          TestSuite4.hs
   build-depends:
     , array
@@ -80,11 +81,21 @@ executable ass4
   default-language: Haskell2010
 
 executable ass5
-  import: warnings
-  ghc-options: -fdefer-type-errors
+  import:           warnings
+  ghc-options:      -fdefer-type-errors
   main-is:          TestSuite5.hs
   build-depends:
+    , base
+    , fpex-test-spec
     , QuickCheck
+    , test-nursery
+
+  default-language: Haskell2010
+
+executable ass6
+  import:           warnings
+  main-is:          TestSuite6.hs
+  build-depends:
     , base
     , fpex-test-spec
     , test-nursery
