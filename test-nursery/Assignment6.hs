@@ -31,7 +31,7 @@ data PE
   = Equal E E -- PE for predicate expression
   | NEqual E E
   | GEqual E E
-  | LEqual
+  | LEqual E E
   deriving (Eq, Show)
 
 type Parse1 a b = [a] -> [(b, [a])]
@@ -41,3 +41,11 @@ parser1 = undefined
 
 topLevel1 :: Parse1 a b -> [a] -> b
 topLevel1 = undefined
+
+newtype Parse2 a = Parse (String -> [(a, String)])
+
+parser2 :: Parse2 P
+parser2 = undefined
+
+topLevel2 :: Parse2 a -> String -> a
+topLevel2 = undefined
