@@ -128,7 +128,7 @@ main =
              )
           ],
         T.group
-          (T.TestGroupProps "Applicative Parser Real Programs" 5 0 15)
+          (T.TestGroupProps "Applicative Parser Real Programs" 5 0 10)
           [ $( T.testcase
                  [e|
                    topLevel1 parser1 "PROGRAM Gcd BEGIN x = 17; y = 56; WHILE /= x y DO IF <= y x THEN x = - x y ELSE y = - y x END ."
@@ -280,7 +280,7 @@ main =
              )
           ],
         T.group
-          (T.TestGroupProps "Monad Parser Real Programs" 5 0 15)
+          (T.TestGroupProps "Monad Parser Real Programs" 5 0 10)
           [ $( T.testcase
                  [e|
                    topLevel2 parser2 "PROGRAM Gcd BEGIN x = 17; y = 56; WHILE /= x y DO IF <= y x THEN x = - x y ELSE y = - y x END."
