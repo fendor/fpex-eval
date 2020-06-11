@@ -93,9 +93,12 @@ data Variable = Named String | Generated Int deriving (Show, Eq)
 newtype Answer = MkAnswer (Subst, Int) deriving Show
 
 
+type Stream a = [a]
+newtype Diag a = MkDiag (Stream a) deriving Show
+newtype Matrix a =MkMatrix (Stream [a]) deriving Show
 
-
-
+unMatrix :: Matrix a -> [[a]]
+unMatrix (MkMatrix xm) = xm
 
 type Identifier = String
 
@@ -129,18 +132,11 @@ data PE
   | LEqual E E
   deriving (Eq, Show)
 
-type Parse1 a b = [a] -> [(b, [a])]
+type State = (Variable -> Either Int Float)
 
-parser1 :: Parse1 Char P
-parser1 = undefined
+interpreter :: P -> State -> State
+interpreter = undefined
 
-topLevel1 :: Parse1 a b -> [a] -> b
-topLevel1 = undefined
-
-newtype Parse2 a = Parse (String -> [(a, String)])
-
-parser2 :: Parse2 P
-parser2 = undefined
-
-topLevel2 :: Parse2 a -> String -> a
-topLevel2 = undefined
+type Mini_Program = String
+mini_interpreter :: Mini_Program -> State -> State
+mini_interpreter mp sigma = undefined
