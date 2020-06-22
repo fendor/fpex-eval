@@ -58,34 +58,26 @@ recalculateTestPoints t =
 maxScore :: TestSuiteResults -> Points
 maxScore TestSuiteResults {..} = sum (map (upperBound . testGroupResultProps) testGroupResults)
 
--- TODO: refactor these accessor functions
-
 correctTests :: TestSuiteResults -> Int
-correctTests TestSuiteResults {..} =
-  length $
-    concatMap
-      (filter ((== TestCaseResultOk) . testCaseReportResult) . testGroupReports)
-      testGroupResults
+correctTests testSuiteResults =
+  length $ getTestsSatisfying (== TestCaseResultOk) testSuiteResults
 
 notSubmittedTests :: TestSuiteResults -> Int
-notSubmittedTests TestSuiteResults {..} =
-  length $
-    concatMap
-      (filter ((== TestCaseResultNotSubmitted) . testCaseReportResult) . testGroupReports)
-      testGroupResults
+notSubmittedTests testSuiteResults =
+  length $ getTestsSatisfying (== TestCaseResultNotSubmitted) testSuiteResults
 
 failedTests :: TestSuiteResults -> Int
-failedTests TestSuiteResults {..} =
-  length $
-    concatMap
-      (filter (isFailedTestCaseResult . testCaseReportResult) . testGroupReports)
-      testGroupResults
+failedTests testSuiteResults =
+  length $ getTestsSatisfying isFailedTestCaseResult testSuiteResults
 
 timeoutTests :: TestSuiteResults -> Int
-timeoutTests TestSuiteResults {..} =
-  length $
+timeoutTests testSuiteResults =
+  length $ getTestsSatisfying (== TestCaseResultTimeout) testSuiteResults
+
+getTestsSatisfying :: (TestCaseResult -> Bool) -> TestSuiteResults -> [TestCaseReport]
+getTestsSatisfying p TestSuiteResults {..} =
     concatMap
-      (filter ((== TestCaseResultTimeout) . testCaseReportResult) . testGroupReports)
+      (filter (p . testCaseReportResult) . testGroupReports)
       testGroupResults
 
 isFailedTestCaseResult :: TestCaseResult -> Bool
@@ -123,8 +115,8 @@ readTestSuiteResult sid suiteName student = do
   pure suite
 
 writeTestSuiteResult :: SubmissionId -> T.Text -> Student -> TestSuiteResults -> IO ()
-writeTestSuiteResult sid suiteName student testSuite =
-  LBS.writeFile (reportSourceJsonFile sid suiteName student) (Aeson.encodePretty testSuite)
+writeTestSuiteResult sid suiteName student testSuiteResults =
+  LBS.writeFile (reportSourceJsonFile sid suiteName student) (Aeson.encodePretty testSuiteResults)
 
 assignmentCollectStudentDir ::
   SubmissionId -> T.Text -> Student -> FilePath

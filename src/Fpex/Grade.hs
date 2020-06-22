@@ -2,7 +2,6 @@ module Fpex.Grade where
 
 import Control.Monad.Extra (unlessM)
 import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import Data.Function
 import qualified Data.Text as T
@@ -37,8 +36,7 @@ runSubmission sid suiteName student = do
   let targetDir = assignmentCollectStudentDir sid suiteName student
   let targetFile = assignmentCollectStudentFile sid suiteName student
   ghciOptions <- asks courseGhciOptions
-  ghciEnv' <- asks ghciEnvironmentLocation
-  ghciEnv <- embed $ makeAbsolute ghciEnv'
+  ghciEnv <- asks ghciEnvironmentLocation
   unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
   let procArgs =
         [ "../Main.hs",

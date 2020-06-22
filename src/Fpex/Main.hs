@@ -1,13 +1,6 @@
 module Fpex.Main where
 
-import Control.Monad
-  ( forM,
-    forM_,
-  )
 import Control.Monad.Extra
-  ( findM,
-    unlessM,
-  )
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Either
@@ -15,7 +8,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Control.Monad.Extra
 import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
 import Fpex.Course.Types
@@ -58,80 +50,85 @@ dispatchLifeCycle ::
 dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
   let testSuiteName = optionTestSuiteName
   (Course {..}, courseDir) <- getCourseConfig optionCourseFile
+  canonicalGhciEnvironment <- embed $ canonicalizePath courseGhciEnvironment
   let students = maybe courseParticipants pure optionStudent
   embed $ setCurrentDirectory courseDir
   case lifecycle of
-    Grade GradeCommand {..} -> runReader Course {..} $ do
-      whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
-      (compileFailTestSuite, noSubmissionTestSuite) <-
-        Grade.runGradeError
-          ( Grade.createEmptyStudent
-              optionSubmissionId
-              testSuiteName
-          )
-          >>= \case
-            Right (a, b) -> return (a, b)
-            Left err -> do
-              case err of
-                Grade.RunnerError msg serr -> embed $ do
-                  T.putStrLn "Failed to execute neutral student"
-                  T.putStrLn msg
-                  LBS.putStrLn $ "Stderr: " <> serr
-                Grade.FailedToDecodeJsonResult msg ->
-                  embed $ hPutStrLn stderr msg
-                Grade.NoSubmission ->
-                  error "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
-              throw $ T.pack $ show err
-      forM_ students $ \student -> do
-        embed $ T.putStrLn $ "run testsuite for student " <> studentId student
-        let targetFile =
-              Eval.reportSourceJsonFile
+    Grade GradeCommand {..} -> runReader
+      Course
+        { courseGhciEnvironment = canonicalGhciEnvironment,
+          ..
+        }
+      $ do
+        whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
+        (compileFailTestSuite, noSubmissionTestSuite) <-
+          Grade.runGradeError
+            ( Grade.createEmptyStudent
+                optionSubmissionId
+                testSuiteName
+            )
+            >>= \case
+              Right (a, b) -> return (a, b)
+              Left err -> do
+                case err of
+                  Grade.RunnerError msg serr -> embed $ do
+                    T.putStrLn "Failed to execute neutral student"
+                    T.putStrLn msg
+                    LBS.putStrLn $ "Stderr: " <> serr
+                  Grade.FailedToDecodeJsonResult msg ->
+                    embed $ hPutStrLn stderr msg
+                  Grade.NoSubmission ->
+                    error "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
+                throw $ T.pack $ show err
+        forM_ students $ \student -> do
+          embed $ T.putStrLn $ "run testsuite for student " <> studentId student
+          let targetFile =
+                Eval.reportSourceJsonFile
+                  optionSubmissionId
+                  testSuiteName
+                  student
+          Grade.runGradeError
+            ( Grade.runSubmission
                 optionSubmissionId
                 testSuiteName
                 student
-        Grade.runGradeError
-          ( Grade.runSubmission
-              optionSubmissionId
-              testSuiteName
-              student
-          )
-          >>= \case
-            Right testResult -> do
-              embed $ T.putStrLn "\tTest Report:"
-              embed $ T.putStrLn $
-                "\t\tPoints: "
-                  <> T.pack (show $ Eval.testSuitePoints testResult)
-                  <> "/"
-                  <> T.pack (show $ Eval.maxScore testResult)
-              embed $ T.putStrLn $
-                "\t\t"
-                  <> T.concat
-                    [ "Correct: ",
-                      T.pack . show $ Eval.correctTests testResult,
-                      ", Incorrect: ",
-                      T.pack . show $ Eval.failedTests testResult,
-                      ", Not submitted: ",
-                      T.pack . show $ Eval.notSubmittedTests testResult,
-                      ", Timeout: ",
-                      T.pack . show $ Eval.timeoutTests testResult
-                    ]
-            Left err -> embed $ do
-              T.putStr "\t"
-              case err of
-                Grade.RunnerError _ serr -> do
-                  T.putStrLn "Runner Error"
-                  LBS.putStrLn serr
-                  Aeson.encodeFile
-                    targetFile
-                    compileFailTestSuite
-                Grade.FailedToDecodeJsonResult msg ->
-                  T.putStrLn $ T.pack msg
-                Grade.NoSubmission -> do
-                  T.putStrLn "No Submission"
-                  Aeson.encodeFile
-                    targetFile
-                    noSubmissionTestSuite
-        return ()
+            )
+            >>= \case
+              Right testResult -> do
+                embed $ T.putStrLn "\tTest Report:"
+                embed $ T.putStrLn $
+                  "\t\tPoints: "
+                    <> T.pack (show $ Eval.testSuitePoints testResult)
+                    <> "/"
+                    <> T.pack (show $ Eval.maxScore testResult)
+                embed $ T.putStrLn $
+                  "\t\t"
+                    <> T.concat
+                      [ "Correct: ",
+                        T.pack . show $ Eval.correctTests testResult,
+                        ", Incorrect: ",
+                        T.pack . show $ Eval.failedTests testResult,
+                        ", Not submitted: ",
+                        T.pack . show $ Eval.notSubmittedTests testResult,
+                        ", Timeout: ",
+                        T.pack . show $ Eval.timeoutTests testResult
+                      ]
+              Left err -> embed $ do
+                T.putStr "\t"
+                case err of
+                  Grade.RunnerError _ serr -> do
+                    T.putStrLn "Runner Error"
+                    LBS.putStrLn serr
+                    Aeson.encodeFile
+                      targetFile
+                      compileFailTestSuite
+                  Grade.FailedToDecodeJsonResult msg ->
+                    T.putStrLn $ T.pack msg
+                  Grade.NoSubmission -> do
+                    T.putStrLn "No Submission"
+                    Aeson.encodeFile
+                      targetFile
+                      noSubmissionTestSuite
     Collect CollectCommand -> do
       embed $
         Collect.prepareSubmissionFolder
@@ -165,7 +162,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
             Course {..}
             testSuiteName
             student
-        return ()
+
     Stats StatCommand {..} -> do
       stats <-
         embed
@@ -178,13 +175,16 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
+
     RecalculatePoints ->
       forM_ students $ \student -> embed $ do
         ts <- Eval.readTestSuiteResult optionSubmissionId testSuiteName student
         let newTs = Eval.recalculateTestPoints ts
         Eval.writeTestSuiteResult optionSubmissionId testSuiteName student newTs
+
     SetTestSuite SetTestSuiteCommand {..} ->
       setTestSuite optionSubmissionId testSuiteName setTestSuiteSpecification
+
     DiffResults DiffResultsCommand {..} -> do
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
@@ -230,6 +230,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
 
 -------------------------------------------------------------------------------------
 
+setTestSuite :: Members [Error Text, Embed IO] r => Eval.SubmissionId -> Text -> FilePath -> Sem r ()
 setTestSuite optionSubmissionId testSuiteName testSuiteSpec = do
   testSuiteSpecification <- embed $ makeAbsolute testSuiteSpec
   checkTestSuiteExists testSuiteSpecification
@@ -245,7 +246,7 @@ getDefaultCourseFile = do
   findM doesFileExist possibleCourseJsonFiles
 
 getCourseFile ::
-  (Member (Error Text) r, Member (Embed IO) r) =>
+  Members [Error Text, Embed IO] r =>
   Maybe FilePath ->
   Sem r (Maybe FilePath)
 getCourseFile (Just c) = return $ Just c
