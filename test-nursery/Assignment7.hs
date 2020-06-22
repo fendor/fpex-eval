@@ -30,9 +30,11 @@ infixr 3 &&&
 infixr 2 |||
 
 newtype Subst = MkSubst [(Variable, Term)] deriving Show
+unSubst :: Subst -> [(Variable, Term)]
 unSubst(MkSubst s) = s
-
+idsubst :: Subst
 idsubst = MkSubst[]
+extend :: Variable -> Term -> Subst -> Subst
 extend x t (MkSubst s) = MkSubst ((x,t):s)
 
 apply :: Subst -> Term -> Term
@@ -118,7 +120,7 @@ data S
 data E
   = I Integer -- E for expression
   | F Float
-  | V Variable
+  | V String
   | Plu E E
   | Min E E
   | Mul E E
@@ -132,7 +134,7 @@ data PE
   | LEqual E E
   deriving (Eq, Show)
 
-type State = (Variable -> Either Int Float)
+type State = (String -> Either Int Float)
 
 interpreter :: P -> State -> State
 interpreter = undefined
