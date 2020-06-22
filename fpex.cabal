@@ -75,6 +75,7 @@ library
     , directory
     , extra
     , filepath
+    , fpex-test-spec
     , optparse-applicative
     , polysemy
     , polysemy-plugin

@@ -63,7 +63,7 @@ runSubmission sid suiteName student = do
   case Aeson.eitherDecode sout of
     Left msg -> throw $ FailedToDecodeJsonResult msg
     Right s -> do
-      embed $ LBS.writeFile (targetDir </> "report.json") (Aeson.encodePretty s)
+      embed $ writeTestSuiteResult sid suiteName student s
       pure s
 
 -- | Create a directory

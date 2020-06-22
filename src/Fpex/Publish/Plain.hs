@@ -17,7 +17,7 @@ renderTestGroup :: TestGroupResults  -> T.Text
 renderTestGroup TestGroupResults { .. }
     = let TestGroupProps { .. } = testGroupResultProps
       in  T.unlines
-              $  [label | not $ T.null label]
+              $  [T.pack label | not $ null label]
               <> [ "Points per test case: "
                    <> T.pack (show pointsPerTest)
                    <> "; penalty per failed test case: "
@@ -41,7 +41,7 @@ renderTestGroup TestGroupResults { .. }
 
 renderTestCase :: TestCaseReport -> T.Text
 renderTestCase TestCaseReport {..} =
-    "Test case: " <> testCaseReportLabel <> " ; test " <> renderTestCaseResult testCaseReportResult
+    "Test case: " <> T.pack testCaseReportLabel <> " ; test " <> renderTestCaseResult testCaseReportResult
 
 renderTestCaseResult :: TestCaseResult -> T.Text
 renderTestCaseResult TestCaseResultOk = "OK"
@@ -49,8 +49,8 @@ renderTestCaseResult TestCaseResultCompileFail = "FAILED TO COMPILE"
 renderTestCaseResult TestCaseResultNotSubmitted = "NOT SUBMITTED"
 renderTestCaseResult (TestCaseResultExpectedButGot (ExpectedButGot expectedOutput actualOutput))
     =  "FAILED\n"
-    <> "Expected:  " <> actualOutput <> ", but got: " <> expectedOutput
+    <> "Expected:  " <> T.pack actualOutput <> ", but got: " <> T.pack expectedOutput
 renderTestCaseResult TestCaseResultTimeout =
     "TIMED OUT"
 renderTestCaseResult (TestCaseResultException exception) =
-    "RUN-TIME EXCEPTION: " <> exception
+    "RUN-TIME EXCEPTION: " <> T.pack exception

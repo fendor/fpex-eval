@@ -123,6 +123,7 @@ data TestCaseResult
   | TestCaseResultException String
   | TestCaseResultTimeout
   | TestCaseResultNotSubmitted
+  | TestCaseResultCompileFail
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
 

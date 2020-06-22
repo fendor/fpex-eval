@@ -178,6 +178,11 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
+    RecalculatePoints ->
+      forM_ students $ \student -> embed $ do
+        ts <- Eval.readTestSuiteResult optionSubmissionId testSuiteName student
+        let newTs = Eval.recalculateTestPoints ts
+        Eval.writeTestSuiteResult optionSubmissionId testSuiteName student newTs
     SetTestSuite SetTestSuiteCommand {..} ->
       setTestSuite optionSubmissionId testSuiteName setTestSuiteSpecification
     DiffResults DiffResultsCommand {..} -> do

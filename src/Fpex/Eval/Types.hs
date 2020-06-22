@@ -1,64 +1,59 @@
-module Fpex.Eval.Types where
+module Fpex.Eval.Types
+  ( TestSuite (..),
+    TestSuiteResults (..),
+    TestCaseReport (..),
+    TestCaseResult (..),
+    TestGroup (..),
+    TestGroupResults (..),
+    TestGroupProps (..),
+    SubmissionId (..),
+    Points,
+    Timeout(..),
+    ExpectedButGot(..),
+    studentSourceFile,
+    assignmentCollectDir,
+    assignmentCollectStudentDir,
+    assignmentCollectStudentFile,
+    maxScore,
+    reportSourceJsonFile,
+    reportPublishFile,
+    recalculateTestPoints,
+    correctTests,
+    notSubmittedTests,
+    failedTests,
+    timeoutTests,
+    studentDir,
+    readTestSuiteResult,
+    writeTestSuiteResult,
+
+  )
+where
 
 import Data.Aeson
-  ( FromJSON,
-    ToJSON,
-  )
+import Data.Aeson.Encode.Pretty as Aeson
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Fpex.Course.Types
 import GHC.Generics (Generic)
 import System.FilePath
+import TestSpec as Spec
 
--- | Types mirroring the types from fpex-test-spec
--- For backwards and forward compatibility.
-type Points = Int
-
-data TestGroupProps = TestGroupProps
-  { label :: T.Text,
-    pointsPerTest :: !Points,
-    penalty :: !Points,
-    upperBound :: !Points
-  }
-  deriving (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
-
-data ExpectedButGot = ExpectedButGot T.Text T.Text
-  deriving (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
-
-data TestSuiteResults = TestSuiteResults
-  { testGroupResults :: [TestGroupResults],
-    testSuitePoints :: Points,
-    testSuiteData :: Maybe [T.Text]
-  }
-  deriving (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
-
-data TestCaseResult
-  = TestCaseResultOk
-  | TestCaseResultExpectedButGot ExpectedButGot
-  | TestCaseResultException T.Text
-  | TestCaseResultTimeout
-  | TestCaseResultNotSubmitted
-  | TestCaseResultCompileFail
-  deriving (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
-
-data TestCaseReport = TestCaseReport
-  { testCaseReportLabel :: T.Text,
-    testCaseReportResult :: TestCaseResult,
-    testCaseReportTimeNs :: Integer
-  }
-  deriving (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
-
-data TestGroupResults = TestGroupResults
-  { testGroupReports :: [TestCaseReport],
-    testGroupPoints :: Points,
-    testGroupResultProps :: TestGroupProps
-  }
-  deriving (Eq, Show, Generic)
-  deriving anyclass (FromJSON, ToJSON)
+recalculateTestPoints :: TestSuiteResults -> TestSuiteResults
+recalculateTestPoints t =
+  t
+    { testSuitePoints = sum (map testGroupPoints newGroupResults),
+      testGroupResults = newGroupResults
+    }
+  where
+    newGroupResults = map recalculateGroup (testGroupResults t)
+    recalculateGroup :: TestGroupResults -> TestGroupResults
+    recalculateGroup tgroup =
+      tgroup
+        { testGroupPoints =
+            getTestGroupPoints
+              (testGroupResultProps tgroup)
+              (map testCaseReportResult $ testGroupReports tgroup)
+        }
 
 maxScore :: TestSuiteResults -> Points
 maxScore TestSuiteResults {..} = sum (map (upperBound . testGroupResultProps) testGroupResults)
@@ -66,16 +61,32 @@ maxScore TestSuiteResults {..} = sum (map (upperBound . testGroupResultProps) te
 -- TODO: refactor these accessor functions
 
 correctTests :: TestSuiteResults -> Int
-correctTests TestSuiteResults {..} = length $ concatMap (filter ((== TestCaseResultOk) . testCaseReportResult) . testGroupReports) testGroupResults
+correctTests TestSuiteResults {..} =
+  length $
+    concatMap
+      (filter ((== TestCaseResultOk) . testCaseReportResult) . testGroupReports)
+      testGroupResults
 
 notSubmittedTests :: TestSuiteResults -> Int
-notSubmittedTests TestSuiteResults {..} = length $ concatMap (filter ((== TestCaseResultNotSubmitted) . testCaseReportResult) . testGroupReports) testGroupResults
+notSubmittedTests TestSuiteResults {..} =
+  length $
+    concatMap
+      (filter ((== TestCaseResultNotSubmitted) . testCaseReportResult) . testGroupReports)
+      testGroupResults
 
 failedTests :: TestSuiteResults -> Int
-failedTests TestSuiteResults {..} = length $ concatMap (filter (isFailedTestCaseResult . testCaseReportResult) . testGroupReports) testGroupResults
+failedTests TestSuiteResults {..} =
+  length $
+    concatMap
+      (filter (isFailedTestCaseResult . testCaseReportResult) . testGroupReports)
+      testGroupResults
 
 timeoutTests :: TestSuiteResults -> Int
-timeoutTests TestSuiteResults {..} = length $ concatMap (filter ((== TestCaseResultTimeout) . testCaseReportResult) . testGroupReports) testGroupResults
+timeoutTests TestSuiteResults {..} =
+  length $
+    concatMap
+      (filter ((== TestCaseResultTimeout) . testCaseReportResult) . testGroupReports)
+      testGroupResults
 
 isFailedTestCaseResult :: TestCaseResult -> Bool
 isFailedTestCaseResult (TestCaseResultExpectedButGot _) = True
@@ -105,6 +116,15 @@ assignmentCollectDir sid suiteName =
       <> "-"
       <> show (getSubmissionId sid)
   )
+
+readTestSuiteResult :: SubmissionId -> T.Text -> Student -> IO TestSuiteResults
+readTestSuiteResult sid suiteName student = do
+  Just suite <- decodeFileStrict (reportSourceJsonFile sid suiteName student)
+  pure suite
+
+writeTestSuiteResult :: SubmissionId -> T.Text -> Student -> TestSuiteResults -> IO ()
+writeTestSuiteResult sid suiteName student testSuite =
+  LBS.writeFile (reportSourceJsonFile sid suiteName student) (Aeson.encodePretty testSuite)
 
 assignmentCollectStudentDir ::
   SubmissionId -> T.Text -> Student -> FilePath

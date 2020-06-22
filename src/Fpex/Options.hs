@@ -25,6 +25,7 @@ data LifeCycle
   | Stats StatCommand
   | SetTestSuite SetTestSuiteCommand
   | DiffResults DiffResultsCommand
+  | RecalculatePoints
   deriving (Show)
 
 data TestSuiteOptions = TestSuiteOptions
@@ -162,6 +163,7 @@ options =
               <> command "stats" (info (withOptions statParser) fullDesc)
               <> command "set-tests" (info (withOptions setTestSuiteParser) fullDesc)
               <> command "diff" (info (withOptions diffResultParser) fullDesc)
+              <> command "recalculate" (info (withOptions $ pure RecalculatePoints) fullDesc)
           )
       courseOption = optional $ option str (long "course")
       studentOption = optional $ Student <$> option str (long "student")
