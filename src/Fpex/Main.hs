@@ -24,7 +24,7 @@ import Polysemy.Reader
 import System.Directory
 import System.Exit (exitFailure)
 import System.FilePath
-import System.IO (hPutStrLn, stderr)
+import System.IO (stderr)
 
 defaultMain :: IO ()
 defaultMain = (runM . runError $ defaultMain') >>= \case
@@ -35,31 +35,36 @@ defaultMain = (runM . runError $ defaultMain') >>= \case
 
 defaultMain' :: Members '[Error Text, Embed IO] r => Sem r ()
 defaultMain' = do
-  Options {..} <- embed $ execParser options
-  case optionCommand of
+  opts <- embed $ execParser options
+  case optionCommand opts of
     Setup setupCommand -> Setup.courseSetup setupCommand
-    Lc gradeTestSuiteOptions lifecycle ->
-      dispatchLifeCycle Options {..} gradeTestSuiteOptions lifecycle
+
+    FinalPoints FinalPointsCommand {..} -> do
+      (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
+      let students = maybe courseParticipants pure (optionStudent opts)
+
+      embed $ setCurrentDirectory courseDir
+
+
+    Lc gradeTestSuiteOptions lifecycle -> do
+
+      (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
+      let students = maybe courseParticipants pure (optionStudent opts)
+
+      embed $ setCurrentDirectory courseDir
+      dispatchLifeCycle Course {..} students gradeTestSuiteOptions lifecycle
 
 dispatchLifeCycle ::
   Members '[Error Text, Embed IO] r =>
-  Options ->
+  Course ->
+  [Student]  ->
   TestSuiteOptions ->
   LifeCycle ->
   Sem r ()
-dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
+dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   let testSuiteName = optionTestSuiteName
-  (Course {..}, courseDir) <- getCourseConfig optionCourseFile
-  canonicalGhciEnvironment <- embed $ canonicalizePath courseGhciEnvironment
-  let students = maybe courseParticipants pure optionStudent
-  embed $ setCurrentDirectory courseDir
   case lifecycle of
-    Grade GradeCommand {..} -> runReader
-      Course
-        { courseGhciEnvironment = canonicalGhciEnvironment,
-          ..
-        }
-      $ do
+    Grade GradeCommand {..} -> runReader course $ do
         whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
         (compileFailTestSuite, noSubmissionTestSuite) <-
           Grade.runGradeError
@@ -69,17 +74,19 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
             )
             >>= \case
               Right (a, b) -> return (a, b)
-              Left err -> do
+              Left err -> throw $
                 case err of
-                  Grade.RunnerError msg serr -> embed $ do
-                    T.putStrLn "Failed to execute neutral student"
-                    T.putStrLn msg
-                    LBS.putStrLn $ "Stderr: " <> serr
-                  Grade.FailedToDecodeJsonResult msg ->
-                    embed $ hPutStrLn stderr msg
+                  Grade.RunnerError msg serr -> T.unlines $
+                    ["Failed to execute neutral student"
+                    , msg
+                    , "Stderr: "
+                    ,  T.pack $ LBS.unpack serr
+                    ]
+                  Grade.FailedToDecodeJsonResult msg -> T.unlines
+                    ["Failed to decode the json result: ", T.pack msg]
                   Grade.NoSubmission ->
-                    error "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
-                throw $ T.pack $ show err
+                    "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
+
         forM_ students $ \student -> do
           embed $ T.putStrLn $ "run testsuite for student " <> studentId student
           let targetFile =
@@ -129,6 +136,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
                     Aeson.encodeFile
                       targetFile
                       noSubmissionTestSuite
+
     Collect CollectCommand -> do
       embed $
         Collect.prepareSubmissionFolder
@@ -143,7 +151,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         embed $
           Collect.collectSubmission
             optionSubmissionId
-            Course {..}
+            course
             testSuiteName
             student
       let (_errs, collected) = partitionEithers collectResults
@@ -154,12 +162,13 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
           <> "/"
           <> show (length students)
           <> " submissions."
+
     Publish PublishCommand -> do
       forM_ students $ \student -> do
         embed $
           Publish.publishTestResult
             optionSubmissionId
-            Course {..}
+            course
             testSuiteName
             student
 
@@ -168,7 +177,7 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         embed
           ( Stats.collectData
               optionSubmissionId
-              Course {..}
+              course
               testSuiteName
           )
       case statOutputKind of
@@ -181,9 +190,6 @@ dispatchLifeCycle Options {..} TestSuiteOptions {..} lifecycle = do
         ts <- Eval.readTestSuiteResult optionSubmissionId testSuiteName student
         let newTs = Eval.recalculateTestPoints ts
         Eval.writeTestSuiteResult optionSubmissionId testSuiteName student newTs
-
-    SetTestSuite SetTestSuiteCommand {..} ->
-      setTestSuite optionSubmissionId testSuiteName setTestSuiteSpecification
 
     DiffResults DiffResultsCommand {..} -> do
       let oldSid = diffResultSid
@@ -261,7 +267,9 @@ getCourseConfig courseOption = do
     Just c -> return c
     Nothing -> throw "course.json not found"
   embed (Aeson.decodeFileStrict courseFile) >>= \case
-    Just c -> return (c, takeDirectory courseFile)
+    Just c -> do
+      ghciFile <- embed $ canonicalizePath $ courseGhciEnvironment c
+      return (c { courseGhciEnvironment = ghciFile }, takeDirectory courseFile)
     Nothing -> throw "course.json invalid format"
 
 checkTestSuiteExists ::

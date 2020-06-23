@@ -2,3 +2,5 @@ packages:
     ./
     ./fpex-test-spec
     ./test-nursery
+
+documentation: true
