@@ -30,7 +30,7 @@ runGradeError = runError
 prettyTestReport :: Members [Embed IO, Reader SubmissionInfo, Reader ErrorReports] r => Either RunnerError TestSuiteResults -> Sem r ()
 prettyTestReport (Right testResult) = do
   embed $ T.putStrLn $
-    T.unlines
+    T.unlines $ map ("\t" <>)
       [ "Test Report:",
         "",
         T.concat
