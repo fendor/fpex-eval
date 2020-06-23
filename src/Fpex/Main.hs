@@ -16,6 +16,7 @@ import qualified Fpex.Grade as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
 import Fpex.Reporter
+import Fpex.Publish.Stats
 import qualified Fpex.Stats.Csv as Stats
 import qualified Fpex.Stats.Grade as Stats
 import Options.Applicative
@@ -43,6 +44,9 @@ defaultMain' = do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
       embed $ setCurrentDirectory courseDir
+      res <- embed $ allPoints Course {..} finalPointsSubmissionIds finalPointsSubmissions
+      embed $ print res
+
     Lc gradeTestSuiteOptions lifecycle -> do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
