@@ -17,6 +17,8 @@ module Fpex.Eval.Types
     newErrorReports,
     notSubmittedReport,
     compileFailReport,
+    isCompileFailReport,
+    isNotSubmittedReport,
     studentSourceFile,
     assignmentCollectDir,
     assignmentCollectStudentDir,
@@ -67,6 +69,12 @@ notSubmittedReport (ErrorReports (_, b)) = b
 
 compileFailReport :: ErrorReports -> CompileFailReport
 compileFailReport (ErrorReports (a, _)) = a
+
+isCompileFailReport :: TestSuiteResults -> Bool
+isCompileFailReport = all (( == TestCaseResultCompileFail) . testCaseReportResult ) . getTestsSatisfying (const True)
+
+isNotSubmittedReport :: TestSuiteResults -> Bool
+isNotSubmittedReport = all (( == TestCaseResultNotSubmitted) . testCaseReportResult ) . getTestsSatisfying (const True)
 
 recalculateTestPoints :: TestSuiteResults -> TestSuiteResults
 recalculateTestPoints t =

@@ -27,8 +27,13 @@ data RunnerError
 runGradeError :: Sem (Error RunnerError ': r) a -> Sem r (Either RunnerError a)
 runGradeError = runError
 
-prettyTestReport :: Members [Embed IO, Reader SubmissionInfo, Reader ErrorReports] r => Either RunnerError TestSuiteResults -> Sem r ()
-prettyTestReport (Right testResult) = do
+prettyTestReport :: Member (Embed IO) r => TestSuiteResults -> Sem r ()
+prettyTestReport testResult
+  | isCompileFailReport testResult =
+      embed $ T.putStrLn "Runner Error"
+  | isNotSubmittedReport testResult =
+      embed $ T.putStrLn "No Submission"
+  | otherwise = do
   embed $ T.putStrLn $
     T.unlines $ map ("\t" <>)
       [ "Test Report:",
@@ -45,25 +50,32 @@ prettyTestReport (Right testResult) = do
         "Not submitted: " <> (T.pack . show $ Eval.notSubmittedTests testResult),
         "Timeout:       " <> (T.pack . show $ Eval.timeoutTests testResult)
       ]
-prettyTestReport (Left err) = do
-  embed $ T.putStr "\t"
-  case err of
-    RunnerError _ serr -> do
-      embed $ T.putStrLn "Runner Error"
-      embed $ LBS.putStrLn serr
-      CompileFailReport compileFailTestSuite <- asks compileFailReport
-      writeTestSuiteResult compileFailTestSuite
-    FailedToDecodeJsonResult msg ->
-      embed $ T.putStrLn $ T.pack msg
-    NoSubmission -> do
-      embed $ T.putStrLn "No Submission"
-      NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
-      writeTestSuiteResult noSubmissionTestSuite
 
 runSubmission ::
-  Members '[Embed IO, Error RunnerError, Reader Course, Reader SubmissionInfo] r =>
+  Members '[Embed IO, Reader ErrorReports, Reader Course, Reader SubmissionInfo] r =>
   Sem r Eval.TestSuiteResults
 runSubmission = do
+  result <- runError $ runSubmission'
+  testSuiteResult <- case result of
+    Right s -> pure s
+    Left runnerError -> case runnerError of
+      (RunnerError _ serr) -> do
+        embed $ LBS.putStrLn serr
+        CompileFailReport compileFailTestSuite <- asks compileFailReport
+        pure compileFailTestSuite
+      FailedToDecodeJsonResult msg -> do
+          embed $ T.putStrLn $ T.pack msg
+          pure undefined
+      NoSubmission -> do
+          NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
+          pure noSubmissionTestSuite
+  writeTestSuiteResult testSuiteResult
+  pure testSuiteResult
+
+runSubmission' ::
+  Members '[Embed IO, Error RunnerError, Reader Course, Reader SubmissionInfo] r =>
+  Sem r Eval.TestSuiteResults
+runSubmission' = do
   sid <- asks subId
   suiteName <- asks subTestSuite
   student <- asks subStudent
@@ -93,9 +105,7 @@ runSubmission = do
     ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
   case Aeson.eitherDecode sout of
     Left msg -> throw $ FailedToDecodeJsonResult msg
-    Right s -> do
-      writeTestSuiteResult s
-      pure s
+    Right s -> pure s
 
 -- | Create a directory
 createEmptyStudent ::
@@ -111,7 +121,7 @@ createEmptyStudent sid suiteName = do
             subTestSuite = suiteName,
             subStudent = errorStudent
           }
-  testSuiteResults <- runReader sinfo runSubmission
+  testSuiteResults <- runReader sinfo runSubmission'
   let modifyTestCaseResult report =
         report {testCaseReportResult = Eval.TestCaseResultCompileFail}
       modifyTestGroup Eval.TestGroupResults {..} =

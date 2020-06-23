@@ -61,7 +61,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   case lifecycle of
     Grade GradeCommand {..} -> runReader course $ do
       whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
-      errorReports <-
+      errorReports <- withReport "run errorStudent" $ do
         Grade.runGradeError
           ( Grade.createEmptyStudent
               optionSubmissionId
@@ -92,7 +92,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                     Eval.subTestSuite = testSuiteName
                   }
           runReader errorReports $ runReader subInfo $ do
-            submissionResult <- Grade.runGradeError $ Grade.runSubmission
+            submissionResult <- Grade.runSubmission
             Grade.prettyTestReport submissionResult
     Collect CollectCommand -> do
       embed $
