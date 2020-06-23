@@ -142,19 +142,20 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
           embed (T.putStrLn $ Stats.statsGrade stats)
     RecalculatePoints ->
       forM_ students $ \student -> do
-        let sinfo =
-              Eval.SubmissionInfo
-                { Eval.subStudent = student,
-                  Eval.subId = optionSubmissionId,
-                  Eval.subTestSuite = testSuiteName
-                }
-        runReader sinfo $ do
-          mts <- Eval.readTestSuiteResult
-          case mts of
-            Nothing -> throw "Shit"
-            Just ts -> do
-              let newTs = Eval.recalculateTestPoints ts
-              Eval.writeTestSuiteResult newTs
+        withReport ("Calculate points for: " <> studentId student) $ do
+          let sinfo =
+                Eval.SubmissionInfo
+                  { Eval.subStudent = student,
+                    Eval.subId = optionSubmissionId,
+                    Eval.subTestSuite = testSuiteName
+                  }
+          runReader sinfo $ do
+            mts <- Eval.readTestSuiteResult
+            case mts of
+              Nothing -> throw "Inconsistent state, could not decode test-suite."
+              Just ts -> do
+                let newTs = Eval.recalculateTestPoints ts
+                Eval.writeTestSuiteResult newTs
     DiffResults DiffResultsCommand {..} -> do
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
