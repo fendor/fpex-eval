@@ -10,6 +10,13 @@ module Fpex.Eval.Types
     Points,
     Timeout(..),
     ExpectedButGot(..),
+    ErrorReports,
+    NotSubmittedReport(..),
+    CompileFailReport(..),
+    SubmissionInfo(..),
+    newErrorReports,
+    notSubmittedReport,
+    compileFailReport,
     studentSourceFile,
     assignmentCollectDir,
     assignmentCollectStudentDir,
@@ -29,6 +36,8 @@ module Fpex.Eval.Types
   )
 where
 
+import Polysemy
+import Polysemy.Reader
 import Data.Aeson
 import Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
@@ -37,6 +46,27 @@ import Fpex.Course.Types
 import GHC.Generics (Generic)
 import System.FilePath
 import TestSpec as Spec
+
+data SubmissionInfo = SubmissionInfo
+  { subStudent :: Student
+  , subId :: SubmissionId
+  , subTestSuite :: T.Text
+  }
+
+newtype NotSubmittedReport = NotSubmittedReport TestSuiteResults
+
+newtype CompileFailReport = CompileFailReport TestSuiteResults
+
+newtype ErrorReports = ErrorReports (CompileFailReport, NotSubmittedReport)
+
+newErrorReports :: CompileFailReport -> NotSubmittedReport -> ErrorReports
+newErrorReports a b = ErrorReports (a, b)
+
+notSubmittedReport :: ErrorReports -> NotSubmittedReport
+notSubmittedReport (ErrorReports (_, b)) = b
+
+compileFailReport :: ErrorReports -> CompileFailReport
+compileFailReport (ErrorReports (a, _)) = a
 
 recalculateTestPoints :: TestSuiteResults -> TestSuiteResults
 recalculateTestPoints t =
@@ -109,14 +139,20 @@ assignmentCollectDir sid suiteName =
       <> show (getSubmissionId sid)
   )
 
-readTestSuiteResult :: SubmissionId -> T.Text -> Student -> IO TestSuiteResults
-readTestSuiteResult sid suiteName student = do
-  Just suite <- decodeFileStrict (reportSourceJsonFile sid suiteName student)
-  pure suite
+readTestSuiteResult :: Members [Embed IO, Reader SubmissionInfo] r => Sem r (Maybe TestSuiteResults)
+readTestSuiteResult = do
+  sid <- asks subId
+  suiteName <- asks subTestSuite
+  student <- asks subStudent
+  embed $ decodeFileStrict' (reportSourceJsonFile sid suiteName student)
 
-writeTestSuiteResult :: SubmissionId -> T.Text -> Student -> TestSuiteResults -> IO ()
-writeTestSuiteResult sid suiteName student testSuiteResults =
-  LBS.writeFile (reportSourceJsonFile sid suiteName student) (Aeson.encodePretty testSuiteResults)
+
+writeTestSuiteResult ::  Members [Embed IO, Reader SubmissionInfo] r => TestSuiteResults -> Sem r ()
+writeTestSuiteResult  testSuiteResults = do
+  sid <- asks subId
+  suiteName <- asks subTestSuite
+  student <- asks subStudent
+  embed $ LBS.writeFile (reportSourceJsonFile sid suiteName student) (Aeson.encodePretty testSuiteResults)
 
 assignmentCollectStudentDir ::
   SubmissionId -> T.Text -> Student -> FilePath
