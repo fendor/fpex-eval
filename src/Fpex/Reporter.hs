@@ -13,7 +13,7 @@ withReport label action = do
   before <- embed $ getTime Monotonic
   !a <- action
   now <- embed $ getTime Monotonic
-  let diff :: Double = (/ 100) . fromInteger . round . (* 100) $ diffSeconds before now
+  let diff :: Double = (/ 100) . fromInteger . round . (* 100) $ diffSeconds now before
   embed $ T.putStrLn $ "### Execution time: " <> T.pack (show diff) <> "s"
   pure a
   where
