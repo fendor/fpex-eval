@@ -119,6 +119,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
           <> "/"
           <> show (length students)
           <> " submissions."
+
     Publish PublishCommand -> do
       forM_ students $ \student -> do
         embed $
