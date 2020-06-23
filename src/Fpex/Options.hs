@@ -16,14 +16,20 @@ data Options = Options
 data OptionCommand
   = Setup SetupCommand
   | Lc TestSuiteOptions LifeCycle
+  | FinalPoints FinalPointsCommand
   deriving (Show)
+
+data FinalPointsCommand = FinalPointsCommand
+  { finalPointsSubmissionIds :: [SubmissionId]
+  , finalPointsSubmissions :: [T.Text]
+  }
+  deriving (Show, Eq, Ord)
 
 data LifeCycle
   = Collect CollectCommand
   | Grade GradeCommand
   | Publish PublishCommand
   | Stats StatCommand
-  | SetTestSuite SetTestSuiteCommand
   | DiffResults DiffResultsCommand
   | RecalculatePoints
   deriving (Show)
@@ -76,13 +82,11 @@ data DiffResultsCommand = DiffResultsCommand
 options :: ParserInfo Options
 options =
   let testSuiteParser =
-        option
-          str
+        strOption
           ( long "test-suite" <> action "file" <> help "Test-suite specification (Haskell file)"
           )
       testSuiteNameParser =
-        option
-          str
+        strOption
           ( long "name" <> help "Name of the test-suite. If empty, takes name of the test-suite."
           )
       submissionIdParser =
@@ -144,7 +148,6 @@ options =
               )
       collectParser = Collect <$> pure CollectCommand
       publishParser = Publish <$> pure PublishCommand
-      setTestSuiteParser = SetTestSuite <$> (SetTestSuiteCommand <$> testSuiteParser)
       statParser =
         Stats
           <$> ( StatCommand
@@ -153,6 +156,7 @@ options =
                       )
               )
       diffResultParser = DiffResults <$> (DiffResultsCommand <$> oldSubmissionIdParser)
+      finalPointsParser = FinalPoints <$> (FinalPointsCommand <$> many submissionIdParser <*> many testSuiteNameParser)
       withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
       commandParser =
         hsubparser
@@ -161,9 +165,9 @@ options =
               <> command "grade" (info (withOptions gradeParser) fullDesc)
               <> command "publish" (info (withOptions publishParser) fullDesc)
               <> command "stats" (info (withOptions statParser) fullDesc)
-              <> command "set-tests" (info (withOptions setTestSuiteParser) fullDesc)
               <> command "diff" (info (withOptions diffResultParser) fullDesc)
               <> command "recalculate" (info (withOptions $ pure RecalculatePoints) fullDesc)
+              <> command "final-points" (info finalPointsParser fullDesc)
           )
       courseOption = optional $ option str (long "course")
       studentOption = optional $ Student <$> option str (long "student")
