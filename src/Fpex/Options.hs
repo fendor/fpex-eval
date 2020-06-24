@@ -22,6 +22,7 @@ data OptionCommand
 data FinalPointsCommand = FinalPointsCommand
   { finalPointsSubmissionIds :: [SubmissionId]
   , finalPointsSubmissions :: [T.Text]
+  , finalPointsOutput :: FilePath
   }
   deriving (Show, Eq, Ord)
 
@@ -156,7 +157,12 @@ options =
                       )
               )
       diffResultParser = DiffResults <$> (DiffResultsCommand <$> oldSubmissionIdParser)
-      finalPointsParser = FinalPoints <$> (FinalPointsCommand <$> many submissionIdParser <*> many testSuiteNameParser)
+      finalPointsParser = FinalPoints <$> (FinalPointsCommand <$> many submissionIdParser <*> many testSuiteNameParser <*> option
+                    str
+                    ( long "output"
+                        <> help
+                          "Output directory for point results"
+                    ))
       withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
       commandParser =
         hsubparser

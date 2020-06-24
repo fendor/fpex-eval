@@ -43,9 +43,13 @@ defaultMain' = do
     FinalPoints FinalPointsCommand {..} -> do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
+      outputDir <- embed $ canonicalizePath finalPointsOutput
       embed $ setCurrentDirectory courseDir
-      res <- embed $ allPoints Course {..} finalPointsSubmissionIds finalPointsSubmissions
-      embed $ print res
+      embed $ createDirectoryIfMissing True outputDir
+      forM_ students $ \student -> do
+        report <- embed $ studentPointReport finalPointsSubmissions finalPointsSubmissionIds student
+        let prettyReport = renderPoints finalPointsSubmissions finalPointsSubmissionIds Mean student report
+        embed $ T.writeFile (outputDir </> T.unpack (studentId student) <.> "md") prettyReport
 
     Lc gradeTestSuiteOptions lifecycle -> do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
@@ -136,8 +140,8 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
       stats <-
         embed
           ( Stats.collectData
+              students
               optionSubmissionId
-              course
               testSuiteName
           )
       case statOutputKind of

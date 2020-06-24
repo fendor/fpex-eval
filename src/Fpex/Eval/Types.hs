@@ -34,6 +34,8 @@ module Fpex.Eval.Types
     studentDir,
     readTestSuiteResult,
     writeTestSuiteResult,
+    readTestSuiteResult',
+    writeTestSuiteResult',
 
   )
 where
@@ -152,15 +154,23 @@ readTestSuiteResult = do
   sid <- asks subId
   suiteName <- asks subTestSuite
   student <- asks subStudent
-  embed $ decodeFileStrict' (reportSourceJsonFile sid suiteName student)
+  embed $ readTestSuiteResult' sid suiteName student
 
+readTestSuiteResult' :: SubmissionId -> T.Text -> Student -> IO (Maybe TestSuiteResults)
+readTestSuiteResult' sid suiteName student = decodeFileStrict' (reportSourceJsonFile sid suiteName student)
 
 writeTestSuiteResult ::  Members [Embed IO, Reader SubmissionInfo] r => TestSuiteResults -> Sem r ()
 writeTestSuiteResult  testSuiteResults = do
   sid <- asks subId
   suiteName <- asks subTestSuite
   student <- asks subStudent
-  embed $ LBS.writeFile (reportSourceJsonFile sid suiteName student) (Aeson.encodePretty testSuiteResults)
+  embed $ writeTestSuiteResult' sid suiteName student testSuiteResults
+
+writeTestSuiteResult' :: SubmissionId -> T.Text -> Student -> TestSuiteResults -> IO ()
+writeTestSuiteResult' sid suiteName student testSuiteResults =
+  LBS.writeFile
+    (reportSourceJsonFile sid suiteName student)
+    (Aeson.encodePretty testSuiteResults)
 
 assignmentCollectStudentDir ::
   SubmissionId -> T.Text -> Student -> FilePath
