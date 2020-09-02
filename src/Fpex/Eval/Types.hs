@@ -49,13 +49,84 @@ import qualified Data.Text as T
 import Fpex.Course.Types
 import GHC.Generics (Generic)
 import System.FilePath
-import TestSpec as Spec
+import Data.Typeable (Typeable)
+import qualified Control.Exception as E
 
 data SubmissionInfo = SubmissionInfo
   { subStudent :: Student
   , subId :: SubmissionId
   , subTestSuite :: T.Text
   }
+
+data ExpectedButGot = ExpectedButGot String String
+  deriving (Eq, Show, Typeable, Generic)
+  deriving anyclass (FromJSON, ToJSON, E.Exception)
+
+data NotSubmitted = NotSubmitted
+  deriving (Eq, Show, Typeable, Generic)
+  deriving anyclass (FromJSON, ToJSON, E.Exception)
+
+type TestCase = (String, IO ())
+
+data TestGroupProps = TestGroupProps
+  { label :: String,
+    pointsPerTest :: !Points,
+    penalty :: !Points,
+    upperBound :: !Points
+  }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
+data TestGroup = TestGroup
+  { testGroupProps :: TestGroupProps,
+    testCases :: [TestCase]
+  }
+
+newtype TestSuite = TestSuite
+  {testSuiteGroups :: [TestGroup]}
+
+data TestCaseResult
+  = TestCaseResultOk
+  | TestCaseResultExpectedButGot ExpectedButGot
+  | TestCaseResultException String
+  | TestCaseResultTimeout
+  | TestCaseResultNotSubmitted
+  | TestCaseResultCompileFail
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
+data TestCaseReport = TestCaseReport
+  { testCaseReportLabel :: String,
+    testCaseReportResult :: TestCaseResult,
+    testCaseReportTimeNs :: Integer
+  }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
+data TestGroupResults = TestGroupResults
+  { testGroupReports :: [TestCaseReport],
+    testGroupPoints :: Points,
+    testGroupResultProps :: TestGroupProps
+  }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
+data TestSuiteResults = TestSuiteResults
+  { testGroupResults :: [TestGroupResults],
+    testSuitePoints :: Points
+  }
+  deriving (Eq, Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
+type Points = Int
+
+getTestCasePoints :: TestGroupProps -> TestCaseResult -> Points
+getTestCasePoints TestGroupProps {..} TestCaseResultOk = pointsPerTest
+getTestCasePoints TestGroupProps {..} _ = - penalty
+
+getTestGroupPoints :: TestGroupProps -> [TestCaseResult] -> Points
+getTestGroupPoints props@TestGroupProps {..} =
+  max 0 . min upperBound . sum . map (getTestCasePoints props)
 
 newtype NotSubmittedReport = NotSubmittedReport TestSuiteResults
 

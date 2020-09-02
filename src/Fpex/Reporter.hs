@@ -22,5 +22,3 @@ withReport label action = do
       = (* 1e-9)
       $ fromIntegral
       $ toNanoSecs end - toNanoSecs  start
-
-

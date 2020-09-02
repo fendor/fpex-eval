@@ -1,6 +1,5 @@
 packages:
     ./
-    ./fpex-test-spec
-    ./test-nursery
 
-documentation: true
+packages *
+  ghc-options: -haddock
