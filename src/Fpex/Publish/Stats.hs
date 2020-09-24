@@ -43,6 +43,7 @@ renderPoints suitesOrder sids calcSubmissionPoints student studentData =
   where
     pointSummary :: (Points, Points)
     pointSummary = (sum $ map fst finalPoints, sum $ map snd finalPoints)
+
     finalPoints :: [(Points, Points)]
     finalPoints =
       map
@@ -58,8 +59,10 @@ renderPoints suitesOrder sids calcSubmissionPoints student studentData =
                 )
         )
         suitesOrder
+
     mdRow :: SubmissionId -> T.Text
     mdRow sid = renderTableRow $ zip cellLengths (dataRow sid)
+
     dataRow :: SubmissionId -> [T.Text]
     dataRow sid =
       [T.pack (show $ getSubmissionId sid)]
@@ -69,22 +72,29 @@ renderPoints suitesOrder sids calcSubmissionPoints student studentData =
                 (studentData Map.! (suite, sid))
           )
           suitesOrder
+
     summaryRow :: [T.Text]
     summaryRow =
       ["Final"]
         <> map showPoints finalPoints
+
     showPoints :: (Points, Points) -> T.Text
     showPoints (s, _) = T.pack (show s) -- <> " / " <> T.pack (show s)
     header :: [T.Text]
     header = "Id \\ TestSuite" : suitesOrder
+
     headerRow :: [(Int, T.Text)]
     headerRow = zip cellLengths header
+
     cellLengths :: [Int]
     cellLengths = map T.length header
+
     separator :: T.Text
     separator = renderTableRow $ map (\l -> (l, T.replicate l "-")) cellLengths
+
     cellSeparator :: T.Text
     cellSeparator = " | "
+
     renderTableRow :: [(Int, T.Text)] -> T.Text
     renderTableRow xs =
       let row = T.intercalate cellSeparator $ map cellContents xs

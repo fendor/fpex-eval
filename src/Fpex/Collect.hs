@@ -48,10 +48,10 @@ collectSubmission sid course suiteName student = do
   fileExists <- doesFileExist sourceFile
   if fileExists
     then do
-      whenM (BS.isInfixOf "unsafePerformIO" <$> BS.readFile sourceFile)
-        $ hPutStrLn stderr
-        $ "Warning: `unsafePerformIO` in submission "
-          <> sourceFile
+      whenM (BS.isInfixOf "unsafePerformIO" <$> BS.readFile sourceFile) $
+        hPutStrLn stderr $
+          "Warning: `unsafePerformIO` in submission "
+            <> sourceFile
       putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
       copyFile sourceFile targetFile
       return (Right targetFile)

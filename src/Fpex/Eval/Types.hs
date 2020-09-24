@@ -1,61 +1,26 @@
-module Fpex.Eval.Types
-  ( TestSuite (..),
-    TestSuiteResults (..),
-    TestCaseReport (..),
-    TestCaseResult (..),
-    TestGroup (..),
-    TestGroupResults (..),
-    TestGroupProps (..),
-    SubmissionId (..),
-    Points,
-    Timeout(..),
-    ExpectedButGot(..),
-    ErrorReports,
-    NotSubmittedReport(..),
-    CompileFailReport(..),
-    SubmissionInfo(..),
-    newErrorReports,
-    notSubmittedReport,
-    compileFailReport,
-    isCompileFailReport,
-    isNotSubmittedReport,
-    studentSourceFile,
-    assignmentCollectDir,
-    assignmentCollectStudentDir,
-    assignmentCollectStudentFile,
-    maxScore,
-    reportSourceJsonFile,
-    reportPublishFile,
-    recalculateTestPoints,
-    correctTests,
-    notSubmittedTests,
-    failedTests,
-    timeoutTests,
-    studentDir,
-    readTestSuiteResult,
-    writeTestSuiteResult,
-    readTestSuiteResult',
-    writeTestSuiteResult',
+module Fpex.Eval.Types where
 
-  )
-where
-
-import Polysemy
-import Polysemy.Reader
+import qualified Control.Exception as E
 import Data.Aeson
+import qualified Data.Aeson.Combinators.Decode as ACD
 import Data.Aeson.Encode.Pretty as Aeson
+import Data.Aeson.Internal as AesonInternal
 import qualified Data.ByteString.Lazy as LBS
+import Data.Char (isSpace)
 import qualified Data.Text as T
+import Data.Typeable (Typeable)
 import Fpex.Course.Types
 import GHC.Generics (Generic)
+import Options.Applicative
+import Polysemy
+import Polysemy.Reader
 import System.FilePath
-import Data.Typeable (Typeable)
-import qualified Control.Exception as E
+import Text.ParserCombinators.ReadP
 
 data SubmissionInfo = SubmissionInfo
-  { subStudent :: Student
-  , subId :: SubmissionId
-  , subTestSuite :: T.Text
+  { subStudent :: Student,
+    subId :: SubmissionId,
+    subTestSuite :: T.Text
   }
 
 data ExpectedButGot = ExpectedButGot String String
@@ -66,24 +31,14 @@ data NotSubmitted = NotSubmitted
   deriving (Eq, Show, Typeable, Generic)
   deriving anyclass (FromJSON, ToJSON, E.Exception)
 
-type TestCase = (String, IO ())
-
 data TestGroupProps = TestGroupProps
-  { label :: String,
+  { label :: T.Text,
     pointsPerTest :: !Points,
     penalty :: !Points,
     upperBound :: !Points
   }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
-
-data TestGroup = TestGroup
-  { testGroupProps :: TestGroupProps,
-    testCases :: [TestCase]
-  }
-
-newtype TestSuite = TestSuite
-  {testSuiteGroups :: [TestGroup]}
 
 data TestCaseResult
   = TestCaseResultOk
@@ -96,7 +51,7 @@ data TestCaseResult
   deriving anyclass (FromJSON, ToJSON)
 
 data TestCaseReport = TestCaseReport
-  { testCaseReportLabel :: String,
+  { testCaseReportLabel :: T.Text,
     testCaseReportResult :: TestCaseResult,
     testCaseReportTimeNs :: Integer
   }
@@ -113,7 +68,8 @@ data TestGroupResults = TestGroupResults
 
 data TestSuiteResults = TestSuiteResults
   { testGroupResults :: [TestGroupResults],
-    testSuitePoints :: Points
+    testSuitePoints :: Points,
+    testSuiteTimeNs :: Integer
   }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
@@ -144,10 +100,10 @@ compileFailReport :: ErrorReports -> CompileFailReport
 compileFailReport (ErrorReports (a, _)) = a
 
 isCompileFailReport :: TestSuiteResults -> Bool
-isCompileFailReport = all (( == TestCaseResultCompileFail) . testCaseReportResult ) . getTestsSatisfying (const True)
+isCompileFailReport = all ((== TestCaseResultCompileFail) . testCaseReportResult) . getTestsSatisfying (const True)
 
 isNotSubmittedReport :: TestSuiteResults -> Bool
-isNotSubmittedReport = all (( == TestCaseResultNotSubmitted) . testCaseReportResult ) . getTestsSatisfying (const True)
+isNotSubmittedReport = all ((== TestCaseResultNotSubmitted) . testCaseReportResult) . getTestsSatisfying (const True)
 
 recalculateTestPoints :: TestSuiteResults -> TestSuiteResults
 recalculateTestPoints t =
@@ -187,9 +143,9 @@ timeoutTests testSuiteResults =
 
 getTestsSatisfying :: (TestCaseResult -> Bool) -> TestSuiteResults -> [TestCaseReport]
 getTestsSatisfying p TestSuiteResults {..} =
-    concatMap
-      (filter (p . testCaseReportResult) . testGroupReports)
-      testGroupResults
+  concatMap
+    (filter (p . testCaseReportResult) . testGroupReports)
+    testGroupResults
 
 isFailedTestCaseResult :: TestCaseResult -> Bool
 isFailedTestCaseResult (TestCaseResultExpectedButGot _) = True
@@ -203,6 +159,143 @@ newtype Timeout = Timeout {getTimeout :: Float}
 newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
   deriving (Show, Generic)
   deriving newtype (Eq, Num, Ord)
+
+-- ----------------------------------------------------------------------------
+-- Custom decoder to read results from 'tasty-grading-system'
+-- ----------------------------------------------------------------------------
+
+decodeFileTastyGradingReport :: FilePath -> IO (Either String TestSuiteResults)
+decodeFileTastyGradingReport = ACD.eitherDecodeFileStrict decodeTastyGradingReport'
+
+-- | Parses json output from tasty-grading-system. Expected format:
+--
+-- @
+--   {
+--       "results": [
+--           {
+--               "groups": [
+--                   {
+--                       "deductions": 0,
+--                       "groups": [
+--                           {
+--                               "time": 31370,
+--                               "name": "List comparison (different length)"
+--                           },
+--                           {
+--                               "time": 8490,
+--                               "name": "List comparison (same length)",
+--                               "failure": "test/MyLibTest.hs:26:\nexpected: LT\n but got: GT"
+--                           },
+--                           {
+--                               "time": 0,
+--                               "name": "throw error",
+--                               "failure": "Test\nCallStack (from HasCallStack):\n  error, called at test/MyLibTest.hs:29:9 in main:Main"
+--                           },
+--                           {
+--                               "time": 5049731309,
+--                               "name": "timeout",
+--                               "failure": "Timeout"
+--                           },
+--                           {
+--                               "time": 0,
+--                               "name": "exception",
+--                               "failure": "arithmetic overflow"
+--                           }
+--                       ],
+--                       "points": 5,
+--                       "tests": 5,
+--                       "maximum": 9,
+--                       "name": "Unit tests"
+--                   }
+--               ],
+--               "tests": 5,
+--               "name": "spec"
+--           }
+--       ],
+--       "tests": 5,
+--       "time": 5049829328,
+--       "failures": 1,
+--       "errors": 3
+--   }
+-- @
+decodeTastyGradingReport' :: ACD.Decoder TestSuiteResults
+decodeTastyGradingReport' = do
+  groups <-
+    ACD.path
+      [ AesonInternal.Key "results",
+        AesonInternal.Index 0,
+        AesonInternal.Key "groups"
+      ]
+      (ACD.list decodeGroup)
+  time <- ACD.key "time" ACD.integer
+  pure
+    TestSuiteResults
+      { testGroupResults = groups,
+        testSuiteTimeNs = time,
+        testSuitePoints = sum $ map testGroupPoints groups
+      }
+  where
+    decodeTestResult =
+      fmap parseError (ACD.key "failure" ACD.text)
+        <|> pure TestCaseResultOk
+
+    decodeSingleTest =
+      TestCaseReport
+        <$> ACD.key "name" ACD.text
+        <*> decodeTestResult
+        <*> ACD.key "time" ACD.integer
+
+    decodeGroup = do
+      tests <- ACD.key "groups" (ACD.list decodeSingleTest)
+      points <- ACD.key "points" ACD.int
+      maximum' <- ACD.key "maximum" ACD.int
+      deductions <- ACD.key "deductions" ACD.int
+      groupName <- ACD.key "name" ACD.text
+      let props = TestGroupProps groupName points deductions maximum'
+      pure
+        TestGroupResults
+          { testGroupReports = tests,
+            testGroupResultProps = props,
+            testGroupPoints = getTestGroupPoints props (map testCaseReportResult tests)
+          }
+
+    parseError :: T.Text -> TestCaseResult
+    parseError t =
+      fst . head . filter (null . snd) $ readP_to_S testCaseResultParser (T.unpack t)
+
+testCaseResultParser :: ReadP TestCaseResult
+testCaseResultParser =
+  timeoutParser
+    <++ expectedButGotParser
+    <++ someExceptionParser
+
+timeoutParser :: ReadP TestCaseResult
+timeoutParser = do
+  _ <- string "Timeout"
+  eof
+  pure TestCaseResultTimeout
+
+expectedButGotParser :: ReadP TestCaseResult
+expectedButGotParser = do
+  _ <- munch (not . isSpace)
+  skipSpaces
+  _ <- string "expected:"
+  skipSpaces
+  expected <- munch1 (not . isSpace)
+  skipSpaces
+  _ <- string "but got:"
+  skipSpaces
+  butGot <- munch1 (not . isSpace)
+  eof
+  pure $ TestCaseResultExpectedButGot $ ExpectedButGot expected butGot
+
+someExceptionParser :: ReadP TestCaseResult
+someExceptionParser =
+  TestCaseResultException <$> munch (const True)
+
+-- ----------------------------------------------------------------------------
+-- Utility functions based for reading and writing test suites
+-- ----------------------------------------------------------------------------
 
 studentDir :: Course -> Student -> FilePath
 studentDir Course {courseRootDir} Student {studentId} =
@@ -230,8 +323,8 @@ readTestSuiteResult = do
 readTestSuiteResult' :: SubmissionId -> T.Text -> Student -> IO (Maybe TestSuiteResults)
 readTestSuiteResult' sid suiteName student = decodeFileStrict' (reportSourceJsonFile sid suiteName student)
 
-writeTestSuiteResult ::  Members [Embed IO, Reader SubmissionInfo] r => TestSuiteResults -> Sem r ()
-writeTestSuiteResult  testSuiteResults = do
+writeTestSuiteResult :: Members [Embed IO, Reader SubmissionInfo] r => TestSuiteResults -> Sem r ()
+writeTestSuiteResult testSuiteResults = do
   sid <- asks subId
   suiteName <- asks subTestSuite
   student <- asks subStudent

@@ -17,7 +17,7 @@ renderTestGroup :: TestGroupResults  -> T.Text
 renderTestGroup TestGroupResults { .. }
     = let TestGroupProps { .. } = testGroupResultProps
       in  T.unlines
-              $  [T.pack label | not $ null label]
+              $  [label | not $ T.null label]
               <> [ "Points per test case: "
                    <> T.pack (show pointsPerTest)
                    <> "; penalty per failed test case: "
@@ -41,7 +41,7 @@ renderTestGroup TestGroupResults { .. }
 
 renderTestCase :: TestCaseReport -> T.Text
 renderTestCase TestCaseReport {..} =
-    "Test case: " <> T.pack testCaseReportLabel <> " ; test " <> renderTestCaseResult testCaseReportResult
+    "Test case: " <> testCaseReportLabel <> " ; test " <> renderTestCaseResult testCaseReportResult
 
 renderTestCaseResult :: TestCaseResult -> T.Text
 renderTestCaseResult TestCaseResultOk = "OK"

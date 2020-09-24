@@ -1,7 +1,6 @@
 module Fpex.Grade where
 
 import Control.Monad.Extra (unlessM)
-import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Function
 import qualified Data.Text as T
@@ -30,26 +29,29 @@ runGradeError = runError
 prettyTestReport :: Member (Embed IO) r => TestSuiteResults -> Sem r ()
 prettyTestReport testResult
   | isCompileFailReport testResult =
-      embed $ T.putStrLn "Runner Error"
+    embed $ T.putStrLn "Runner Error"
   | isNotSubmittedReport testResult =
-      embed $ T.putStrLn "No Submission"
+    embed $ T.putStrLn "No Submission"
   | otherwise = do
-  embed $ T.putStrLn $
-    T.unlines $ map ("\t" <>)
-      [ "Test Report:",
-        "",
-        T.concat
-          [ "Points: ",
-            T.pack (show $ Eval.testSuitePoints testResult),
-            "/",
-            T.pack (show $ Eval.maxScore testResult)
-          ],
-        "",
-        "Correct:       " <> (T.pack . show $ Eval.correctTests testResult),
-        "Incorrect:     " <> (T.pack . show $ Eval.failedTests testResult),
-        "Not submitted: " <> (T.pack . show $ Eval.notSubmittedTests testResult),
-        "Timeout:       " <> (T.pack . show $ Eval.timeoutTests testResult)
-      ]
+    embed $
+      T.putStrLn $
+        T.unlines $
+          map
+            ("\t" <>)
+            [ "Test Report:",
+              "",
+              T.concat
+                [ "Points: ",
+                  T.pack (show $ Eval.testSuitePoints testResult),
+                  "/",
+                  T.pack (show $ Eval.maxScore testResult)
+                ],
+              "",
+              "Correct:       " <> (T.pack . show $ Eval.correctTests testResult),
+              "Incorrect:     " <> (T.pack . show $ Eval.failedTests testResult),
+              "Not submitted: " <> (T.pack . show $ Eval.notSubmittedTests testResult),
+              "Timeout:       " <> (T.pack . show $ Eval.timeoutTests testResult)
+            ]
 
 runSubmission ::
   Members '[Embed IO, Reader ErrorReports, Reader Course, Reader SubmissionInfo] r =>
@@ -64,11 +66,11 @@ runSubmission = do
         CompileFailReport compileFailTestSuite <- asks compileFailReport
         pure compileFailTestSuite
       FailedToDecodeJsonResult msg -> do
-          embed $ T.putStrLn $ T.pack msg
-          pure undefined
+        embed $ T.putStrLn $ T.pack msg
+        pure undefined
       NoSubmission -> do
-          NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
-          pure noSubmissionTestSuite
+        NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
+        pure noSubmissionTestSuite
   writeTestSuiteResult testSuiteResult
   pure testSuiteResult
 
@@ -92,18 +94,23 @@ runSubmission' = do
           "-i.",
           "-i..",
           "-e",
-          "Main.main"
+          -- TODO: timeout is missing
+          ":main --grading-json=testsuite-result.json"
         ]
           ++ ghciOptions
       procConfig =
         Proc.proc "ghci" procArgs
           & Proc.setWorkingDir targetDir
   (procRes, sout, serr) <- Proc.readProcess procConfig
-  embed $ LBS.writeFile (targetDir </> "stderr.log") serr
+  -- Write logs to files
+  embed $ do
+    LBS.writeFile (targetDir </> "stderr.log") serr
+    LBS.writeFile (targetDir </> "stdout.log") sout
   case procRes of
     ExitSuccess -> return ()
     ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
-  case Aeson.eitherDecode sout of
+  decodeResult <- embed $ decodeFileTastyGradingReport "testsuite-result.json"
+  case decodeResult of
     Left msg -> throw $ FailedToDecodeJsonResult msg
     Right s -> pure s
 
