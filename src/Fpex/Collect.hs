@@ -27,13 +27,6 @@ prepareSubmissionFolder :: SubmissionId -> T.Text -> IO ()
 prepareSubmissionFolder sid suiteName = do
   let targetDir = assignmentCollectDir sid suiteName
   createDirectoryIfMissing True targetDir
-
-  -- copy test-spec file
-  let testSpecTargetDir = targetDir </> "TestSpec.hs"
-  testSpecFile <- makeAbsolute "TestSpec.hs"
-  putStrLn $ "copy " <> testSpecFile <> " to " <> testSpecTargetDir
-  copyFile testSpecFile testSpecTargetDir
-
   return ()
 
 collectSubmission :: SubmissionId -> Course -> T.Text -> Student -> IO (Either FailureReason FilePath)
