@@ -1,7 +1,7 @@
 module Fpex.Stats.Histogram where
 
 
-import           Fpex.Eval.Types
+import           Fpex.Grade.Types
 import qualified Data.Aeson                    as Aeson
 import           Data.Array
 import qualified Data.Text as T

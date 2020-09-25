@@ -1,7 +1,7 @@
 module Fpex.Stats.Csv where
 
 
-import           Fpex.Eval.Types
+import           Fpex.Grade.Types
 import qualified Data.Text                     as T
 import qualified Data.Aeson                    as Aeson
 import           Data.Text                      ( Text )

@@ -4,7 +4,7 @@ import Control.Monad (forM)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Eval.Types
+import Fpex.Grade.Types
 
 data PointsCalc
   = Mean
@@ -19,7 +19,7 @@ studentPointReport :: [T.Text] -> [SubmissionId] -> Student -> IO (Map.Map (T.Te
 studentPointReport suites sids student = do
   let tuples = (,) <$> suites <*> sids
   r <- forM tuples $ \(suite, sid) -> do
-    Just r <- readTestSuiteResult' sid suite student
+    Just r <- readTestSuiteResultIO sid suite student
     pure $ ((suite, sid), (testSuitePoints r, maxScore r))
   pure $ Map.fromList r
 

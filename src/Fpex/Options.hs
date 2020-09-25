@@ -2,7 +2,7 @@ module Fpex.Options where
 
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Eval.Types
+import Fpex.Grade.Types
 import Options.Applicative
 
 data Options = Options

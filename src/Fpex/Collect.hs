@@ -5,10 +5,11 @@ import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Fpex.Course.Types
-import Fpex.Eval.Types
+import Fpex.Grade.Types
 import System.Directory
 import System.FilePath
 import System.IO
+import Fpex.Grade.ErrorStudent (errorStudent)
 
 data FailureReason = NoSubmission
   deriving (Show, Eq, Read)
@@ -56,7 +57,6 @@ createEmptyStudent ::
   T.Text ->
   IO (Either FailureReason FilePath)
 createEmptyStudent sid suiteName = do
-  let errorStudent = Student "errorStudent"
   let targetDir =
         assignmentCollectStudentDir sid suiteName errorStudent
   let targetFile =

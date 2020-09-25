@@ -5,7 +5,8 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Function
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Eval.Types as Eval
+import Fpex.Grade.Tasty as Eval
+import Fpex.Grade.Types as Eval
 import Polysemy
 import Polysemy.Error
 import Polysemy.Internal
@@ -18,13 +19,30 @@ import System.FilePath
 import qualified System.Process.Typed as Proc
 
 data RunnerError
-  = RunnerError T.Text LBS.ByteString
+  = RunnerInternalError T.Text LBS.ByteString
   | FailedToDecodeJsonResult String
   | NoSubmission
   deriving (Show, Eq, Read, Ord)
 
 runGradeError :: Sem (Error RunnerError ': r) a -> Sem r (Either RunnerError a)
 runGradeError = runError
+
+prettyRunnerError :: SubmissionInfo -> RunnerError -> Sem r T.Text
+prettyRunnerError _sinfo = \case
+  RunnerInternalError msg serr ->
+    pure $
+      T.unlines $
+        [ "Failed to execute neutral student",
+          msg,
+          "Stderr: ",
+          T.pack $ LBS.unpack serr
+        ]
+  FailedToDecodeJsonResult msg ->
+    pure $
+      T.unlines
+        ["Failed to decode the json result: ", T.pack msg]
+  NoSubmission ->
+    pure "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
 
 data RunTestSuite m a where
   -- | Generates a hash from a password
@@ -84,54 +102,46 @@ runTastyTestSuite = interpret $ \case
 
 runSubmission ::
   Members
-    [ Embed IO,
-      Error T.Text,
+    [ Error T.Text,
+      Error RunnerError,
       Reader ErrorReports,
       Reader SubmissionInfo,
       Reader Course,
-      Reader RunnerInfo
+      Reader RunnerInfo,
+      RunTestSuite,
+      TestSuiteStorage
     ]
     r =>
   Sem r Eval.TestSuiteResults
 runSubmission = do
   submissionInfo <- ask @SubmissionInfo
-  result <- runError $ runTastyTestSuite $ runTestSuite submissionInfo
-  testSuiteResult <- case result of
-    Right s -> pure s
-    Left runnerError -> case runnerError of
-      (RunnerError _ serr) -> do
-        embed $ LBS.putStrLn serr
-        CompileFailReport compileFailTestSuite <- asks compileFailReport
-        pure compileFailTestSuite
-      NoSubmission -> do
-        NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
-        pure noSubmissionTestSuite
-      FailedToDecodeJsonResult msg ->
-        throw $ T.pack msg
-  writeTestSuiteResult testSuiteResult
+  testSuiteResult <-
+    runTestSuite submissionInfo
+      `catch` \case
+        (RunnerInternalError _ _serr) -> do
+          -- embed $ LBS.putStrLn serr
+          CompileFailReport compileFailTestSuite <- asks compileFailReport
+          pure compileFailTestSuite
+        NoSubmission -> do
+          NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
+          pure noSubmissionTestSuite
+        FailedToDecodeJsonResult msg ->
+          throw $ T.pack msg
+  writeTestSuiteResult submissionInfo testSuiteResult
   pure testSuiteResult
 
 -- | Create a directory
 createEmptyStudent ::
   Members
-    [ Embed IO,
-      Error RunnerError,
+    [ Error RunnerError,
       Reader RunnerInfo,
       Reader Course,
       RunTestSuite
     ]
     r =>
-  SubmissionId ->
-  T.Text ->
+  SubmissionInfo ->
   Sem r Eval.ErrorReports
-createEmptyStudent sid suiteName = do
-  let errorStudent = Student "errorStudent"
-  let sinfo =
-        SubmissionInfo
-          { subId = sid,
-            subTestSuite = suiteName,
-            subStudent = errorStudent
-          }
+createEmptyStudent sinfo = do
   testSuiteResults <- runTestSuite sinfo
   let modifyTestCaseResult report =
         report {testCaseReportResult = Eval.TestCaseResultCompileFail}

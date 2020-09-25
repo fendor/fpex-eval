@@ -1,6 +1,6 @@
 module Fpex.Publish.Plain where
 
-import           Fpex.Eval.Types
+import           Fpex.Grade.Types
 import qualified Data.Text as T
 import           Data.List                      ( partition )
 

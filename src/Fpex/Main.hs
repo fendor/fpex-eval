@@ -3,7 +3,6 @@ module Fpex.Main where
 import Colourista
 import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Either
 import Data.Maybe
 import Data.Text (Text)
@@ -12,8 +11,9 @@ import qualified Data.Text.IO as T
 import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
 import Fpex.Course.Types
-import qualified Fpex.Eval.Types as Eval
 import qualified Fpex.Grade as Grade
+import qualified Fpex.Grade.ErrorStudent as ErrorStudent
+import qualified Fpex.Grade.Types as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
 import Fpex.Publish.Stats
@@ -68,44 +68,36 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   let testSuiteName = optionTestSuiteName
   case lifecycle of
     Grade GradeCommand {..} ->
-      runReader (defaultRunnerInfo testTimeout) $
-        runReader course $ do
-          whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
-          errorReports <- withReport "run errorStudent" $ do
-            Grade.runGradeError
-              ( Grade.runTastyTestSuite $
-                  Grade.createEmptyStudent
-                    optionSubmissionId
-                    testSuiteName
-              )
-              >>= \case
-                Right errorReport -> return errorReport
-                Left err -> throw $
-                  case err of
-                    Grade.RunnerError msg serr ->
-                      T.unlines $
-                        [ "Failed to execute neutral student",
-                          msg,
-                          "Stderr: ",
-                          T.pack $ LBS.unpack serr
-                        ]
-                    Grade.FailedToDecodeJsonResult msg ->
-                      T.unlines
-                        ["Failed to decode the json result: ", T.pack msg]
-                    Grade.NoSubmission ->
-                      "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
-          forM_ students $ \student -> do
-            withReport ("run testsuite for student " <> studentId student) $ do
-              let subInfo =
-                    Eval.SubmissionInfo
-                      { Eval.subStudent = student,
-                        Eval.subId = optionSubmissionId,
-                        Eval.subTestSuite = testSuiteName
-                      }
-              runReader subInfo $
-                runReader errorReports $ do
-                  submissionResult <- Grade.runSubmission
-                  prettyTestReport submissionResult
+      Grade.runTestSuiteStorageFileSystem $
+        runReader (defaultRunnerInfo testTimeout) $
+          runReader course $ do
+            -- Run Error Student, prepare failed submissions, etc...
+            let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId testSuiteName
+            whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
+            errorReports <- withReport "run errorStudent" $ do
+              Grade.runGradeError
+                ( Grade.runTastyTestSuite $
+                    Grade.createEmptyStudent errorStudent
+                )
+                >>= \case
+                  Right errorReport -> return errorReport
+                  Left err -> throw =<< Grade.prettyRunnerError errorStudent err
+
+            -- Run testsuite grading for all students.
+            forM_ students $ \student -> do
+              withReport ("run testsuite for student " <> studentId student) $ do
+                let subInfo =
+                      Grade.SubmissionInfo
+                        { Grade.subStudent = student,
+                          Grade.subId = optionSubmissionId,
+                          Grade.subTestSuite = testSuiteName
+                        }
+                runReader subInfo $
+                  runReader errorReports $
+                    Grade.runGradeError $
+                      Grade.runTastyTestSuite $ do
+                        submissionResult <- Grade.runSubmission
+                        prettyTestReport submissionResult
     Collect CollectCommand -> do
       embed $
         Collect.prepareSubmissionFolder
@@ -125,11 +117,11 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
             student
       let (_errs, collected) = partitionEithers collectResults
       embed $
-        putStrLn $
+        successMessage $
           "Collected "
-            <> show (length collected)
+            <> T.pack (show (length collected))
             <> "/"
-            <> show (length students)
+            <> T.pack (show (length students))
             <> " submissions."
     Publish PublishCommand -> do
       forM_ students $ \student -> do
@@ -151,48 +143,48 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
-    RecalculatePoints ->
+    RecalculatePoints -> Grade.runTestSuiteStorageFileSystem $
       forM_ students $ \student -> do
         withReport ("Calculate points for: " <> studentId student) $ do
           let sinfo =
-                Eval.SubmissionInfo
-                  { Eval.subStudent = student,
-                    Eval.subId = optionSubmissionId,
-                    Eval.subTestSuite = testSuiteName
+                Grade.SubmissionInfo
+                  { Grade.subStudent = student,
+                    Grade.subId = optionSubmissionId,
+                    Grade.subTestSuite = testSuiteName
                   }
-          runReader sinfo $ do
-            mts <- Eval.readTestSuiteResult
-            case mts of
-              Nothing -> throw "Inconsistent state, could not decode test-suite."
-              Just ts -> do
-                let newTs = Eval.recalculateTestPoints ts
-                Eval.writeTestSuiteResult newTs
+
+          mts <- Grade.readTestSuiteResult sinfo
+          case mts of
+            Nothing -> throw "Inconsistent state, could not decode test-suite."
+            Just ts -> do
+              let newTs = Grade.recalculateTestPoints ts
+              Grade.writeTestSuiteResult sinfo newTs
     DiffResults DiffResultsCommand {..} -> do
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
       let suiteName = optionTestSuiteName
       embed $
         T.putStrLn $
-          "Show Difference between " <> T.pack (show $ Eval.getSubmissionId currentSid)
+          "Show Difference between " <> T.pack (show $ Grade.getSubmissionId currentSid)
             <> " and "
-            <> T.pack (show $ Eval.getSubmissionId oldSid)
+            <> T.pack (show $ Grade.getSubmissionId oldSid)
       forM_ students $ \student -> embed $ do
         moldReport <-
           Aeson.decodeFileStrict $
-            Eval.reportSourceJsonFile oldSid suiteName student
+            Grade.reportSourceJsonFile oldSid suiteName student
         mnewReport <-
           Aeson.decodeFileStrict $
-            Eval.reportSourceJsonFile currentSid suiteName student
+            Grade.reportSourceJsonFile currentSid suiteName student
         let oldReport = fromMaybe (error "TODO") moldReport
         let newReport = fromMaybe (error "TODO") mnewReport
-        let oldSubmission = Eval.assignmentCollectStudentFile oldSid suiteName student
-        let newSubmission = Eval.assignmentCollectStudentFile currentSid suiteName student
-        let correctTests = Eval.correctTests newReport - Eval.correctTests oldReport
-        let failedTests = Eval.failedTests newReport - Eval.failedTests oldReport
-        let notSubmittedTests = Eval.notSubmittedTests newReport - Eval.notSubmittedTests oldReport
-        let timeoutTests = Eval.timeoutTests newReport - Eval.timeoutTests oldReport
-        let oldScore = Eval.testSuitePoints oldReport
-        let newScore = Eval.testSuitePoints newReport
+        let oldSubmission = Grade.assignmentCollectStudentFile oldSid suiteName student
+        let newSubmission = Grade.assignmentCollectStudentFile currentSid suiteName student
+        let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
+        let failedTests = Grade.failedTests newReport - Grade.failedTests oldReport
+        let notSubmittedTests = Grade.notSubmittedTests newReport - Grade.notSubmittedTests oldReport
+        let timeoutTests = Grade.timeoutTests newReport - Grade.timeoutTests oldReport
+        let oldScore = Grade.testSuitePoints oldReport
+        let newScore = Grade.testSuitePoints newReport
         if oldScore /= newScore || any (/= 0) [correctTests, failedTests, notSubmittedTests, timeoutTests]
           then do
             T.putStrLn $ "Difference for " <> studentId student
@@ -221,7 +213,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 
 setTestSuite ::
   Members [Error Text, Embed IO] r =>
-  Eval.SubmissionId ->
+  Grade.SubmissionId ->
   Text ->
   FilePath ->
   Sem r ()
@@ -230,14 +222,14 @@ setTestSuite optionSubmissionId testSuiteName testSuiteSpec = do
   checkTestSuiteExists testSuiteSpecification
   embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
 
-defaultRunnerInfo :: Eval.Timeout -> Eval.RunnerInfo
+defaultRunnerInfo :: Grade.Timeout -> Grade.RunnerInfo
 defaultRunnerInfo t =
-  Eval.RunnerInfo
-    { Eval.runnerInfoTimeout = t,
-      Eval.runnerInfoReportOutput = "testsuite-result.json"
+  Grade.RunnerInfo
+    { Grade.runnerInfoTimeout = t,
+      Grade.runnerInfoReportOutput = "testsuite-result.json"
     }
 
--------------------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
 -- Project setup relevant functions
 -- ----------------------------------------------------------------------------
 

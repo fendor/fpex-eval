@@ -1,21 +1,16 @@
-module Fpex.Eval.Types where
+module Fpex.Grade.Types where
 
 import qualified Control.Exception as E
 import Data.Aeson
-import qualified Data.Aeson.Combinators.Decode as ACD
 import Data.Aeson.Encode.Pretty as Aeson
-import Data.Aeson.Internal as AesonInternal
 import qualified Data.ByteString.Lazy as LBS
-import Data.Char (isSpace)
 import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import Fpex.Course.Types
 import GHC.Generics (Generic)
-import Options.Applicative
 import Polysemy
-import Polysemy.Reader
 import System.FilePath
-import Text.ParserCombinators.ReadP
+import Polysemy.Internal
 
 data SubmissionInfo = SubmissionInfo
   { subStudent :: Student,
@@ -182,148 +177,50 @@ newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
   deriving (Show, Generic)
   deriving newtype (Eq, Num, Ord)
 
--- ----------------------------------------------------------------------------
--- Custom decoder to read results from 'tasty-grading-system'
--- ----------------------------------------------------------------------------
-
-decodeFileTastyGradingReport :: FilePath -> IO (Either String TestSuiteResults)
-decodeFileTastyGradingReport =
-  ACD.eitherDecodeFileStrict decodeTastyGradingReport'
-
--- | Parses json output from tasty-grading-system. Expected format:
---
--- @
---   {
---       "results": [
---           {
---               "groups": [
---                   {
---                       "deductions": 0,
---                       "groups": [
---                           {
---                               "time": 31370,
---                               "name": "List comparison (different length)"
---                           },
---                           {
---                               "time": 8490,
---                               "name": "List comparison (same length)",
---                               "failure": "test/MyLibTest.hs:26:\nexpected: LT\n but got: GT"
---                           },
---                           {
---                               "time": 0,
---                               "name": "throw error",
---                               "failure": "Test\nCallStack (from HasCallStack):\n  error, called at test/MyLibTest.hs:29:9 in main:Main"
---                           },
---                           {
---                               "time": 5049731309,
---                               "name": "timeout",
---                               "failure": "Timeout"
---                           },
---                           {
---                               "time": 0,
---                               "name": "exception",
---                               "failure": "arithmetic overflow"
---                           }
---                       ],
---                       "points": 5,
---                       "tests": 5,
---                       "maximum": 9,
---                       "name": "Unit tests"
---                   }
---               ],
---               "tests": 5,
---               "name": "spec"
---           }
---       ],
---       "tests": 5,
---       "time": 5049829328,
---       "failures": 1,
---       "errors": 3
---   }
--- @
-decodeTastyGradingReport' :: ACD.Decoder TestSuiteResults
-decodeTastyGradingReport' = do
-  groups <-
-    ACD.path
-      [ AesonInternal.Key "results",
-        AesonInternal.Index 0,
-        AesonInternal.Key "groups"
-      ]
-      (ACD.list decodeGroup)
-  time <- ACD.key "time" ACD.integer
-  pure
-    TestSuiteResults
-      { testGroupResults = groups,
-        testSuiteTimeNs = time,
-        testSuitePoints = sum $ map testGroupPoints groups
-      }
-  where
-    decodeTestResult =
-      fmap parseError (ACD.key "failure" ACD.text)
-        <|> pure TestCaseResultOk
-
-    decodeSingleTest =
-      TestCaseReport
-        <$> ACD.key "name" ACD.text
-        <*> decodeTestResult
-        <*> ACD.key "time" ACD.integer
-
-    decodeGroup = do
-      tests <- ACD.key "groups" (ACD.list decodeSingleTest)
-      points <- ACD.key "points" ACD.int
-      maximum' <- ACD.key "maximum" ACD.int
-      deductions <- ACD.key "deductions" ACD.int
-      groupName <- ACD.key "name" ACD.text
-      let props = TestGroupProps groupName points deductions maximum'
-      pure
-        TestGroupResults
-          { testGroupReports = tests,
-            testGroupResultProps = props,
-            testGroupPoints =
-              getTestGroupPoints
-                props
-                (map testCaseReportResult tests)
-          }
-
-    parseError :: T.Text -> TestCaseResult
-    parseError t =
-      fst . head . filter (null . snd) $
-        readP_to_S
-          testCaseResultParser
-          (T.unpack t)
-
-testCaseResultParser :: ReadP TestCaseResult
-testCaseResultParser =
-  timeoutParser
-    <++ expectedButGotParser
-    <++ someExceptionParser
-
-timeoutParser :: ReadP TestCaseResult
-timeoutParser = do
-  _ <- string "Timeout"
-  eof
-  pure TestCaseResultTimeout
-
-expectedButGotParser :: ReadP TestCaseResult
-expectedButGotParser = do
-  _ <- munch (not . isSpace)
-  skipSpaces
-  _ <- string "expected:"
-  skipSpaces
-  expected <- munch1 (not . isSpace)
-  skipSpaces
-  _ <- string "but got:"
-  skipSpaces
-  butGot <- munch1 (not . isSpace)
-  eof
-  pure $ TestCaseResultExpectedButGot $ ExpectedButGot expected butGot
-
-someExceptionParser :: ReadP TestCaseResult
-someExceptionParser =
-  TestCaseResultException <$> munch (const True)
 
 -- ----------------------------------------------------------------------------
 -- Utility functions based for reading and writing test suites
+-- ----------------------------------------------------------------------------
+
+data TestSuiteStorage m a where
+  WriteTestSuiteResult :: SubmissionInfo -> TestSuiteResults -> TestSuiteStorage m ()
+  ReadTestSuiteResult :: SubmissionInfo -> TestSuiteStorage m (Maybe TestSuiteResults)
+
+writeTestSuiteResult :: Member TestSuiteStorage r => SubmissionInfo -> TestSuiteResults -> Sem r ()
+writeTestSuiteResult info s = send $ WriteTestSuiteResult info s
+
+readTestSuiteResult :: Member TestSuiteStorage r => SubmissionInfo -> Sem r (Maybe TestSuiteResults)
+readTestSuiteResult info = send $ ReadTestSuiteResult info
+
+runTestSuiteStorageFileSystem :: Member (Embed IO) r => Sem (TestSuiteStorage : r) a ->  Sem (r) a
+runTestSuiteStorageFileSystem = interpret $ \case
+  WriteTestSuiteResult SubmissionInfo {..} results ->
+    embed $ writeTestSuiteResultIO subId subTestSuite subStudent results
+  ReadTestSuiteResult SubmissionInfo {..} ->
+    embed $ readTestSuiteResultIO subId subTestSuite subStudent
+
+readTestSuiteResultIO ::
+  SubmissionId ->
+  T.Text ->
+  Student ->
+  IO (Maybe TestSuiteResults)
+readTestSuiteResultIO sid suiteName student =
+  decodeFileStrict'
+    (reportSourceJsonFile sid suiteName student)
+
+writeTestSuiteResultIO ::
+  SubmissionId ->
+  T.Text ->
+  Student ->
+  TestSuiteResults ->
+  IO ()
+writeTestSuiteResultIO sid suiteName student testSuiteResults =
+  LBS.writeFile
+    (reportSourceJsonFile sid suiteName student)
+    (Aeson.encodePretty testSuiteResults)
+
+-- ----------------------------------------------------------------------------
+-- Pure functions for extracting filepath information
 -- ----------------------------------------------------------------------------
 
 studentDir :: Course -> Student -> FilePath
@@ -341,45 +238,6 @@ assignmentCollectDir sid suiteName =
       <> "-"
       <> show (getSubmissionId sid)
   )
-
-readTestSuiteResult ::
-  Members [Embed IO, Reader SubmissionInfo] r =>
-  Sem r (Maybe TestSuiteResults)
-readTestSuiteResult = do
-  sid <- asks subId
-  suiteName <- asks subTestSuite
-  student <- asks subStudent
-  embed $ readTestSuiteResult' sid suiteName student
-
-readTestSuiteResult' ::
-  SubmissionId ->
-  T.Text ->
-  Student ->
-  IO (Maybe TestSuiteResults)
-readTestSuiteResult' sid suiteName student =
-  decodeFileStrict'
-    (reportSourceJsonFile sid suiteName student)
-
-writeTestSuiteResult ::
-  Members [Embed IO, Reader SubmissionInfo] r =>
-  TestSuiteResults ->
-  Sem r ()
-writeTestSuiteResult testSuiteResults = do
-  sid <- asks subId
-  suiteName <- asks subTestSuite
-  student <- asks subStudent
-  embed $ writeTestSuiteResult' sid suiteName student testSuiteResults
-
-writeTestSuiteResult' ::
-  SubmissionId ->
-  T.Text ->
-  Student ->
-  TestSuiteResults ->
-  IO ()
-writeTestSuiteResult' sid suiteName student testSuiteResults =
-  LBS.writeFile
-    (reportSourceJsonFile sid suiteName student)
-    (Aeson.encodePretty testSuiteResults)
 
 assignmentCollectStudentDir ::
   SubmissionId -> T.Text -> Student -> FilePath

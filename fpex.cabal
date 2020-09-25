@@ -40,8 +40,10 @@ library
     Fpex.Collect
     Fpex.Course.CourseSetup
     Fpex.Course.Types
-    Fpex.Eval.Types
     Fpex.Grade
+    Fpex.Grade.ErrorStudent
+    Fpex.Grade.Tasty
+    Fpex.Grade.Types
     Fpex.Main
     Fpex.Options
     Fpex.Publish
