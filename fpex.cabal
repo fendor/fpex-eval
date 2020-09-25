@@ -45,7 +45,6 @@ library
     Fpex.Main
     Fpex.Options
     Fpex.Publish
-    Fpex.Publish.Markdown
     Fpex.Publish.Plain
     Fpex.Publish.Stats
     Fpex.Reporter
@@ -61,12 +60,13 @@ library
 
   build-depends:
     , aeson
-    , aeson-pretty
     , aeson-combinators
+    , aeson-pretty
     , array
     , base
     , bytestring
     , clock
+    , colourista
     , containers
     , directory
     , extra

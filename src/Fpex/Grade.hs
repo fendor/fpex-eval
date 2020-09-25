@@ -4,11 +4,11 @@ import Control.Monad.Extra (unlessM)
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Function
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Fpex.Course.Types
 import Fpex.Eval.Types as Eval
 import Polysemy
 import Polysemy.Error
+import Polysemy.Internal
 import Polysemy.Reader
 import System.Directory
 import System.Exit (ExitCode (..))
@@ -26,38 +26,76 @@ data RunnerError
 runGradeError :: Sem (Error RunnerError ': r) a -> Sem r (Either RunnerError a)
 runGradeError = runError
 
-prettyTestReport :: Member (Embed IO) r => TestSuiteResults -> Sem r ()
-prettyTestReport testResult
-  | isCompileFailReport testResult =
-    embed $ T.putStrLn "Runner Error"
-  | isNotSubmittedReport testResult =
-    embed $ T.putStrLn "No Submission"
-  | otherwise = do
-    embed $
-      T.putStrLn $
-        T.unlines $
-          map
-            ("\t" <>)
-            [ "Test Report:",
-              "",
-              T.concat
-                [ "Points: ",
-                  T.pack (show $ Eval.testSuitePoints testResult),
-                  "/",
-                  T.pack (show $ Eval.maxScore testResult)
-                ],
-              "",
-              "Correct:       " <> (T.pack . show $ Eval.correctTests testResult),
-              "Incorrect:     " <> (T.pack . show $ Eval.failedTests testResult),
-              "Not submitted: " <> (T.pack . show $ Eval.notSubmittedTests testResult),
-              "Timeout:       " <> (T.pack . show $ Eval.timeoutTests testResult)
-            ]
+data RunTestSuite m a where
+  -- | Generates a hash from a password
+  RunTestSuite :: SubmissionInfo -> RunTestSuite m TestSuiteResults
+
+runTestSuite :: Member RunTestSuite r => SubmissionInfo -> Sem r TestSuiteResults
+runTestSuite s = send $ RunTestSuite s
+
+runTastyTestSuite ::
+  Members
+    [ Error RunnerError,
+      Embed IO,
+      Reader Course,
+      Reader RunnerInfo
+    ]
+    r =>
+  Sem (RunTestSuite : r) a ->
+  Sem r a
+runTastyTestSuite = interpret $ \case
+  RunTestSuite SubmissionInfo {..} -> do
+    let sid = subId
+    let suiteName = subTestSuite
+    let student = subStudent
+    let targetDir = assignmentCollectStudentDir sid suiteName student
+    let targetFile = assignmentCollectStudentFile sid suiteName student
+    ghciOptions <- asks courseGhciOptions
+    ghciEnv <- asks ghciEnvironmentLocation
+    reportOutput <- asks runnerInfoReportOutput
+    testTimeout <- asks runnerInfoTimeout
+    unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
+    let procArgs =
+          [ "../Main.hs",
+            "-package-env",
+            ghciEnv,
+            "-i",
+            "-i.",
+            "-i..",
+            "-e",
+            unwords [":main", "-t", show testTimeout, "--grading-json", reportOutput]
+          ]
+            ++ ghciOptions
+        procConfig =
+          Proc.proc "ghci" procArgs
+            & Proc.setWorkingDir targetDir
+    (procRes, sout, serr) <- Proc.readProcess procConfig
+    -- Write logs to files
+    embed $ do
+      LBS.writeFile (targetDir </> "stderr.log") serr
+      LBS.writeFile (targetDir </> "stdout.log") sout
+    case procRes of
+      ExitSuccess -> return ()
+      ExitFailure _ -> return () -- throw $ RunnerError (T.pack $ show procConfig) serr
+    decodeResult <- embed $ decodeFileTastyGradingReport (targetDir </> reportOutput)
+    case decodeResult of
+      Left msg -> throw $ FailedToDecodeJsonResult msg
+      Right s -> pure s
 
 runSubmission ::
-  Members '[Embed IO, Reader ErrorReports, Reader Course, Reader SubmissionInfo] r =>
+  Members
+    [ Embed IO,
+      Error T.Text,
+      Reader ErrorReports,
+      Reader SubmissionInfo,
+      Reader Course,
+      Reader RunnerInfo
+    ]
+    r =>
   Sem r Eval.TestSuiteResults
 runSubmission = do
-  result <- runError $ runSubmission'
+  submissionInfo <- ask @SubmissionInfo
+  result <- runError $ runTastyTestSuite $ runTestSuite submissionInfo
   testSuiteResult <- case result of
     Right s -> pure s
     Left runnerError -> case runnerError of
@@ -65,58 +103,24 @@ runSubmission = do
         embed $ LBS.putStrLn serr
         CompileFailReport compileFailTestSuite <- asks compileFailReport
         pure compileFailTestSuite
-      FailedToDecodeJsonResult msg -> do
-        embed $ T.putStrLn $ T.pack msg
-        pure undefined
       NoSubmission -> do
         NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
         pure noSubmissionTestSuite
+      FailedToDecodeJsonResult msg ->
+        throw $ T.pack msg
   writeTestSuiteResult testSuiteResult
   pure testSuiteResult
 
-runSubmission' ::
-  Members '[Embed IO, Error RunnerError, Reader Course, Reader SubmissionInfo] r =>
-  Sem r Eval.TestSuiteResults
-runSubmission' = do
-  sid <- asks subId
-  suiteName <- asks subTestSuite
-  student <- asks subStudent
-  let targetDir = assignmentCollectStudentDir sid suiteName student
-  let targetFile = assignmentCollectStudentFile sid suiteName student
-  ghciOptions <- asks courseGhciOptions
-  ghciEnv <- asks ghciEnvironmentLocation
-  unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
-  let procArgs =
-        [ "../Main.hs",
-          "-package-env",
-          ghciEnv,
-          "-i",
-          "-i.",
-          "-i..",
-          "-e",
-          -- TODO: timeout is missing
-          ":main --grading-json=testsuite-result.json"
-        ]
-          ++ ghciOptions
-      procConfig =
-        Proc.proc "ghci" procArgs
-          & Proc.setWorkingDir targetDir
-  (procRes, sout, serr) <- Proc.readProcess procConfig
-  -- Write logs to files
-  embed $ do
-    LBS.writeFile (targetDir </> "stderr.log") serr
-    LBS.writeFile (targetDir </> "stdout.log") sout
-  case procRes of
-    ExitSuccess -> return ()
-    ExitFailure _ -> throw $ RunnerError (T.pack $ show procConfig) serr
-  decodeResult <- embed $ decodeFileTastyGradingReport "testsuite-result.json"
-  case decodeResult of
-    Left msg -> throw $ FailedToDecodeJsonResult msg
-    Right s -> pure s
-
 -- | Create a directory
 createEmptyStudent ::
-  Members '[Embed IO, Error RunnerError, Reader Course] r =>
+  Members
+    [ Embed IO,
+      Error RunnerError,
+      Reader RunnerInfo,
+      Reader Course,
+      RunTestSuite
+    ]
+    r =>
   SubmissionId ->
   T.Text ->
   Sem r Eval.ErrorReports
@@ -128,7 +132,7 @@ createEmptyStudent sid suiteName = do
             subTestSuite = suiteName,
             subStudent = errorStudent
           }
-  testSuiteResults <- runReader sinfo runSubmission'
+  testSuiteResults <- runTestSuite sinfo
   let modifyTestCaseResult report =
         report {testCaseReportResult = Eval.TestCaseResultCompileFail}
       modifyTestGroup Eval.TestGroupResults {..} =

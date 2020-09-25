@@ -1,5 +1,6 @@
 module Fpex.Main where
 
+import Colourista
 import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
@@ -15,8 +16,8 @@ import qualified Fpex.Eval.Types as Eval
 import qualified Fpex.Grade as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
-import Fpex.Reporter
 import Fpex.Publish.Stats
+import Fpex.Reporter
 import qualified Fpex.Stats.Csv as Stats
 import qualified Fpex.Stats.Grade as Stats
 import Options.Applicative
@@ -26,16 +27,16 @@ import Polysemy.Reader
 import System.Directory
 import System.Exit (exitFailure)
 import System.FilePath
-import System.IO (stderr)
 
 defaultMain :: IO ()
-defaultMain = (runM . runError $ defaultMain') >>= \case
-  Right () -> return ()
-  Left e -> do
-    T.hPutStrLn stderr e
-    exitFailure
+defaultMain =
+  (runM . runError $ defaultMain') >>= \case
+    Right () -> return ()
+    Left e -> do
+      errorMessage e
+      exitFailure
 
-defaultMain' :: Members '[Error Text, Embed IO] r => Sem r ()
+defaultMain' :: Members [Error Text, Embed IO] r => Sem r ()
 defaultMain' = do
   opts <- embed $ execParser options
   case optionCommand opts of
@@ -50,7 +51,6 @@ defaultMain' = do
         report <- embed $ studentPointReport finalPointsSubmissions finalPointsSubmissionIds student
         let prettyReport = renderPoints finalPointsSubmissions finalPointsSubmissionIds Mean student report
         embed $ T.writeFile (outputDir </> T.unpack (studentId student) <.> "md") prettyReport
-
     Lc gradeTestSuiteOptions lifecycle -> do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
@@ -58,7 +58,7 @@ defaultMain' = do
       dispatchLifeCycle Course {..} students gradeTestSuiteOptions lifecycle
 
 dispatchLifeCycle ::
-  Members '[Error Text, Embed IO] r =>
+  Members [Error Text, Embed IO] r =>
   Course ->
   [Student] ->
   TestSuiteOptions ->
@@ -67,41 +67,45 @@ dispatchLifeCycle ::
 dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   let testSuiteName = optionTestSuiteName
   case lifecycle of
-    Grade GradeCommand {..} -> runReader course $ do
-      whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
-      errorReports <- withReport "run errorStudent" $ do
-        Grade.runGradeError
-          ( Grade.createEmptyStudent
-              optionSubmissionId
-              testSuiteName
-          )
-          >>= \case
-            Right errorReport -> return errorReport
-            Left err -> throw $
-              case err of
-                Grade.RunnerError msg serr ->
-                  T.unlines $
-                    [ "Failed to execute neutral student",
-                      msg,
-                      "Stderr: ",
-                      T.pack $ LBS.unpack serr
-                    ]
-                Grade.FailedToDecodeJsonResult msg ->
-                  T.unlines
-                    ["Failed to decode the json result: ", T.pack msg]
-                Grade.NoSubmission ->
-                  "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
-      forM_ students $ \student -> do
-        withReport ("run testsuite for student " <> studentId student) $ do
-          let subInfo =
-                Eval.SubmissionInfo
-                  { Eval.subStudent = student,
-                    Eval.subId = optionSubmissionId,
-                    Eval.subTestSuite = testSuiteName
-                  }
-          runReader errorReports $ runReader subInfo $ do
-            submissionResult <- Grade.runSubmission
-            Grade.prettyTestReport submissionResult
+    Grade GradeCommand {..} ->
+      runReader (defaultRunnerInfo testTimeout) $
+        runReader course $ do
+          whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
+          errorReports <- withReport "run errorStudent" $ do
+            Grade.runGradeError
+              ( Grade.runTastyTestSuite $
+                  Grade.createEmptyStudent
+                    optionSubmissionId
+                    testSuiteName
+              )
+              >>= \case
+                Right errorReport -> return errorReport
+                Left err -> throw $
+                  case err of
+                    Grade.RunnerError msg serr ->
+                      T.unlines $
+                        [ "Failed to execute neutral student",
+                          msg,
+                          "Stderr: ",
+                          T.pack $ LBS.unpack serr
+                        ]
+                    Grade.FailedToDecodeJsonResult msg ->
+                      T.unlines
+                        ["Failed to decode the json result: ", T.pack msg]
+                    Grade.NoSubmission ->
+                      "Main.hs:Grade (NoSubmission) Invariant violated, can not be generated here."
+          forM_ students $ \student -> do
+            withReport ("run testsuite for student " <> studentId student) $ do
+              let subInfo =
+                    Eval.SubmissionInfo
+                      { Eval.subStudent = student,
+                        Eval.subId = optionSubmissionId,
+                        Eval.subTestSuite = testSuiteName
+                      }
+              runReader subInfo $
+                runReader errorReports $ do
+                  submissionResult <- Grade.runSubmission
+                  prettyTestReport submissionResult
     Collect CollectCommand -> do
       embed $
         Collect.prepareSubmissionFolder
@@ -120,14 +124,13 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
             testSuiteName
             student
       let (_errs, collected) = partitionEithers collectResults
-      embed
-        $ putStrLn
-        $ "Collected "
-          <> show (length collected)
-          <> "/"
-          <> show (length students)
-          <> " submissions."
-
+      embed $
+        putStrLn $
+          "Collected "
+            <> show (length collected)
+            <> "/"
+            <> show (length students)
+            <> " submissions."
     Publish PublishCommand -> do
       forM_ students $ \student -> do
         embed $
@@ -168,13 +171,18 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
       let suiteName = optionTestSuiteName
-      embed $ T.putStrLn $
-        "Show Difference between " <> T.pack (show $ Eval.getSubmissionId currentSid)
-          <> " and "
-          <> T.pack (show $ Eval.getSubmissionId oldSid)
+      embed $
+        T.putStrLn $
+          "Show Difference between " <> T.pack (show $ Eval.getSubmissionId currentSid)
+            <> " and "
+            <> T.pack (show $ Eval.getSubmissionId oldSid)
       forM_ students $ \student -> embed $ do
-        moldReport <- Aeson.decodeFileStrict $ Eval.reportSourceJsonFile oldSid suiteName student
-        mnewReport <- Aeson.decodeFileStrict $ Eval.reportSourceJsonFile currentSid suiteName student
+        moldReport <-
+          Aeson.decodeFileStrict $
+            Eval.reportSourceJsonFile oldSid suiteName student
+        mnewReport <-
+          Aeson.decodeFileStrict $
+            Eval.reportSourceJsonFile currentSid suiteName student
         let oldReport = fromMaybe (error "TODO") moldReport
         let newReport = fromMaybe (error "TODO") mnewReport
         let oldSubmission = Eval.assignmentCollectStudentFile oldSid suiteName student
@@ -207,15 +215,31 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
         return ()
       return ()
 
--------------------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
+-- Helpers
+-- ----------------------------------------------------------------------------
 
-setTestSuite :: Members [Error Text, Embed IO] r => Eval.SubmissionId -> Text -> FilePath -> Sem r ()
+setTestSuite ::
+  Members [Error Text, Embed IO] r =>
+  Eval.SubmissionId ->
+  Text ->
+  FilePath ->
+  Sem r ()
 setTestSuite optionSubmissionId testSuiteName testSuiteSpec = do
   testSuiteSpecification <- embed $ makeAbsolute testSuiteSpec
   checkTestSuiteExists testSuiteSpecification
   embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
 
+defaultRunnerInfo :: Eval.Timeout -> Eval.RunnerInfo
+defaultRunnerInfo t =
+  Eval.RunnerInfo
+    { Eval.runnerInfoTimeout = t,
+      Eval.runnerInfoReportOutput = "testsuite-result.json"
+    }
+
 -------------------------------------------------------------------------------------
+-- Project setup relevant functions
+-- ----------------------------------------------------------------------------
 
 -- | get the default course file
 getDefaultCourseFile :: IO (Maybe FilePath)
@@ -232,13 +256,14 @@ getCourseFile (Just c) = return $ Just c
 getCourseFile Nothing = embed getDefaultCourseFile
 
 getCourseConfig ::
-  (Member (Error Text) r, Member (Embed IO) r) =>
+  (Members [Error Text, Embed IO] r) =>
   Maybe FilePath ->
   Sem r (Course, FilePath)
 getCourseConfig courseOption = do
-  courseFile <- getCourseFile courseOption >>= \case
-    Just c -> return c
-    Nothing -> throw "course.json not found"
+  courseFile <-
+    getCourseFile courseOption >>= \case
+      Just c -> return c
+      Nothing -> throw "course.json not found. Create one with 'fpex init'"
   embed (Aeson.decodeFileStrict courseFile) >>= \case
     Just c -> do
       ghciFile <- embed $ canonicalizePath $ courseGhciEnvironment c
@@ -246,10 +271,10 @@ getCourseConfig courseOption = do
     Nothing -> throw "course.json invalid format"
 
 checkTestSuiteExists ::
-  Members '[Error Text, Embed IO] r => FilePath -> Sem r ()
+  Members [Error Text, Embed IO] r => FilePath -> Sem r ()
 checkTestSuiteExists testSuite =
-  unlessM (embed $ doesFileExist testSuite)
-    $ throw
-    $ "Test-Suite specification \""
-      <> T.pack testSuite
-      <> "\" does not exist"
+  unlessM (embed $ doesFileExist testSuite) $
+    throw $
+      "Test-Suite specification \""
+        <> T.pack testSuite
+        <> "\" does not exist"

@@ -27,7 +27,6 @@ prepareSubmissionFolder :: SubmissionId -> T.Text -> IO ()
 prepareSubmissionFolder sid suiteName = do
   let targetDir = assignmentCollectDir sid suiteName
   createDirectoryIfMissing True targetDir
-  return ()
 
 collectSubmission :: SubmissionId -> Course -> T.Text -> Student -> IO (Either FailureReason FilePath)
 collectSubmission sid course suiteName student = do

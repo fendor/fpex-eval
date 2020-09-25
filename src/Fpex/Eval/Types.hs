@@ -22,6 +22,13 @@ data SubmissionInfo = SubmissionInfo
     subId :: SubmissionId,
     subTestSuite :: T.Text
   }
+  deriving (Show, Eq, Ord)
+
+data RunnerInfo = RunnerInfo
+  { runnerInfoTimeout :: Timeout,
+    runnerInfoReportOutput :: FilePath
+  }
+  deriving (Show, Eq, Ord)
 
 data ExpectedButGot = ExpectedButGot String String
   deriving (Eq, Show, Typeable, Generic)
@@ -100,10 +107,20 @@ compileFailReport :: ErrorReports -> CompileFailReport
 compileFailReport (ErrorReports (a, _)) = a
 
 isCompileFailReport :: TestSuiteResults -> Bool
-isCompileFailReport = all ((== TestCaseResultCompileFail) . testCaseReportResult) . getTestsSatisfying (const True)
+isCompileFailReport =
+  all
+    ( (== TestCaseResultCompileFail)
+        . testCaseReportResult
+    )
+    . getTestsSatisfying (const True)
 
 isNotSubmittedReport :: TestSuiteResults -> Bool
-isNotSubmittedReport = all ((== TestCaseResultNotSubmitted) . testCaseReportResult) . getTestsSatisfying (const True)
+isNotSubmittedReport =
+  all
+    ( (== TestCaseResultNotSubmitted)
+        . testCaseReportResult
+    )
+    . getTestsSatisfying (const True)
 
 recalculateTestPoints :: TestSuiteResults -> TestSuiteResults
 recalculateTestPoints t =
@@ -123,7 +140,9 @@ recalculateTestPoints t =
         }
 
 maxScore :: TestSuiteResults -> Points
-maxScore TestSuiteResults {..} = sum (map (upperBound . testGroupResultProps) testGroupResults)
+maxScore TestSuiteResults {..} =
+  sum
+    (map (upperBound . testGroupResultProps) testGroupResults)
 
 correctTests :: TestSuiteResults -> Int
 correctTests testSuiteResults =
@@ -141,7 +160,10 @@ timeoutTests :: TestSuiteResults -> Int
 timeoutTests testSuiteResults =
   length $ getTestsSatisfying (== TestCaseResultTimeout) testSuiteResults
 
-getTestsSatisfying :: (TestCaseResult -> Bool) -> TestSuiteResults -> [TestCaseReport]
+getTestsSatisfying ::
+  (TestCaseResult -> Bool) ->
+  TestSuiteResults ->
+  [TestCaseReport]
 getTestsSatisfying p TestSuiteResults {..} =
   concatMap
     (filter (p . testCaseReportResult) . testGroupReports)
@@ -165,7 +187,8 @@ newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
 -- ----------------------------------------------------------------------------
 
 decodeFileTastyGradingReport :: FilePath -> IO (Either String TestSuiteResults)
-decodeFileTastyGradingReport = ACD.eitherDecodeFileStrict decodeTastyGradingReport'
+decodeFileTastyGradingReport =
+  ACD.eitherDecodeFileStrict decodeTastyGradingReport'
 
 -- | Parses json output from tasty-grading-system. Expected format:
 --
@@ -256,12 +279,18 @@ decodeTastyGradingReport' = do
         TestGroupResults
           { testGroupReports = tests,
             testGroupResultProps = props,
-            testGroupPoints = getTestGroupPoints props (map testCaseReportResult tests)
+            testGroupPoints =
+              getTestGroupPoints
+                props
+                (map testCaseReportResult tests)
           }
 
     parseError :: T.Text -> TestCaseResult
     parseError t =
-      fst . head . filter (null . snd) $ readP_to_S testCaseResultParser (T.unpack t)
+      fst . head . filter (null . snd) $
+        readP_to_S
+          testCaseResultParser
+          (T.unpack t)
 
 testCaseResultParser :: ReadP TestCaseResult
 testCaseResultParser =
@@ -313,24 +342,40 @@ assignmentCollectDir sid suiteName =
       <> show (getSubmissionId sid)
   )
 
-readTestSuiteResult :: Members [Embed IO, Reader SubmissionInfo] r => Sem r (Maybe TestSuiteResults)
+readTestSuiteResult ::
+  Members [Embed IO, Reader SubmissionInfo] r =>
+  Sem r (Maybe TestSuiteResults)
 readTestSuiteResult = do
   sid <- asks subId
   suiteName <- asks subTestSuite
   student <- asks subStudent
   embed $ readTestSuiteResult' sid suiteName student
 
-readTestSuiteResult' :: SubmissionId -> T.Text -> Student -> IO (Maybe TestSuiteResults)
-readTestSuiteResult' sid suiteName student = decodeFileStrict' (reportSourceJsonFile sid suiteName student)
+readTestSuiteResult' ::
+  SubmissionId ->
+  T.Text ->
+  Student ->
+  IO (Maybe TestSuiteResults)
+readTestSuiteResult' sid suiteName student =
+  decodeFileStrict'
+    (reportSourceJsonFile sid suiteName student)
 
-writeTestSuiteResult :: Members [Embed IO, Reader SubmissionInfo] r => TestSuiteResults -> Sem r ()
+writeTestSuiteResult ::
+  Members [Embed IO, Reader SubmissionInfo] r =>
+  TestSuiteResults ->
+  Sem r ()
 writeTestSuiteResult testSuiteResults = do
   sid <- asks subId
   suiteName <- asks subTestSuite
   student <- asks subStudent
   embed $ writeTestSuiteResult' sid suiteName student testSuiteResults
 
-writeTestSuiteResult' :: SubmissionId -> T.Text -> Student -> TestSuiteResults -> IO ()
+writeTestSuiteResult' ::
+  SubmissionId ->
+  T.Text ->
+  Student ->
+  TestSuiteResults ->
+  IO ()
 writeTestSuiteResult' sid suiteName student testSuiteResults =
   LBS.writeFile
     (reportSourceJsonFile sid suiteName student)
@@ -352,4 +397,6 @@ reportSourceJsonFile sid suiteName student =
 
 reportPublishFile :: SubmissionId -> Course -> T.Text -> Student -> FilePath
 reportPublishFile sid course suiteName student =
-  studentDir course student </> T.unpack suiteName <.> ("out_" <> show (getSubmissionId sid))
+  studentDir course student
+    </> T.unpack suiteName
+      <.> ("out_" <> show (getSubmissionId sid))

@@ -88,7 +88,7 @@ options =
           )
       testSuiteNameParser =
         strOption
-          ( long "name" <> help "Name of the test-suite. If empty, takes name of the test-suite."
+          ( long "name" <> help "Name of the test-suite."
           )
       submissionIdParser =
         SubmissionId
