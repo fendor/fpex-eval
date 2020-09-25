@@ -5,6 +5,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Function
 import qualified Data.Text as T
 import Fpex.Course.Types
+import Fpex.Grade.Storage (TestSuiteStorage, writeTestSuiteResult)
 import Fpex.Grade.Tasty as Eval
 import Fpex.Grade.Types as Eval
 import Polysemy
@@ -81,7 +82,15 @@ runTastyTestSuite = interpret $ \case
             "-i.",
             "-i..",
             "-e",
-            unwords [":main", "-t", show testTimeout, "--grading-json", reportOutput]
+            unwords
+              [ ":main",
+                "-j",
+                "12",
+                "-t",
+                show (getTimeout testTimeout),
+                "--grading-json",
+                reportOutput
+              ]
           ]
             ++ ghciOptions
         procConfig =
@@ -92,9 +101,9 @@ runTastyTestSuite = interpret $ \case
     embed $ do
       LBS.writeFile (targetDir </> "stderr.log") serr
       LBS.writeFile (targetDir </> "stdout.log") sout
-    case procRes of
-      ExitSuccess -> return ()
-      ExitFailure _ -> return () -- throw $ RunnerError (T.pack $ show procConfig) serr
+    -- case procRes of
+    --   ExitSuccess -> return ()
+    --   ExitFailure _ -> throw $ RunnerInternalError (T.pack $ show procConfig) serr
     decodeResult <- embed $ decodeFileTastyGradingReport (targetDir </> reportOutput)
     case decodeResult of
       Left msg -> throw $ FailedToDecodeJsonResult msg
@@ -133,15 +142,20 @@ runSubmission = do
 -- | Create a directory
 createEmptyStudent ::
   Members
-    [ Error RunnerError,
+    [ Embed IO,
+      Error RunnerError,
       Reader RunnerInfo,
       Reader Course,
       RunTestSuite
     ]
     r =>
+  FilePath ->
   SubmissionInfo ->
   Sem r Eval.ErrorReports
-createEmptyStudent sinfo = do
+createEmptyStudent baseDefinitions sinfo@SubmissionInfo {..} = do
+  let targetFile =
+        assignmentCollectStudentFile subId subTestSuite subStudent
+  embed $ copyFile baseDefinitions targetFile
   testSuiteResults <- runTestSuite sinfo
   let modifyTestCaseResult report =
         report {testCaseReportResult = Eval.TestCaseResultCompileFail}

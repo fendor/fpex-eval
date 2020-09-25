@@ -12,7 +12,7 @@ import System.Directory
 import System.FilePath
 
 -- | Publish assignment of single student
-publishTestResult :: SubmissionId -> Course -> T.Text -> Student -> IO ()
+publishTestResult :: SubmissionId -> Course -> Assignment -> Student -> IO ()
 publishTestResult sid course suiteName student = do
   let sourceFile = reportSourceJsonFile sid suiteName student
   let targetFile = reportPublishFile sid course suiteName student
@@ -27,6 +27,6 @@ publishTestResult sid course suiteName student = do
   let sourceDir = assignmentCollectStudentDir sid suiteName student
   let targetDir = studentDir course student
   let feedbackFile = sourceDir </> "Feedback.md"
-  let feedbackTarget = targetDir </> (T.unpack suiteName <> "_Feedback") <.> "md"
+  let feedbackTarget = targetDir </> (T.unpack (getAssignment suiteName) <> "_Feedback") <.> "md"
   whenM (doesFileExist feedbackFile) $ do
     copyFile feedbackFile feedbackTarget

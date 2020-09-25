@@ -2,22 +2,11 @@ module Fpex.Grade.Types where
 
 import qualified Control.Exception as E
 import Data.Aeson
-import Data.Aeson.Encode.Pretty as Aeson
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import Fpex.Course.Types
 import GHC.Generics (Generic)
-import Polysemy
 import System.FilePath
-import Polysemy.Internal
-
-data SubmissionInfo = SubmissionInfo
-  { subStudent :: Student,
-    subId :: SubmissionId,
-    subTestSuite :: T.Text
-  }
-  deriving (Show, Eq, Ord)
 
 data RunnerInfo = RunnerInfo
   { runnerInfoTimeout :: Timeout,
@@ -26,7 +15,7 @@ data RunnerInfo = RunnerInfo
   deriving (Show, Eq, Ord)
 
 data ExpectedButGot = ExpectedButGot String String
-  deriving (Eq, Show, Typeable, Generic)
+  deriving (Eq, Show, Ord, Typeable, Generic)
   deriving anyclass (FromJSON, ToJSON, E.Exception)
 
 data NotSubmitted = NotSubmitted
@@ -49,7 +38,7 @@ data TestCaseResult
   | TestCaseResultTimeout
   | TestCaseResultNotSubmitted
   | TestCaseResultCompileFail
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Ord, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
 data TestCaseReport = TestCaseReport
@@ -57,7 +46,7 @@ data TestCaseReport = TestCaseReport
     testCaseReportResult :: TestCaseResult,
     testCaseReportTimeNs :: Integer
   }
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Ord, Generic)
   deriving anyclass (FromJSON, ToJSON)
 
 data TestGroupResults = TestGroupResults
@@ -134,26 +123,33 @@ recalculateTestPoints t =
               (map testCaseReportResult $ testGroupReports tgroup)
         }
 
+allTests :: TestSuiteResults -> [TestCaseReport]
+allTests = getTestsSatisfying (const True)
+
 maxScore :: TestSuiteResults -> Points
 maxScore TestSuiteResults {..} =
   sum
     (map (upperBound . testGroupResultProps) testGroupResults)
 
+numberOfTests :: TestSuiteResults -> Int
+numberOfTests =
+  length . getTestsSatisfying (const True)
+
 correctTests :: TestSuiteResults -> Int
-correctTests testSuiteResults =
-  length $ getTestsSatisfying (== TestCaseResultOk) testSuiteResults
+correctTests =
+  length . getTestsSatisfying isPassedTestCaseResult
 
 notSubmittedTests :: TestSuiteResults -> Int
-notSubmittedTests testSuiteResults =
-  length $ getTestsSatisfying (== TestCaseResultNotSubmitted) testSuiteResults
+notSubmittedTests =
+  length . getTestsSatisfying (== TestCaseResultNotSubmitted)
 
 failedTests :: TestSuiteResults -> Int
-failedTests testSuiteResults =
-  length $ getTestsSatisfying isFailedTestCaseResult testSuiteResults
+failedTests =
+  length . getTestsSatisfying isFailedTestCaseResult
 
 timeoutTests :: TestSuiteResults -> Int
-timeoutTests testSuiteResults =
-  length $ getTestsSatisfying (== TestCaseResultTimeout) testSuiteResults
+timeoutTests =
+  length . getTestsSatisfying (== TestCaseResultTimeout)
 
 getTestsSatisfying ::
   (TestCaseResult -> Bool) ->
@@ -164,6 +160,10 @@ getTestsSatisfying p TestSuiteResults {..} =
     (filter (p . testCaseReportResult) . testGroupReports)
     testGroupResults
 
+isPassedTestCaseResult :: TestCaseResult -> Bool
+isPassedTestCaseResult TestCaseResultOk = True
+isPassedTestCaseResult _ = False
+
 isFailedTestCaseResult :: TestCaseResult -> Bool
 isFailedTestCaseResult (TestCaseResultExpectedButGot _) = True
 isFailedTestCaseResult (TestCaseResultException _) = True
@@ -172,52 +172,6 @@ isFailedTestCaseResult _ = False
 newtype Timeout = Timeout {getTimeout :: Float}
   deriving (Show, Generic)
   deriving newtype (Eq, Num, Ord)
-
-newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
-  deriving (Show, Generic)
-  deriving newtype (Eq, Num, Ord)
-
-
--- ----------------------------------------------------------------------------
--- Utility functions based for reading and writing test suites
--- ----------------------------------------------------------------------------
-
-data TestSuiteStorage m a where
-  WriteTestSuiteResult :: SubmissionInfo -> TestSuiteResults -> TestSuiteStorage m ()
-  ReadTestSuiteResult :: SubmissionInfo -> TestSuiteStorage m (Maybe TestSuiteResults)
-
-writeTestSuiteResult :: Member TestSuiteStorage r => SubmissionInfo -> TestSuiteResults -> Sem r ()
-writeTestSuiteResult info s = send $ WriteTestSuiteResult info s
-
-readTestSuiteResult :: Member TestSuiteStorage r => SubmissionInfo -> Sem r (Maybe TestSuiteResults)
-readTestSuiteResult info = send $ ReadTestSuiteResult info
-
-runTestSuiteStorageFileSystem :: Member (Embed IO) r => Sem (TestSuiteStorage : r) a ->  Sem (r) a
-runTestSuiteStorageFileSystem = interpret $ \case
-  WriteTestSuiteResult SubmissionInfo {..} results ->
-    embed $ writeTestSuiteResultIO subId subTestSuite subStudent results
-  ReadTestSuiteResult SubmissionInfo {..} ->
-    embed $ readTestSuiteResultIO subId subTestSuite subStudent
-
-readTestSuiteResultIO ::
-  SubmissionId ->
-  T.Text ->
-  Student ->
-  IO (Maybe TestSuiteResults)
-readTestSuiteResultIO sid suiteName student =
-  decodeFileStrict'
-    (reportSourceJsonFile sid suiteName student)
-
-writeTestSuiteResultIO ::
-  SubmissionId ->
-  T.Text ->
-  Student ->
-  TestSuiteResults ->
-  IO ()
-writeTestSuiteResultIO sid suiteName student testSuiteResults =
-  LBS.writeFile
-    (reportSourceJsonFile sid suiteName student)
-    (Aeson.encodePretty testSuiteResults)
 
 -- ----------------------------------------------------------------------------
 -- Pure functions for extracting filepath information
@@ -228,33 +182,49 @@ studentDir Course {courseRootDir} Student {studentId} =
   courseRootDir </> T.unpack studentId
 
 -- | Filename of the submission file
-studentSourceFile :: Course -> T.Text -> Student -> FilePath
+studentSourceFile :: Course -> Assignment -> Student -> FilePath
 studentSourceFile course suiteName student =
-  studentDir course student </> T.unpack suiteName <.> "hs"
+  studentDir course student </> assignmentPath suiteName <.> "hs"
 
-assignmentCollectDir :: SubmissionId -> T.Text -> FilePath
+assignmentCollectDir :: SubmissionId -> Assignment -> FilePath
 assignmentCollectDir sid suiteName =
-  ( T.unpack suiteName
+  ( assignmentPath suiteName
       <> "-"
       <> show (getSubmissionId sid)
   )
 
 assignmentCollectStudentDir ::
-  SubmissionId -> T.Text -> Student -> FilePath
+  SubmissionId -> Assignment -> Student -> FilePath
 assignmentCollectStudentDir sid suiteName student =
   assignmentCollectDir sid suiteName </> T.unpack (studentId student)
 
-assignmentCollectStudentFile :: SubmissionId -> T.Text -> Student -> FilePath
+assignmentCollectStudentFile ::
+  SubmissionId ->
+  Assignment ->
+  Student ->
+  FilePath
 assignmentCollectStudentFile sid suiteName student =
   assignmentCollectStudentDir sid suiteName student
-    </> T.unpack suiteName <.> "hs"
+    </> assignmentPath suiteName <.> "hs"
 
-reportSourceJsonFile :: SubmissionId -> T.Text -> Student -> FilePath
+reportSourceJsonFile ::
+  SubmissionId ->
+  Assignment ->
+  Student ->
+  FilePath
 reportSourceJsonFile sid suiteName student =
   assignmentCollectStudentDir sid suiteName student </> "report.json"
 
-reportPublishFile :: SubmissionId -> Course -> T.Text -> Student -> FilePath
+reportPublishFile ::
+  SubmissionId ->
+  Course ->
+  Assignment ->
+  Student ->
+  FilePath
 reportPublishFile sid course suiteName student =
   studentDir course student
-    </> T.unpack suiteName
+    </> assignmentPath suiteName
       <.> ("out_" <> show (getSubmissionId sid))
+
+assignmentPath :: Assignment -> FilePath
+assignmentPath (Assignment t) = T.unpack t

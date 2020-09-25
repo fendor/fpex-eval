@@ -12,7 +12,9 @@ import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
 import Fpex.Course.Types
 import qualified Fpex.Grade as Grade
+import Fpex.Grade.Analysis
 import qualified Fpex.Grade.ErrorStudent as ErrorStudent
+import qualified Fpex.Grade.Storage as Grade
 import qualified Fpex.Grade.Types as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
@@ -24,6 +26,7 @@ import Options.Applicative
 import Polysemy
 import Polysemy.Error
 import Polysemy.Reader
+import Polysemy.State
 import System.Directory
 import System.Exit (exitFailure)
 import System.FilePath
@@ -69,45 +72,51 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   case lifecycle of
     Grade GradeCommand {..} ->
       Grade.runTestSuiteStorageFileSystem $
-        runReader (defaultRunnerInfo testTimeout) $
-          runReader course $ do
-            -- Run Error Student, prepare failed submissions, etc...
-            let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId testSuiteName
-            whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
-            errorReports <- withReport "run errorStudent" $ do
-              Grade.runGradeError
-                ( Grade.runTastyTestSuite $
-                    Grade.createEmptyStudent errorStudent
-                )
-                >>= \case
-                  Right errorReport -> return errorReport
-                  Left err -> throw =<< Grade.prettyRunnerError errorStudent err
+        evalState (mempty :: AnalysisState) $
+          runStatefulAnalyser $
+            runReader (defaultRunnerInfo testTimeout) $
+              runReader course $ do
+                -- Run Error Student, prepare failed submissions, etc...
+                let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId testSuiteName
+                whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
+                errorReports <- withReport "run errorStudent" $ do
+                  Grade.runGradeError
+                    ( Grade.runTastyTestSuite $
+                        Grade.createEmptyStudent gradeBaseDefinitions errorStudent
+                    )
+                    >>= \case
+                      Right errorReport -> return errorReport
+                      Left err -> throw =<< Grade.prettyRunnerError errorStudent err
 
-            -- Run testsuite grading for all students.
-            forM_ students $ \student -> do
-              withReport ("run testsuite for student " <> studentId student) $ do
-                let subInfo =
-                      Grade.SubmissionInfo
-                        { Grade.subStudent = student,
-                          Grade.subId = optionSubmissionId,
-                          Grade.subTestSuite = testSuiteName
-                        }
-                runReader subInfo $
-                  runReader errorReports $
-                    Grade.runGradeError $
-                      Grade.runTastyTestSuite $ do
-                        submissionResult <- Grade.runSubmission
-                        prettyTestReport submissionResult
+                -- Run testsuite grading for all students.
+                forM_ students $ \student -> do
+                  withReport ("run testsuite for student " <> studentId student) $ do
+                    let subInfo =
+                          SubmissionInfo
+                            { subStudent = student,
+                              subId = optionSubmissionId,
+                              subTestSuite = testSuiteName
+                            }
+                    runReader subInfo $
+                      runReader errorReports $
+                        Grade.runGradeError $
+                          Grade.runTastyTestSuite $ do
+                            submissionResult <- Grade.runSubmission
+                            analyseTestSuite subInfo submissionResult
+                            prettyTestReport submissionResult
+
+                analysisReport <- finalAnalysisReport
+                runReader errorReports $ printFinalAnalysisReport analysisReport
     Collect CollectCommand -> do
       embed $
         Collect.prepareSubmissionFolder
           optionSubmissionId
           testSuiteName
-      _ <-
-        embed $
-          Collect.createEmptyStudent
-            optionSubmissionId
-            testSuiteName
+
+      embed $
+        Collect.createEmptyStudent
+          optionSubmissionId
+          testSuiteName
       collectResults <- forM students $ \student -> do
         embed $
           Collect.collectSubmission
@@ -147,10 +156,10 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
       forM_ students $ \student -> do
         withReport ("Calculate points for: " <> studentId student) $ do
           let sinfo =
-                Grade.SubmissionInfo
-                  { Grade.subStudent = student,
-                    Grade.subId = optionSubmissionId,
-                    Grade.subTestSuite = testSuiteName
+                SubmissionInfo
+                  { subStudent = student,
+                    subId = optionSubmissionId,
+                    subTestSuite = testSuiteName
                   }
 
           mts <- Grade.readTestSuiteResult sinfo
@@ -165,9 +174,9 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
       let suiteName = optionTestSuiteName
       embed $
         T.putStrLn $
-          "Show Difference between " <> T.pack (show $ Grade.getSubmissionId currentSid)
+          "Show Difference between " <> T.pack (show $ getSubmissionId currentSid)
             <> " and "
-            <> T.pack (show $ Grade.getSubmissionId oldSid)
+            <> T.pack (show $ getSubmissionId oldSid)
       forM_ students $ \student -> embed $ do
         moldReport <-
           Aeson.decodeFileStrict $
@@ -213,8 +222,8 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 
 setTestSuite ::
   Members [Error Text, Embed IO] r =>
-  Grade.SubmissionId ->
-  Text ->
+  SubmissionId ->
+  Assignment ->
   FilePath ->
   Sem r ()
 setTestSuite optionSubmissionId testSuiteName testSuiteSpec = do

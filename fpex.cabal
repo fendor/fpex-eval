@@ -10,8 +10,8 @@ common exts
   default-extensions:
     BangPatterns
     DataKinds
-    DataKinds
     DeriveAnyClass
+    DerivingVia
     DeriveGeneric
     DerivingStrategies
     FlexibleContexts
@@ -41,7 +41,9 @@ library
     Fpex.Course.CourseSetup
     Fpex.Course.Types
     Fpex.Grade
+    Fpex.Grade.Analysis
     Fpex.Grade.ErrorStudent
+    Fpex.Grade.Storage
     Fpex.Grade.Tasty
     Fpex.Grade.Types
     Fpex.Main
@@ -80,6 +82,7 @@ library
     , temporary
     , text
     , typed-process
+    , semigroups
     , unordered-containers
 
   default-language: Haskell2010

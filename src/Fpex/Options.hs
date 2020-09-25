@@ -1,6 +1,5 @@
 module Fpex.Options where
 
-import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade.Types
 import Options.Applicative
@@ -20,9 +19,9 @@ data OptionCommand
   deriving (Show)
 
 data FinalPointsCommand = FinalPointsCommand
-  { finalPointsSubmissionIds :: [SubmissionId]
-  , finalPointsSubmissions :: [T.Text]
-  , finalPointsOutput :: FilePath
+  { finalPointsSubmissionIds :: [SubmissionId],
+    finalPointsSubmissions :: [Assignment],
+    finalPointsOutput :: FilePath
   }
   deriving (Show, Eq, Ord)
 
@@ -37,7 +36,7 @@ data LifeCycle
 
 data TestSuiteOptions = TestSuiteOptions
   { optionSubmissionId :: SubmissionId,
-    optionTestSuiteName :: T.Text
+    optionTestSuiteName :: Assignment
   }
   deriving (Show, Eq)
 
@@ -54,8 +53,10 @@ data SetupCommand = SetupCommand
 
 data GradeCommand = GradeCommand
   { -- | Time in seconds each test may at most run before abort.
-    testTimeout :: Timeout
-  , gradeTestSuite :: Maybe FilePath -- ^ Set the test-suite for the grading cycle.
+    testTimeout :: Timeout,
+    gradeBaseDefinitions :: FilePath,
+    -- | Set the test-suite for the grading cycle.
+    gradeTestSuite :: Maybe FilePath
   }
   deriving (Show, Eq)
 
@@ -87,9 +88,10 @@ options =
           ( long "test-suite" <> action "file" <> help "Test-suite specification (Haskell file)"
           )
       testSuiteNameParser =
-        strOption
-          ( long "name" <> help "Name of the test-suite."
-          )
+        Assignment
+          <$> strOption
+            ( long "name" <> help "Name of the test-suite."
+            )
       submissionIdParser =
         SubmissionId
           <$> option
@@ -123,6 +125,10 @@ options =
                                 <> value 5.0
                             )
                       )
+                  <*> strOption
+                    ( long "definitions"
+                        <> help "Describes functions and datatypes under test. This is the base submission, used to evaluate all students."
+                    )
                   <*> optional testSuiteParser
               )
       setupParser =
@@ -157,12 +163,16 @@ options =
                       )
               )
       diffResultParser = DiffResults <$> (DiffResultsCommand <$> oldSubmissionIdParser)
-      finalPointsParser = FinalPoints <$> (FinalPointsCommand <$> many submissionIdParser <*> many testSuiteNameParser <*> option
+      finalPointsParser =
+        FinalPoints
+          <$> ( FinalPointsCommand <$> many submissionIdParser <*> many testSuiteNameParser
+                  <*> option
                     str
                     ( long "output"
                         <> help
                           "Output directory for point results"
-                    ))
+                    )
+              )
       withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
       commandParser =
         hsubparser

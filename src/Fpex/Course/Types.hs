@@ -2,6 +2,7 @@ module Fpex.Course.Types where
 
 import Data.Aeson
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 data Course = Course
@@ -37,3 +38,22 @@ newtype Student = Student
 
 ghciEnvironmentLocation :: Course -> FilePath
 ghciEnvironmentLocation Course {courseGhciEnvironment} = courseGhciEnvironment
+
+newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
+  deriving (Show, Generic)
+  deriving newtype (Eq, Num, Ord)
+
+newtype TestSuitePath = TestSuiteTestSuitePath
+  {getTestSuitePath :: FilePath}
+  deriving (Show, Eq, Ord)
+
+newtype Assignment = Assignment
+  {getAssignment :: T.Text}
+  deriving (Show, Eq, Ord)
+
+data SubmissionInfo = SubmissionInfo
+  { subStudent :: Student,
+    subId :: SubmissionId,
+    subTestSuite :: Assignment
+  }
+  deriving (Show, Eq, Ord)

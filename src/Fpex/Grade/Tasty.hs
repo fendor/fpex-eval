@@ -2,11 +2,12 @@ module Fpex.Grade.Tasty where
 
 import qualified Data.Aeson.Combinators.Decode as ACD
 import Data.Aeson.Internal as AesonInternal
-import Data.Char (isSpace)
+import Data.Char
 import qualified Data.Text as T
 import Control.Applicative
 import Text.ParserCombinators.ReadP
 import Fpex.Grade.Types
+import Data.List (isInfixOf)
 
 
 -- ----------------------------------------------------------------------------
@@ -114,7 +115,7 @@ decodeTastyGradingReport' = do
 
     parseError :: T.Text -> TestCaseResult
     parseError t =
-      fst . head . filter (null . snd) $
+      fst . head $
         readP_to_S
           testCaseResultParser
           (T.unpack t)
@@ -123,6 +124,7 @@ testCaseResultParser :: ReadP TestCaseResult
 testCaseResultParser =
   timeoutParser
     <++ expectedButGotParser
+    <++ notSubmittedParser
     <++ someExceptionParser
 
 timeoutParser :: ReadP TestCaseResult
@@ -130,6 +132,13 @@ timeoutParser = do
   _ <- string "Timeout"
   eof
   pure TestCaseResultTimeout
+
+notSubmittedParser :: ReadP TestCaseResult
+notSubmittedParser = do
+  s <- look
+  if isInfixOf "Variable not in scope" s
+    then pure TestCaseResultNotSubmitted
+    else pfail
 
 expectedButGotParser :: ReadP TestCaseResult
 expectedButGotParser = do

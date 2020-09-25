@@ -2,8 +2,6 @@ module Fpex.Collect where
 
 import Control.Monad.Extra (whenM)
 import qualified Data.ByteString as BS
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Fpex.Course.Types
 import Fpex.Grade.Types
 import System.Directory
@@ -14,7 +12,7 @@ import Fpex.Grade.ErrorStudent (errorStudent)
 data FailureReason = NoSubmission
   deriving (Show, Eq, Read)
 
-setTestSuite :: SubmissionId -> T.Text -> FilePath -> IO ()
+setTestSuite :: SubmissionId -> Assignment -> FilePath -> IO ()
 setTestSuite sid suiteName testSuite = do
   let targetDir = assignmentCollectDir sid suiteName
   createDirectoryIfMissing True targetDir
@@ -24,12 +22,12 @@ setTestSuite sid suiteName testSuite = do
   putStrLn $ "copy " <> testSuite <> " to " <> targetDir
   copyFile testSuite testSuiteTarget
 
-prepareSubmissionFolder :: SubmissionId -> T.Text -> IO ()
+prepareSubmissionFolder :: SubmissionId -> Assignment -> IO ()
 prepareSubmissionFolder sid suiteName = do
   let targetDir = assignmentCollectDir sid suiteName
   createDirectoryIfMissing True targetDir
 
-collectSubmission :: SubmissionId -> Course -> T.Text -> Student -> IO (Either FailureReason FilePath)
+collectSubmission :: SubmissionId -> Course -> Assignment -> Student -> IO (Either FailureReason FilePath)
 collectSubmission sid course suiteName student = do
   let sourceFile = studentSourceFile course suiteName student
   let targetDir = assignmentCollectStudentDir sid suiteName student
@@ -54,13 +52,9 @@ collectSubmission sid course suiteName student = do
 -- | Create a directory
 createEmptyStudent ::
   SubmissionId ->
-  T.Text ->
-  IO (Either FailureReason FilePath)
+  Assignment ->
+  IO ()
 createEmptyStudent sid suiteName = do
   let targetDir =
         assignmentCollectStudentDir sid suiteName errorStudent
-  let targetFile =
-        assignmentCollectStudentFile sid suiteName errorStudent
   createDirectoryIfMissing True targetDir
-  T.writeFile targetFile ("module " <> suiteName <> " where\n")
-  return $ Right targetFile

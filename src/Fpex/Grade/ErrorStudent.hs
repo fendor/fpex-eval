@@ -1,8 +1,6 @@
 module Fpex.Grade.ErrorStudent where
 
-import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Grade.Types
 
 errorStudent :: Student
 errorStudent = Student "errorStudent"
@@ -10,7 +8,7 @@ errorStudent = Student "errorStudent"
 isErrorStudent :: Student -> Bool
 isErrorStudent = (== errorStudent)
 
-errorStudentSubmissionInfo :: SubmissionId -> T.Text -> SubmissionInfo
+errorStudentSubmissionInfo :: SubmissionId -> Assignment -> SubmissionInfo
 errorStudentSubmissionInfo sid suiteName =
   SubmissionInfo
     { subId = sid,

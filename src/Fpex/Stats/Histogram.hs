@@ -4,14 +4,13 @@ module Fpex.Stats.Histogram where
 import           Fpex.Grade.Types
 import qualified Data.Aeson                    as Aeson
 import           Data.Array
-import qualified Data.Text as T
 import           Data.Function                  ( (&) )
 import           Data.List                      ( transpose )
 import           Fpex.Course.Types
 import           Control.Monad                  ( forM )
 import           Text.Printf                    ( printf )
 
-compute :: SubmissionId -> Course -> T.Text -> IO [(Int, Double)]
+compute :: SubmissionId -> Course -> Assignment -> IO [(Int, Double)]
 compute sid Course {..} suiteName = do
 
     points <- forM courseParticipants $ \student -> do
