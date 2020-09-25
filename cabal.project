@@ -1,5 +1,5 @@
 packages:
     ./
 
-packages *
+package *
   ghc-options: -haddock
