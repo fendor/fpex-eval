@@ -1,0 +1,13 @@
+TestSuite1 Spec
+  Fib tests
+    Basic Fib Test 1: OK
+    Basic Fib Test 2: OK
+    Basic Fib Test 3: TIMEOUT (5.05s)
+      Timed out after 5.0
+  Bar tests
+    Basic Bar Test 1: FAIL (0.03s)
+      ../Main.hs:40:
+      expected: 2
+       but got: 1
+
+2 out of 4 tests failed (5.05s)

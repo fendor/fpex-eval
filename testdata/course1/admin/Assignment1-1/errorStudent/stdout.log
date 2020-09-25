@@ -1,0 +1,25 @@
+TestSuite1 Spec
+  Fib tests
+    Basic Fib Test 1: FAIL
+      Exception: Prelude.undefined
+      CallStack (from HasCallStack):
+        error, called at libraries/base/GHC/Err.hs:80:14 in base:GHC.Err
+        undefined, called at ./Assignment1.hs:4:9 in main:Assignment1
+    Basic Fib Test 2: FAIL
+      Exception: Prelude.undefined
+      CallStack (from HasCallStack):
+        error, called at libraries/base/GHC/Err.hs:80:14 in base:GHC.Err
+        undefined, called at ./Assignment1.hs:4:9 in main:Assignment1
+    Basic Fib Test 3: FAIL
+      Exception: Prelude.undefined
+      CallStack (from HasCallStack):
+        error, called at libraries/base/GHC/Err.hs:80:14 in base:GHC.Err
+        undefined, called at ./Assignment1.hs:4:9 in main:Assignment1
+  Bar tests
+    Basic Bar Test 1: FAIL
+      Exception: Prelude.undefined
+      CallStack (from HasCallStack):
+        error, called at libraries/base/GHC/Err.hs:80:14 in base:GHC.Err
+        undefined, called at ./Assignment1.hs:7:7 in main:Assignment1
+
+4 out of 4 tests failed (0.00s)
