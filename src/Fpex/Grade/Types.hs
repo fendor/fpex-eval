@@ -188,10 +188,9 @@ studentSourceFile course suiteName student =
 
 assignmentCollectDir :: SubmissionId -> Assignment -> FilePath
 assignmentCollectDir sid suiteName =
-  ( assignmentPath suiteName
-      <> "-"
-      <> show (getSubmissionId sid)
-  )
+  assignmentPath suiteName
+    <> "-"
+    <> show (getSubmissionId sid)
 
 assignmentCollectStudentDir ::
   SubmissionId -> Assignment -> Student -> FilePath
@@ -223,8 +222,21 @@ reportPublishFile ::
   FilePath
 reportPublishFile sid course suiteName student =
   studentDir course student
-    </> assignmentPath suiteName
-      <.> ("out_" <> show (getSubmissionId sid))
+    </> reportName sid suiteName
+
+reportFeedbackFile ::
+  SubmissionId ->
+  Assignment ->
+  Student ->
+  FilePath
+reportFeedbackFile sid suiteName student =
+  assignmentCollectStudentDir sid suiteName student
+    </> reportName sid suiteName
+
+reportName :: SubmissionId -> Assignment -> String
+reportName sid suiteName =
+  assignmentPath suiteName
+    <.> ("out_" <> show (getSubmissionId sid))
 
 assignmentPath :: Assignment -> FilePath
 assignmentPath (Assignment t) = T.unpack t

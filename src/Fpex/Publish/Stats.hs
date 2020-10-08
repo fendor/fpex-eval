@@ -4,23 +4,24 @@ import Control.Monad (forM)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Fpex.Course.Types
+import Fpex.Grade.Storage
 import Fpex.Grade.Types
-import Fpex.Grade.Storage (readTestSuiteResultIO)
+import Polysemy
 
 data PointsCalc
   = Mean
   | Max
 
-allPoints :: [Student] -> [Assignment] -> [SubmissionId] -> IO (Map.Map Student (Map.Map (Assignment, SubmissionId) (Points, Points)))
+allPoints :: Members [Embed IO, TestSuiteStorage] r => [Student] -> [Assignment] -> [SubmissionId] -> Sem r (Map.Map Student (Map.Map (Assignment, SubmissionId) (Points, Points)))
 allPoints students suites sids = do
   r <- forM students $ \student -> studentPointReport suites sids student >>= pure . (student,)
   pure $ Map.fromList r
 
-studentPointReport :: [Assignment] -> [SubmissionId] -> Student -> IO (Map.Map (Assignment, SubmissionId) (Points, Points))
+studentPointReport :: Members [Embed IO, TestSuiteStorage] r => [Assignment] -> [SubmissionId] -> Student -> Sem r (Map.Map (Assignment, SubmissionId) (Points, Points))
 studentPointReport suites sids student = do
   let tuples = (,) <$> suites <*> sids
   r <- forM tuples $ \(suite, sid) -> do
-    Just r <- readTestSuiteResultIO sid suite student
+    r <- readTestSuiteResult $ SubmissionInfo student sid suite
     pure $ ((suite, sid), (testSuitePoints r, maxScore r))
   pure $ Map.fromList r
 

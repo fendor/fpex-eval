@@ -11,9 +11,9 @@ common exts
     BangPatterns
     DataKinds
     DeriveAnyClass
-    DerivingVia
     DeriveGeneric
     DerivingStrategies
+    DerivingVia
     FlexibleContexts
     FlexibleInstances
     GADTs
@@ -70,6 +70,8 @@ library
     , base
     , bytestring
     , clock
+    , co-log
+    , co-log-polysemy
     , colourista
     , containers
     , directory
@@ -79,10 +81,10 @@ library
     , polysemy
     , polysemy-plugin
     , regex-tdfa
+    , semigroups
     , temporary
     , text
     , typed-process
-    , semigroups
     , unordered-containers
 
   default-language: Haskell2010

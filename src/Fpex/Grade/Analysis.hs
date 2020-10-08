@@ -61,18 +61,22 @@ runStatefulAnalyser = interpret $ \case
         passedAllTests = Any $ numberOfTests t == correctTests t
         oldSubmission = previousSubmission sinfo
     let testsPassed = Map.fromList $ zip [1 ..] $ getTestsSatisfying isPassedTestCaseResult t
-    pointRegression <- pure []
-    -- readTestSuiteResult oldSubmission >>= \case
-    --   Nothing -> pure []
-    --   Just oldResult
-    --     | testSuitePoints t < testSuitePoints oldResult ->
-    --       case () of
-    --         _
-    --           | isNotSubmittedReport t ->
-    --             pure [(sinfo, ReasonNotSubmitted)]
-    --           | isCompileFailReport t -> pure [(sinfo, ReasonCompileFail)]
-    --           | otherwise -> pure [(sinfo, ReasonFewerPoints (testSuitePoints oldResult) (testSuitePoints t))]
-    --     | otherwise -> pure []
+    pointRegression <-
+      doesTestSuiteResultExist oldSubmission >>= \case
+        False -> pure []
+        True ->
+          readTestSuiteResult oldSubmission >>= \case
+            oldResult
+              | testSuitePoints t < testSuitePoints oldResult ->
+                case () of
+                  _
+                    | isNotSubmittedReport t ->
+                      pure [(sinfo, ReasonNotSubmitted)]
+                    | isCompileFailReport t ->
+                      pure [(sinfo, ReasonCompileFail)]
+                    | otherwise ->
+                      pure [(sinfo, ReasonFewerPoints (testSuitePoints oldResult) (testSuitePoints t))]
+              | otherwise -> pure []
 
     State.modify (<> AnalysisState {..})
     pure Nothing
@@ -109,7 +113,7 @@ printFinalAnalysisReport (AnalysisReport AnalysisState {..}) = do
           infoMessage $
             " Previously " <> formatWith [red] (T.pack $ show oldPoints) <> " Points, now "
               <> formatWith [yellow] (T.pack $ show newPoints)
-              <> "Points"
+              <> " Points"
 
   when (not . null $ testsNoOnePassed) $ do
     embed $ warningMessage "There are test cases that not a single student passed!"

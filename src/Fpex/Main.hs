@@ -1,5 +1,8 @@
 module Fpex.Main where
 
+import Colog.Actions
+import Colog.Polysemy
+import qualified Colog.Polysemy as Log
 import Colourista
 import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
@@ -14,7 +17,7 @@ import Fpex.Course.Types
 import qualified Fpex.Grade as Grade
 import Fpex.Grade.Analysis
 import qualified Fpex.Grade.ErrorStudent as ErrorStudent
-import qualified Fpex.Grade.Storage as Grade
+import qualified Fpex.Grade.Storage as Storage
 import qualified Fpex.Grade.Types as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
@@ -33,25 +36,25 @@ import System.FilePath
 
 defaultMain :: IO ()
 defaultMain =
-  (runM . runError $ defaultMain') >>= \case
+  (runM . runError . runLogActionSem logTextStderr $ defaultMain') >>= \case
     Right () -> return ()
     Left e -> do
       errorMessage e
       exitFailure
 
-defaultMain' :: Members [Error Text, Embed IO] r => Sem r ()
+defaultMain' :: Members [Log.Log T.Text, Error Text, Embed IO] r => Sem r ()
 defaultMain' = do
   opts <- embed $ execParser options
   case optionCommand opts of
     Setup setupCommand -> Setup.courseSetup setupCommand
-    FinalPoints FinalPointsCommand {..} -> do
+    FinalPoints FinalPointsCommand {..} -> Storage.runTestSuiteStorageFileSystem $ do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
       outputDir <- embed $ canonicalizePath finalPointsOutput
       embed $ setCurrentDirectory courseDir
       embed $ createDirectoryIfMissing True outputDir
       forM_ students $ \student -> do
-        report <- embed $ studentPointReport finalPointsSubmissions finalPointsSubmissionIds student
+        report <- studentPointReport finalPointsSubmissions finalPointsSubmissionIds student
         let prettyReport = renderPoints finalPointsSubmissions finalPointsSubmissionIds Mean student report
         embed $ T.writeFile (outputDir </> T.unpack (studentId student) <.> "md") prettyReport
     Lc gradeTestSuiteOptions lifecycle -> do
@@ -61,7 +64,7 @@ defaultMain' = do
       dispatchLifeCycle Course {..} students gradeTestSuiteOptions lifecycle
 
 dispatchLifeCycle ::
-  Members [Error Text, Embed IO] r =>
+  Members [Log.Log T.Text, Error Text, Embed IO] r =>
   Course ->
   [Student] ->
   TestSuiteOptions ->
@@ -71,7 +74,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   let testSuiteName = optionTestSuiteName
   case lifecycle of
     Grade GradeCommand {..} ->
-      Grade.runTestSuiteStorageFileSystem $
+      Storage.runTestSuiteStorageFileSystem $
         evalState (mempty :: AnalysisState) $
           runStatefulAnalyser $
             runReader (defaultRunnerInfo testTimeout) $
@@ -102,7 +105,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                         Grade.runGradeError $
                           Grade.runTastyTestSuite $ do
                             submissionResult <- Grade.runSubmission
-                            analyseTestSuite subInfo submissionResult
+                            _warnings <- analyseTestSuite subInfo submissionResult
                             prettyTestReport submissionResult
 
                 analysisReport <- finalAnalysisReport
@@ -132,14 +135,15 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
             <> "/"
             <> T.pack (show (length students))
             <> " submissions."
-    Publish PublishCommand -> do
-      forM_ students $ \student -> do
-        embed $
-          Publish.publishTestResult
-            optionSubmissionId
-            course
-            testSuiteName
-            student
+    Feedback FeedbackCommand {..} ->
+      Storage.runTestSuiteStorageFileSystem $
+        runReader course $
+          Publish.runPublisherService $ do
+            forM_ students $ \student -> do
+              let sinfo = SubmissionInfo student optionSubmissionId testSuiteName
+              Publish.writeTestFeedback sinfo
+              when publish $
+                Publish.publishTestFeedback sinfo
     Stats StatCommand {..} -> do
       stats <-
         embed
@@ -152,7 +156,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
-    RecalculatePoints -> Grade.runTestSuiteStorageFileSystem $
+    RecalculatePoints -> Storage.runTestSuiteStorageFileSystem $
       forM_ students $ \student -> do
         withReport ("Calculate points for: " <> studentId student) $ do
           let sinfo =
@@ -162,13 +166,10 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                     subTestSuite = testSuiteName
                   }
 
-          mts <- Grade.readTestSuiteResult sinfo
-          case mts of
-            Nothing -> throw "Inconsistent state, could not decode test-suite."
-            Just ts -> do
-              let newTs = Grade.recalculateTestPoints ts
-              Grade.writeTestSuiteResult sinfo newTs
-    DiffResults DiffResultsCommand {..} -> do
+          ts <- Storage.readTestSuiteResult sinfo
+          let newTs = Grade.recalculateTestPoints ts
+          Storage.writeTestSuiteResult sinfo newTs
+    DiffResults DiffResultsCommand {..} -> Storage.runTestSuiteStorageFileSystem $ do
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
       let suiteName = optionTestSuiteName
@@ -177,15 +178,9 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
           "Show Difference between " <> T.pack (show $ getSubmissionId currentSid)
             <> " and "
             <> T.pack (show $ getSubmissionId oldSid)
-      forM_ students $ \student -> embed $ do
-        moldReport <-
-          Aeson.decodeFileStrict $
-            Grade.reportSourceJsonFile oldSid suiteName student
-        mnewReport <-
-          Aeson.decodeFileStrict $
-            Grade.reportSourceJsonFile currentSid suiteName student
-        let oldReport = fromMaybe (error "TODO") moldReport
-        let newReport = fromMaybe (error "TODO") mnewReport
+      forM_ students $ \student -> do
+        oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid suiteName
+        newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid suiteName
         let oldSubmission = Grade.assignmentCollectStudentFile oldSid suiteName student
         let newSubmission = Grade.assignmentCollectStudentFile currentSid suiteName student
         let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
@@ -195,7 +190,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
         let oldScore = Grade.testSuitePoints oldReport
         let newScore = Grade.testSuitePoints newReport
         if oldScore /= newScore || any (/= 0) [correctTests, failedTests, notSubmittedTests, timeoutTests]
-          then do
+          then embed $ do
             T.putStrLn $ "Difference for " <> studentId student
             T.putStrLn $ "  Old: " <> T.pack oldSubmission <> " -- Points: " <> T.pack (show oldScore)
             T.putStrLn $ "  New: " <> T.pack newSubmission <> " -- Points: " <> T.pack (show newScore)
@@ -212,7 +207,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                     ", Timeout: ",
                     T.pack $ show timeoutTests
                   ]
-          else T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
+          else embed $ T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
         return ()
       return ()
 

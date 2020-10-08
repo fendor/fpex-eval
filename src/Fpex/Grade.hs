@@ -1,11 +1,15 @@
 module Fpex.Grade where
 
+import Colog.Polysemy
+import qualified Colog.Polysemy as Log
 import Control.Monad.Extra (unlessM)
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Function
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as T
 import Fpex.Course.Types
-import Fpex.Grade.Storage (TestSuiteStorage, writeTestSuiteResult)
+import Fpex.Grade.Storage
 import Fpex.Grade.Tasty as Eval
 import Fpex.Grade.Types as Eval
 import Polysemy
@@ -13,7 +17,6 @@ import Polysemy.Error
 import Polysemy.Internal
 import Polysemy.Reader
 import System.Directory
-import System.Exit (ExitCode (..))
 import System.FilePath
   ( (</>),
   )
@@ -85,7 +88,7 @@ runTastyTestSuite = interpret $ \case
             unwords
               [ ":main",
                 "-j",
-                "12",
+                "1",
                 "-t",
                 show (getTimeout testTimeout),
                 "--grading-json",
@@ -96,7 +99,7 @@ runTastyTestSuite = interpret $ \case
         procConfig =
           Proc.proc "ghci" procArgs
             & Proc.setWorkingDir targetDir
-    (procRes, sout, serr) <- Proc.readProcess procConfig
+    (_procRes, sout, serr) <- Proc.readProcess procConfig
     -- Write logs to files
     embed $ do
       LBS.writeFile (targetDir </> "stderr.log") serr
@@ -111,7 +114,8 @@ runTastyTestSuite = interpret $ \case
 
 runSubmission ::
   Members
-    [ Error T.Text,
+    [ Log T.Text,
+      Error T.Text,
       Error RunnerError,
       Reader ErrorReports,
       Reader SubmissionInfo,
@@ -127,8 +131,8 @@ runSubmission = do
   testSuiteResult <-
     runTestSuite submissionInfo
       `catch` \case
-        (RunnerInternalError _ _serr) -> do
-          -- embed $ LBS.putStrLn serr
+        (RunnerInternalError _ serr) -> do
+          Log.log $ TL.toStrict $ T.decodeUtf8 serr
           CompileFailReport compileFailTestSuite <- asks compileFailReport
           pure compileFailTestSuite
         NoSubmission -> do

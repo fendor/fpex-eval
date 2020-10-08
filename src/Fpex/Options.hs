@@ -28,7 +28,7 @@ data FinalPointsCommand = FinalPointsCommand
 data LifeCycle
   = Collect CollectCommand
   | Grade GradeCommand
-  | Publish PublishCommand
+  | Feedback FeedbackCommand
   | Stats StatCommand
   | DiffResults DiffResultsCommand
   | RecalculatePoints
@@ -63,7 +63,8 @@ data GradeCommand = GradeCommand
 data CollectCommand = CollectCommand
   deriving (Show, Eq)
 
-data PublishCommand = PublishCommand
+data FeedbackCommand = FeedbackCommand
+  { publish :: Bool }
   deriving (Show, Eq)
 
 data StatCommand = StatCommand
@@ -127,7 +128,8 @@ options =
                       )
                   <*> strOption
                     ( long "definitions"
-                        <> help "Describes functions and datatypes under test. This is the base submission, used to evaluate all students."
+                        <> help ("Describes functions and datatypes under test."
+                        <> " This is the base submission, used to evaluate all students.")
                     )
                   <*> optional testSuiteParser
               )
@@ -154,7 +156,7 @@ options =
                     )
               )
       collectParser = Collect <$> pure CollectCommand
-      publishParser = Publish <$> pure PublishCommand
+      publishParser = Feedback <$> (FeedbackCommand <$> switch (long "publish" <> help "Publish the feedback"))
       statParser =
         Stats
           <$> ( StatCommand
@@ -179,7 +181,7 @@ options =
           ( command "setup" (info setupParser fullDesc)
               <> command "collect" (info (withOptions collectParser) fullDesc)
               <> command "grade" (info (withOptions gradeParser) fullDesc)
-              <> command "publish" (info (withOptions publishParser) fullDesc)
+              <> command "feedback" (info (withOptions publishParser) fullDesc)
               <> command "stats" (info (withOptions statParser) fullDesc)
               <> command "diff" (info (withOptions diffResultParser) fullDesc)
               <> command "recalculate" (info (withOptions $ pure RecalculatePoints) fullDesc)
