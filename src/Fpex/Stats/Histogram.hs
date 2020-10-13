@@ -10,7 +10,7 @@ import           Fpex.Course.Types
 import           Control.Monad                  ( forM )
 import           Text.Printf                    ( printf )
 
-compute :: SubmissionId -> Course -> Assignment -> IO [(Int, Double)]
+compute :: SubmissionId -> Course -> SubmissionName -> IO [(Int, Double)]
 compute sid Course {..} suiteName = do
 
     points <- forM courseParticipants $ \student -> do

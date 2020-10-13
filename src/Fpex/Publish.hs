@@ -15,54 +15,55 @@ import Polysemy.Reader
 import System.Directory
 import System.FilePath
 
+data FeedbackState =
+  WriteFeedback
+  | PublishFeedback
+
 data Publisher m a where
-  WriteTestFeedback :: SubmissionInfo -> Publisher m ()
-  PublishTestFeedback :: SubmissionInfo -> Publisher m ()
+  WriteTestFeedback :: SubmissionInfo -> FeedbackState -> Publisher m ()
+writeTestFeedback :: Member Publisher r => SubmissionInfo -> FeedbackState -> Sem r ()
+writeTestFeedback sinfo s = send (WriteTestFeedback sinfo s)
 
-writeTestFeedback :: Member Publisher r => SubmissionInfo -> Sem r ()
-writeTestFeedback sinfo = send (WriteTestFeedback sinfo)
-
-publishTestFeedback :: Member Publisher r => SubmissionInfo -> Sem r ()
-publishTestFeedback sinfo = send (PublishTestFeedback sinfo)
-
-runPublisherService :: Members [Log.Log T.Text, TestSuiteStorage, Embed IO, Error T.Text, Reader Course] r => Sem (Publisher : r) a -> Sem r a
+runPublisherService :: Members [Log.Log T.Text, Storage, Embed IO, Error T.Text, Reader Course] r => Sem (Publisher : r) a -> Sem r a
 runPublisherService = interpret $ \case
-  WriteTestFeedback sinfo -> do
-    _resultPath <- writeTestResultFeedback sinfo
-    pure ()
-  PublishTestFeedback sinfo ->
-    publishTestResult sinfo
+  WriteTestFeedback sinfo s ->
+    case s of
+      WriteFeedback -> do
+        _resultPath <- writeTestResultFeedback sinfo
+        pure ()
+      PublishFeedback -> do
+        publishTestResult sinfo
 
 -- | Publish assignment of single student
 publishTestResult ::
-  Members [Log.Log T.Text, TestSuiteStorage, Embed IO, Error T.Text, Reader Course] r =>
+  Members [Log.Log T.Text, Storage, Embed IO, Error T.Text, Reader Course] r =>
   SubmissionInfo ->
   Sem r ()
 publishTestResult SubmissionInfo {..} = do
   course <- ask
-  let fp = reportFeedbackFile subId subTestSuite subStudent
-  let targetFile = reportPublishFile subId course subTestSuite subStudent
+  let fp = reportFeedbackFile subId subName subStudent
+  let targetFile = reportPublishFile subId course subName subStudent
   embed $ copyFile fp targetFile
-  copyHandwrittenFeedback course subId subTestSuite subStudent
+  copyHandwrittenFeedback course subId subName subStudent
 
 writeTestResultFeedback ::
-  Members [Log.Log T.Text, TestSuiteStorage, Embed IO, Error T.Text, Reader Course] r =>
+  Members [Log.Log T.Text, Storage, Embed IO, Error T.Text, Reader Course] r =>
   SubmissionInfo ->
   Sem r FilePath
 writeTestResultFeedback sinfo@SubmissionInfo {..} = do
-  let targetFile = reportFeedbackFile subId subTestSuite subStudent
+  let targetFile = reportFeedbackFile subId subName subStudent
   Log.log $ "publish " <> T.pack targetFile
   testSuiteResults <- readTestSuiteResult sinfo
   let prettyTextReport = Publish.prettyTestReport testSuiteResults
   embed (T.writeFile targetFile prettyTextReport)
   pure targetFile
 
-copyHandwrittenFeedback :: Members [Log.Log T.Text, Embed IO] r => Course -> SubmissionId -> Assignment -> Student -> Sem r ()
+copyHandwrittenFeedback :: Members [Log.Log T.Text, Embed IO] r => Course -> SubmissionId -> SubmissionName -> Student -> Sem r ()
 copyHandwrittenFeedback course sid suiteName student = do
-  let sourceDir = assignmentCollectStudentDir sid suiteName student
+  let sourceDir = assignmentCollectStudentDir' sid suiteName student
   let targetDir = studentDir course student
   let feedbackFile = sourceDir </> "Feedback.md"
-  let feedbackTarget = targetDir </> (T.unpack (getAssignment suiteName <> "_Feedback")) <.> "md"
+  let feedbackTarget = targetDir </> (T.unpack (getSubmissionName suiteName <> "_Feedback")) <.> "md"
   exists <- embed $ doesFileExist feedbackFile
   when exists $ do
     Log.log $ "publish feedback " <> T.pack feedbackFile

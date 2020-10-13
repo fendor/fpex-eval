@@ -7,10 +7,13 @@ import Data.Typeable (Typeable)
 import Fpex.Course.Types
 import GHC.Generics (Generic)
 import System.FilePath
+import Polysemy
+import Polysemy.Reader (asks, Reader)
 
 data RunnerInfo = RunnerInfo
   { runnerInfoTimeout :: Timeout,
-    runnerInfoReportOutput :: FilePath
+    runnerInfoReportOutput :: FilePath,
+    runnerInfoStudentSubmission :: StudentSubmission
   }
   deriving (Show, Eq, Ord)
 
@@ -182,42 +185,48 @@ studentDir Course {courseRootDir} Student {studentId} =
   courseRootDir </> T.unpack studentId
 
 -- | Filename of the submission file
-studentSourceFile :: Course -> Assignment -> Student -> FilePath
-studentSourceFile course suiteName student =
-  studentDir course student </> assignmentPath suiteName <.> "hs"
+studentSourceFile :: Course -> StudentSubmission -> Student -> FilePath
+studentSourceFile course studentSubmission student =
+  studentDir course student </> getStudentSubmission studentSubmission
 
-assignmentCollectDir :: SubmissionId -> Assignment -> FilePath
+assignmentCollectDir :: SubmissionId -> SubmissionName -> FilePath
 assignmentCollectDir sid suiteName =
   assignmentPath suiteName
     <> "-"
     <> show (getSubmissionId sid)
 
 assignmentCollectStudentDir ::
-  SubmissionId -> Assignment -> Student -> FilePath
-assignmentCollectStudentDir sid suiteName student =
+  Member (Reader SubmissionInfo) r => Sem r FilePath
+assignmentCollectStudentDir =
+  assignmentCollectStudentDir' <$> asks subId <*> asks subName <*> asks subStudent
+
+assignmentCollectStudentDir' ::
+  SubmissionId -> SubmissionName -> Student -> FilePath
+assignmentCollectStudentDir' sid suiteName student =
   assignmentCollectDir sid suiteName </> T.unpack (studentId student)
 
 assignmentCollectStudentFile ::
   SubmissionId ->
-  Assignment ->
+  SubmissionName ->
+  StudentSubmission ->
   Student ->
   FilePath
-assignmentCollectStudentFile sid suiteName student =
-  assignmentCollectStudentDir sid suiteName student
-    </> assignmentPath suiteName <.> "hs"
+assignmentCollectStudentFile sid suiteName studentSubmission student =
+  assignmentCollectStudentDir' sid suiteName student
+    </> getStudentSubmission studentSubmission
 
 reportSourceJsonFile ::
   SubmissionId ->
-  Assignment ->
+  SubmissionName ->
   Student ->
   FilePath
 reportSourceJsonFile sid suiteName student =
-  assignmentCollectStudentDir sid suiteName student </> "report.json"
+  assignmentCollectStudentDir' sid suiteName student </> "report.json"
 
 reportPublishFile ::
   SubmissionId ->
   Course ->
-  Assignment ->
+  SubmissionName ->
   Student ->
   FilePath
 reportPublishFile sid course suiteName student =
@@ -226,17 +235,17 @@ reportPublishFile sid course suiteName student =
 
 reportFeedbackFile ::
   SubmissionId ->
-  Assignment ->
+  SubmissionName ->
   Student ->
   FilePath
 reportFeedbackFile sid suiteName student =
-  assignmentCollectStudentDir sid suiteName student
+  assignmentCollectStudentDir' sid suiteName student
     </> reportName sid suiteName
 
-reportName :: SubmissionId -> Assignment -> String
+reportName :: SubmissionId -> SubmissionName -> String
 reportName sid suiteName =
   assignmentPath suiteName
     <.> ("out_" <> show (getSubmissionId sid))
 
-assignmentPath :: Assignment -> FilePath
-assignmentPath (Assignment t) = T.unpack t
+assignmentPath :: SubmissionName -> FilePath
+assignmentPath (SubmissionName t) = T.unpack t

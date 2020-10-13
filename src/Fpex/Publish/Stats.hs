@@ -12,12 +12,12 @@ data PointsCalc
   = Mean
   | Max
 
-allPoints :: Members [Embed IO, TestSuiteStorage] r => [Student] -> [Assignment] -> [SubmissionId] -> Sem r (Map.Map Student (Map.Map (Assignment, SubmissionId) (Points, Points)))
+allPoints :: Members [Embed IO, Storage] r => [Student] -> [SubmissionName] -> [SubmissionId] -> Sem r (Map.Map Student (Map.Map (SubmissionName, SubmissionId) (Points, Points)))
 allPoints students suites sids = do
   r <- forM students $ \student -> studentPointReport suites sids student >>= pure . (student,)
   pure $ Map.fromList r
 
-studentPointReport :: Members [Embed IO, TestSuiteStorage] r => [Assignment] -> [SubmissionId] -> Student -> Sem r (Map.Map (Assignment, SubmissionId) (Points, Points))
+studentPointReport :: Members [Embed IO, Storage] r => [SubmissionName] -> [SubmissionId] -> Student -> Sem r (Map.Map (SubmissionName, SubmissionId) (Points, Points))
 studentPointReport suites sids student = do
   let tuples = (,) <$> suites <*> sids
   r <- forM tuples $ \(suite, sid) -> do
@@ -25,7 +25,7 @@ studentPointReport suites sids student = do
     pure $ ((suite, sid), (testSuitePoints r, maxScore r))
   pure $ Map.fromList r
 
-renderPoints :: [Assignment] -> [SubmissionId] -> PointsCalc -> Student -> Map.Map (Assignment, SubmissionId) (Points, Points) -> T.Text
+renderPoints :: [SubmissionName] -> [SubmissionId] -> PointsCalc -> Student -> Map.Map (SubmissionName, SubmissionId) (Points, Points) -> T.Text
 renderPoints suitesOrder sids calcSubmissionPoints student studentData =
   T.unlines $
     [ "# Final Points for " <> studentId student,
@@ -83,7 +83,7 @@ renderPoints suitesOrder sids calcSubmissionPoints student studentData =
     showPoints :: (Points, Points) -> T.Text
     showPoints (s, _) = T.pack (show s) -- <> " / " <> T.pack (show s)
     header :: [T.Text]
-    header = "Id \\ TestSuite" : map getAssignment suitesOrder
+    header = "Id \\ TestSuite" : map getSubmissionName suitesOrder
 
     headerRow :: [(Int, T.Text)]
     headerRow = zip cellLengths header

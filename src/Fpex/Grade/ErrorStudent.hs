@@ -8,10 +8,10 @@ errorStudent = Student "errorStudent"
 isErrorStudent :: Student -> Bool
 isErrorStudent = (== errorStudent)
 
-errorStudentSubmissionInfo :: SubmissionId -> Assignment -> SubmissionInfo
-errorStudentSubmissionInfo sid suiteName =
+errorStudentSubmissionInfo :: SubmissionId -> SubmissionName -> SubmissionInfo
+errorStudentSubmissionInfo sid submissionName =
   SubmissionInfo
     { subId = sid,
-      subTestSuite = suiteName,
+      subName = submissionName,
       subStudent = errorStudent
     }

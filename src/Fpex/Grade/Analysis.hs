@@ -49,7 +49,7 @@ data Reason
 
 runStatefulAnalyser ::
   Members
-    [ TestSuiteStorage,
+    [ Storage,
       State AnalysisState
     ]
     r =>

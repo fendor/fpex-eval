@@ -20,7 +20,7 @@ data OptionCommand
 
 data FinalPointsCommand = FinalPointsCommand
   { finalPointsSubmissionIds :: [SubmissionId],
-    finalPointsSubmissions :: [Assignment],
+    finalPointsSubmissions :: [SubmissionName],
     finalPointsOutput :: FilePath
   }
   deriving (Show, Eq, Ord)
@@ -36,7 +36,7 @@ data LifeCycle
 
 data TestSuiteOptions = TestSuiteOptions
   { optionSubmissionId :: SubmissionId,
-    optionTestSuiteName :: Assignment
+    optionSubmissionName :: SubmissionName
   }
   deriving (Show, Eq)
 
@@ -56,15 +56,17 @@ data GradeCommand = GradeCommand
     testTimeout :: Timeout,
     gradeBaseDefinitions :: FilePath,
     -- | Set the test-suite for the grading cycle.
-    gradeTestSuite :: Maybe FilePath
+    gradeTestSuite :: Maybe TestSuitePath
   }
   deriving (Show, Eq)
 
 data CollectCommand = CollectCommand
+ { collectStudentSubmission :: Maybe StudentSubmission
+ }
   deriving (Show, Eq)
 
 data FeedbackCommand = FeedbackCommand
-  { publish :: Bool }
+  {publish :: Bool}
   deriving (Show, Eq)
 
 data StatCommand = StatCommand
@@ -85,11 +87,18 @@ data DiffResultsCommand = DiffResultsCommand
 options :: ParserInfo Options
 options =
   let testSuiteParser =
-        strOption
-          ( long "test-suite" <> action "file" <> help "Test-suite specification (Haskell file)"
-          )
-      testSuiteNameParser =
-        Assignment
+        TestSuitePath
+          <$> strOption
+            ( long "test-suite" <> action "file" <> help "Test-suite specification (Haskell file)"
+            )
+
+      studentSubmissionParser =
+        StudentSubmission
+          <$> strOption
+            ( long "submission" <> action "file" <> help "Name of the submission"
+            )
+      submissionNameParser =
+        SubmissionName
           <$> strOption
             ( long "name" <> help "Name of the test-suite."
             )
@@ -112,7 +121,7 @@ options =
                 <> help "Old Submission Id to compare the current submission to."
             )
       testSuiteOptionParser =
-        TestSuiteOptions <$> submissionIdParser <*> testSuiteNameParser
+        TestSuiteOptions <$> submissionIdParser <*> submissionNameParser
       gradeParser =
         Grade
           <$> ( GradeCommand
@@ -128,8 +137,11 @@ options =
                       )
                   <*> strOption
                     ( long "definitions"
-                        <> help ("Describes functions and datatypes under test."
-                        <> " This is the base submission, used to evaluate all students.")
+                        <> action "file"
+                        <> help
+                          ( "Describes functions and datatypes under test."
+                              <> " This is the base submission, used to evaluate all students."
+                          )
                     )
                   <*> optional testSuiteParser
               )
@@ -155,7 +167,7 @@ options =
                         <> value "f[0-9]{8}"
                     )
               )
-      collectParser = Collect <$> pure CollectCommand
+      collectParser = Collect <$> (CollectCommand <$> optional studentSubmissionParser)
       publishParser = Feedback <$> (FeedbackCommand <$> switch (long "publish" <> help "Publish the feedback"))
       statParser =
         Stats
@@ -167,7 +179,7 @@ options =
       diffResultParser = DiffResults <$> (DiffResultsCommand <$> oldSubmissionIdParser)
       finalPointsParser =
         FinalPoints
-          <$> ( FinalPointsCommand <$> many submissionIdParser <*> many testSuiteNameParser
+          <$> ( FinalPointsCommand <$> many submissionIdParser <*> many submissionNameParser
                   <*> option
                     str
                     ( long "output"

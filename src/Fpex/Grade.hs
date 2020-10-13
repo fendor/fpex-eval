@@ -68,10 +68,11 @@ runTastyTestSuite ::
 runTastyTestSuite = interpret $ \case
   RunTestSuite SubmissionInfo {..} -> do
     let sid = subId
-    let suiteName = subTestSuite
+    let suiteName = subName
     let student = subStudent
-    let targetDir = assignmentCollectStudentDir sid suiteName student
-    let targetFile = assignmentCollectStudentFile sid suiteName student
+    let targetDir = assignmentCollectStudentDir' sid suiteName student
+    studentSubmission <- asks runnerInfoStudentSubmission
+    let targetFile = assignmentCollectStudentFile sid suiteName studentSubmission student
     ghciOptions <- asks courseGhciOptions
     ghciEnv <- asks ghciEnvironmentLocation
     reportOutput <- asks runnerInfoReportOutput
@@ -122,7 +123,7 @@ runSubmission ::
       Reader Course,
       Reader RunnerInfo,
       RunTestSuite,
-      TestSuiteStorage
+      Storage
     ]
     r =>
   Sem r Eval.TestSuiteResults
@@ -157,8 +158,9 @@ createEmptyStudent ::
   SubmissionInfo ->
   Sem r Eval.ErrorReports
 createEmptyStudent baseDefinitions sinfo@SubmissionInfo {..} = do
+  studentSubmission <- asks runnerInfoStudentSubmission
   let targetFile =
-        assignmentCollectStudentFile subId subTestSuite subStudent
+        assignmentCollectStudentFile subId subName studentSubmission subStudent
   embed $ copyFile baseDefinitions targetFile
   testSuiteResults <- runTestSuite sinfo
   let modifyTestCaseResult report =

@@ -43,17 +43,30 @@ newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
   deriving (Show, Generic)
   deriving newtype (Eq, Num, Ord)
 
-newtype TestSuitePath = TestSuiteTestSuitePath
+newtype TestSuitePath = TestSuitePath
   {getTestSuitePath :: FilePath}
   deriving (Show, Eq, Ord)
 
-newtype Assignment = Assignment
-  {getAssignment :: T.Text}
+newtype SubmissionName = SubmissionName
+  {getSubmissionName :: T.Text}
+  deriving (Show, Eq, Ord)
+
+newtype StudentSubmission = StudentSubmission
+  { getStudentSubmission :: FilePath
+  }
   deriving (Show, Eq, Ord)
 
 data SubmissionInfo = SubmissionInfo
   { subStudent :: Student,
     subId :: SubmissionId,
-    subTestSuite :: Assignment
+    subName :: SubmissionName
+  }
+  deriving (Show, Eq, Ord)
+
+data AppCtx = AppCtx
+  { appCourse :: Course,
+    appStudentSubmission :: StudentSubmission,
+    appSubmissionName :: SubmissionName,
+    appSubmissionId :: SubmissionId
   }
   deriving (Show, Eq, Ord)

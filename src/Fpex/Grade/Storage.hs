@@ -11,48 +11,39 @@ import Polysemy.Error
 import Polysemy.Internal
 import System.Directory (doesFileExist)
 
-data TestSuiteStorage m a where
-  WriteTestSuiteResult :: SubmissionInfo -> TestSuiteResults -> TestSuiteStorage m ()
-  ReadTestSuiteResult :: SubmissionInfo -> TestSuiteStorage m TestSuiteResults
-  DoesTestSuiteResultExist :: SubmissionInfo -> TestSuiteStorage m Bool
+data Storage m a where
+  WriteTestSuiteResult :: SubmissionInfo -> TestSuiteResults -> Storage m ()
+  ReadTestSuiteResult :: SubmissionInfo -> Storage m TestSuiteResults
+  DoesTestSuiteResultExist :: SubmissionInfo -> Storage m Bool
 
-writeTestSuiteResult :: Member TestSuiteStorage r => SubmissionInfo -> TestSuiteResults -> Sem r ()
+writeTestSuiteResult :: Member Storage r => SubmissionInfo -> TestSuiteResults -> Sem r ()
 writeTestSuiteResult info s = send $ WriteTestSuiteResult info s
 
-readTestSuiteResult :: Member TestSuiteStorage r => SubmissionInfo -> Sem r TestSuiteResults
+readTestSuiteResult :: Member Storage r => SubmissionInfo -> Sem r TestSuiteResults
 readTestSuiteResult info = send $ ReadTestSuiteResult info
 
-doesTestSuiteResultExist :: Member TestSuiteStorage r => SubmissionInfo -> Sem r Bool
+doesTestSuiteResultExist :: Member Storage r => SubmissionInfo -> Sem r Bool
 doesTestSuiteResultExist info = send $ DoesTestSuiteResultExist info
 
-runTestSuiteStorageFileSystem ::
+runStorageFileSystem ::
   Members [Embed IO, Error T.Text] r =>
-  Sem (TestSuiteStorage : r) a ->
+  Sem (Storage : r) a ->
   Sem (r) a
-runTestSuiteStorageFileSystem = interpret $ \case
+runStorageFileSystem = interpret $ \case
   WriteTestSuiteResult SubmissionInfo {..} results ->
-    embed $ writeTestSuiteResultIO subId subTestSuite subStudent results
+    embed $ writeTestSuiteResultIO subId subName subStudent results
   ReadTestSuiteResult SubmissionInfo {..} ->
-    readTestSuiteResultIO subId subTestSuite subStudent
+    readTestSuiteResultIO subId subName subStudent
   DoesTestSuiteResultExist sinfo ->
     doesSubmissionInfoExist sinfo
 
 readTestSuiteResultIO ::
   Members [Embed IO, Error T.Text] r =>
   SubmissionId ->
-  Assignment ->
+  SubmissionName ->
   Student ->
   Sem r TestSuiteResults
-readTestSuiteResultIO sid suiteName student =
-  readTestSuiteResult' sid suiteName student
-
-readTestSuiteResult' ::
-  Members [Embed IO, Error T.Text] r =>
-  SubmissionId ->
-  Assignment ->
-  Student ->
-  Sem r TestSuiteResults
-readTestSuiteResult' sid suiteName student = do
+readTestSuiteResultIO sid suiteName student = do
   let sourceFile = reportSourceJsonFile sid suiteName student
   embed
     ( Aeson.eitherDecodeFileStrict sourceFile
@@ -68,7 +59,7 @@ readTestSuiteResult' sid suiteName student = do
 
 writeTestSuiteResultIO ::
   SubmissionId ->
-  Assignment ->
+  SubmissionName ->
   Student ->
   TestSuiteResults ->
   IO ()
@@ -84,5 +75,5 @@ writeTestSuiteResultIO sid suiteName student testSuiteResults =
 
 doesSubmissionInfoExist :: Member (Embed IO) r => SubmissionInfo -> Sem r Bool
 doesSubmissionInfoExist SubmissionInfo {..} = do
-  let studentFile = reportSourceJsonFile subId subTestSuite subStudent
+  let studentFile = reportSourceJsonFile subId subName subStudent
   embed (doesFileExist studentFile)

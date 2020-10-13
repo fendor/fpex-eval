@@ -7,7 +7,6 @@ import Colourista
 import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
 import Data.Either
-import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -47,7 +46,7 @@ defaultMain' = do
   opts <- embed $ execParser options
   case optionCommand opts of
     Setup setupCommand -> Setup.courseSetup setupCommand
-    FinalPoints FinalPointsCommand {..} -> Storage.runTestSuiteStorageFileSystem $ do
+    FinalPoints FinalPointsCommand {..} -> Storage.runStorageFileSystem $ do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
       outputDir <- embed $ canonicalizePath finalPointsOutput
@@ -63,6 +62,17 @@ defaultMain' = do
       embed $ setCurrentDirectory courseDir
       dispatchLifeCycle Course {..} students gradeTestSuiteOptions lifecycle
 
+buildApp :: Members [Embed IO, Error T.Text] r => Course -> TestSuiteOptions -> Maybe StudentSubmission -> Sem r AppCtx
+buildApp course TestSuiteOptions {..} studentSubmission = do
+  let submission = buildStudentSubmissionWithDefault optionSubmissionName studentSubmission
+  pure
+    AppCtx
+      { appCourse = course,
+        appSubmissionId = optionSubmissionId,
+        appSubmissionName = optionSubmissionName,
+        appStudentSubmission = submission
+      }
+
 dispatchLifeCycle ::
   Members [Log.Log T.Text, Error Text, Embed IO] r =>
   Course ->
@@ -71,17 +81,17 @@ dispatchLifeCycle ::
   LifeCycle ->
   Sem r ()
 dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
-  let testSuiteName = optionTestSuiteName
+  let submissionName = optionSubmissionName
   case lifecycle of
     Grade GradeCommand {..} ->
-      Storage.runTestSuiteStorageFileSystem $
+      Storage.runStorageFileSystem $
         evalState (mempty :: AnalysisState) $
           runStatefulAnalyser $
-            runReader (defaultRunnerInfo testTimeout) $
+            runReader (defaultRunnerInfo submissionName testTimeout) $
               runReader course $ do
                 -- Run Error Student, prepare failed submissions, etc...
-                let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId testSuiteName
-                whenJust gradeTestSuite $ setTestSuite optionSubmissionId testSuiteName
+                let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId submissionName
+                whenJust gradeTestSuite $ setTestSuite optionSubmissionId submissionName
                 errorReports <- withReport "run errorStudent" $ do
                   Grade.runGradeError
                     ( Grade.runTastyTestSuite $
@@ -98,7 +108,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                           SubmissionInfo
                             { subStudent = student,
                               subId = optionSubmissionId,
-                              subTestSuite = testSuiteName
+                              subName = submissionName
                             }
                     runReader subInfo $
                       runReader errorReports $
@@ -110,22 +120,25 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 
                 analysisReport <- finalAnalysisReport
                 runReader errorReports $ printFinalAnalysisReport analysisReport
-    Collect CollectCommand -> do
+    Collect CollectCommand {..} -> do
+      let studentSubmission = buildStudentSubmissionWithDefault submissionName collectStudentSubmission
       embed $
         Collect.prepareSubmissionFolder
           optionSubmissionId
-          testSuiteName
+          submissionName
 
       embed $
         Collect.createEmptyStudent
           optionSubmissionId
-          testSuiteName
+          submissionName
+
       collectResults <- forM students $ \student -> do
         embed $
           Collect.collectSubmission
-            optionSubmissionId
             course
-            testSuiteName
+            optionSubmissionId
+            submissionName
+            studentSubmission
             student
       let (_errs, collected) = partitionEithers collectResults
       embed $
@@ -136,53 +149,56 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
             <> T.pack (show (length students))
             <> " submissions."
     Feedback FeedbackCommand {..} ->
-      Storage.runTestSuiteStorageFileSystem $
+      Storage.runStorageFileSystem $
         runReader course $
           Publish.runPublisherService $ do
             forM_ students $ \student -> do
-              let sinfo = SubmissionInfo student optionSubmissionId testSuiteName
-              Publish.writeTestFeedback sinfo
-              when publish $
-                Publish.publishTestFeedback sinfo
+              let sinfo = SubmissionInfo student optionSubmissionId submissionName
+              Publish.writeTestFeedback
+                sinfo
+                ( if publish
+                    then Publish.PublishFeedback
+                    else Publish.WriteFeedback
+                )
     Stats StatCommand {..} -> do
       stats <-
         embed
           ( Stats.collectData
               students
               optionSubmissionId
-              testSuiteName
+              submissionName
           )
       case statOutputKind of
         StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
         StatsOutputGrades ->
           embed (T.putStrLn $ Stats.statsGrade stats)
-    RecalculatePoints -> Storage.runTestSuiteStorageFileSystem $
+    RecalculatePoints -> Storage.runStorageFileSystem $
       forM_ students $ \student -> do
         withReport ("Calculate points for: " <> studentId student) $ do
           let sinfo =
                 SubmissionInfo
                   { subStudent = student,
                     subId = optionSubmissionId,
-                    subTestSuite = testSuiteName
+                    subName = submissionName
                   }
 
           ts <- Storage.readTestSuiteResult sinfo
           let newTs = Grade.recalculateTestPoints ts
           Storage.writeTestSuiteResult sinfo newTs
-    DiffResults DiffResultsCommand {..} -> Storage.runTestSuiteStorageFileSystem $ do
+    DiffResults DiffResultsCommand {..} -> Storage.runStorageFileSystem $ do
+      let studentSubmission = buildStudentSubmissionWithDefault submissionName Nothing
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
-      let suiteName = optionTestSuiteName
       embed $
         T.putStrLn $
           "Show Difference between " <> T.pack (show $ getSubmissionId currentSid)
             <> " and "
             <> T.pack (show $ getSubmissionId oldSid)
       forM_ students $ \student -> do
-        oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid suiteName
-        newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid suiteName
-        let oldSubmission = Grade.assignmentCollectStudentFile oldSid suiteName student
-        let newSubmission = Grade.assignmentCollectStudentFile currentSid suiteName student
+        oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid submissionName
+        newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid submissionName
+        let oldSubmission = Grade.assignmentCollectStudentFile oldSid submissionName studentSubmission student
+        let newSubmission = Grade.assignmentCollectStudentFile currentSid submissionName studentSubmission student
         let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
         let failedTests = Grade.failedTests newReport - Grade.failedTests oldReport
         let notSubmittedTests = Grade.notSubmittedTests newReport - Grade.notSubmittedTests oldReport
@@ -218,20 +234,38 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 setTestSuite ::
   Members [Error Text, Embed IO] r =>
   SubmissionId ->
-  Assignment ->
-  FilePath ->
+  SubmissionName ->
+  TestSuitePath ->
   Sem r ()
-setTestSuite optionSubmissionId testSuiteName testSuiteSpec = do
-  testSuiteSpecification <- embed $ makeAbsolute testSuiteSpec
-  checkTestSuiteExists testSuiteSpecification
-  embed $ Collect.setTestSuite optionSubmissionId testSuiteName testSuiteSpecification
+setTestSuite submissionId submissionName testSuiteSpec = do
+  absoluteTestSuiteSpec <- checkTestSuiteExists testSuiteSpec
+  embed $ Collect.setTestSuite submissionId submissionName absoluteTestSuiteSpec
 
-defaultRunnerInfo :: Grade.Timeout -> Grade.RunnerInfo
-defaultRunnerInfo t =
+defaultRunnerInfo :: SubmissionName -> Grade.Timeout -> Grade.RunnerInfo
+defaultRunnerInfo submissionName t =
   Grade.RunnerInfo
     { Grade.runnerInfoTimeout = t,
-      Grade.runnerInfoReportOutput = "testsuite-result.json"
+      Grade.runnerInfoReportOutput = "testsuite-result.json",
+      Grade.runnerInfoStudentSubmission = buildStudentSubmissionWithDefault submissionName Nothing
     }
+
+buildStudentSubmissionWithDefault :: SubmissionName -> Maybe StudentSubmission -> StudentSubmission
+buildStudentSubmissionWithDefault submissionName = \case
+  Nothing ->
+    StudentSubmission $ T.unpack (getSubmissionName submissionName) <.> "hs"
+  Just s -> s
+
+checkTestSuiteExists ::
+  Members [Error Text, Embed IO] r => TestSuitePath -> Sem r TestSuitePath
+checkTestSuiteExists testSuite = do
+  let fp = getTestSuitePath testSuite
+  afp <- embed $ canonicalizePath fp
+  unlessM (embed $ doesFileExist afp) $
+    throw $
+      "Test-Suite specification \""
+        <> T.pack afp
+        <> "\" does not exist"
+  pure $ TestSuitePath afp
 
 -- ----------------------------------------------------------------------------
 -- Project setup relevant functions
@@ -266,11 +300,6 @@ getCourseConfig courseOption = do
       return (c {courseGhciEnvironment = ghciFile}, takeDirectory courseFile)
     Nothing -> throw "course.json invalid format"
 
-checkTestSuiteExists ::
-  Members [Error Text, Embed IO] r => FilePath -> Sem r ()
-checkTestSuiteExists testSuite =
-  unlessM (embed $ doesFileExist testSuite) $
-    throw $
-      "Test-Suite specification \""
-        <> T.pack testSuite
-        <> "\" does not exist"
+-- ----------------------------------------------------------------------------
+-- Project setup relevant functions
+-- ----------------------------------------------------------------------------
