@@ -2,6 +2,7 @@ module Fpex.Options where
 
 import Fpex.Course.Types
 import Fpex.Grade.Types
+import Fpex.Publish (FeedbackAction (..))
 import Options.Applicative
 
 data Options = Options
@@ -61,12 +62,14 @@ data GradeCommand = GradeCommand
   deriving (Show, Eq)
 
 data CollectCommand = CollectCommand
- { collectStudentSubmission :: Maybe StudentSubmission
- }
+  { collectStudentSubmission :: Maybe StudentSubmission
+  }
   deriving (Show, Eq)
 
 data FeedbackCommand = FeedbackCommand
-  {publish :: Bool}
+  { feedbackPublish :: FeedbackAction,
+    feedbackStudentSubmission :: Maybe StudentSubmission
+  }
   deriving (Show, Eq)
 
 data StatCommand = StatCommand
@@ -168,7 +171,15 @@ options =
                     )
               )
       collectParser = Collect <$> (CollectCommand <$> optional studentSubmissionParser)
-      publishParser = Feedback <$> (FeedbackCommand <$> switch (long "publish" <> help "Publish the feedback"))
+      publishParser =
+        Feedback
+          <$> ( FeedbackCommand
+                  <$> flag
+                    WriteFeedback
+                    PublishFeedback
+                    (long "publish" <> help "Publish the feedback")
+                  <*> optional studentSubmissionParser
+              )
       statParser =
         Stats
           <$> ( StatCommand

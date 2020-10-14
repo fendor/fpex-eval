@@ -13,10 +13,10 @@ import qualified Data.Text.IO as T
 import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
 import Fpex.Course.Types
-import Fpex.Grade.Paths as Paths
 import qualified Fpex.Grade as Grade
 import Fpex.Grade.Analysis
 import qualified Fpex.Grade.ErrorStudent as ErrorStudent
+import Fpex.Grade.Paths as Paths
 import qualified Fpex.Grade.Storage as Storage
 import qualified Fpex.Grade.Tasty as Grade
 import qualified Fpex.Grade.Types as Grade
@@ -150,18 +150,17 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
             <> "/"
             <> T.pack (show (length students))
             <> " submissions."
-    Feedback FeedbackCommand {..} ->
+    Feedback FeedbackCommand {..} -> do
+      let studentSubmission = buildStudentSubmissionWithDefault submissionName feedbackStudentSubmission
       Storage.runStorageFileSystem $
         runReader course $
-          Publish.runPublisherService $ do
-            forM_ students $ \student -> do
-              let sinfo = SubmissionInfo student optionSubmissionId submissionName
-              Publish.writeTestFeedback
-                sinfo
-                ( if publish
-                    then Publish.PublishFeedback
-                    else Publish.WriteFeedback
-                )
+          runReader studentSubmission $
+            Publish.runPublisherService $ do
+              forM_ students $ \student -> do
+                let sinfo = SubmissionInfo student optionSubmissionId submissionName
+                Publish.writeTestFeedback
+                  sinfo
+                  feedbackPublish
     Stats StatCommand {..} -> do
       stats <-
         embed

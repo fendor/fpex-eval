@@ -1,9 +1,9 @@
 module Fpex.Grade.Paths where
 
+import qualified Data.Text as T
+import Fpex.Course.Types
 import Polysemy
 import Polysemy.Reader
-import Fpex.Course.Types
-import qualified Data.Text as T
 import System.FilePath
 
 -- ----------------------------------------------------------------------------
@@ -15,7 +15,6 @@ assignmentCollectStudentDir ::
 assignmentCollectStudentDir =
   assignmentCollectStudentDir' <$> asks subId <*> asks subName <*> asks subStudent
 
-
 -- ----------------------------------------------------------------------------
 -- Pure functions for extracting filepath information
 -- ----------------------------------------------------------------------------
@@ -26,11 +25,6 @@ testSuiteMain Course {..} = courseRootDir </> "Main" <.> "hs"
 studentDir :: Course -> Student -> FilePath
 studentDir Course {..} Student {..} =
   courseRootDir </> T.unpack studentId
-
--- | Filename of the submission file
-studentSourceFile :: Course -> StudentSubmission -> Student -> FilePath
-studentSourceFile course studentSubmission student =
-  studentDir course student </> getStudentSubmission studentSubmission
 
 assignmentCollectDir :: SubmissionId -> SubmissionName -> FilePath
 assignmentCollectDir sid suiteName =
@@ -61,29 +55,52 @@ reportSourceJsonFile ::
 reportSourceJsonFile sid suiteName student =
   assignmentCollectStudentDir' sid suiteName student </> "report.json"
 
-reportPublishFile ::
+reportTestSuiteFile ::
   SubmissionId ->
-  Course ->
   SubmissionName ->
+  StudentSubmission ->
   Student ->
   FilePath
-reportPublishFile sid course suiteName student =
-  studentDir course student
-    </> reportName sid suiteName
+reportTestSuiteFile sid suiteName studentSubmission student =
+  assignmentCollectStudentDir' sid suiteName student
+    </> ( dropExtension (getStudentSubmission studentSubmission)
+            ++ "_TestSuite"
+            ++ show (getSubmissionId sid) <.> "hs"
+        )
 
 reportFeedbackFile ::
   SubmissionId ->
   SubmissionName ->
+  StudentSubmission ->
   Student ->
   FilePath
-reportFeedbackFile sid suiteName student =
+reportFeedbackFile sid suiteName studentSubmission student =
   assignmentCollectStudentDir' sid suiteName student
-    </> reportName sid suiteName
+    </> reportName sid studentSubmission
 
-reportName :: SubmissionId -> SubmissionName -> String
-reportName sid suiteName =
-  assignmentPath suiteName
+reportName :: SubmissionId -> StudentSubmission -> String
+reportName sid studentSubmission =
+  getStudentSubmission studentSubmission
     <.> ("out_" <> show (getSubmissionId sid))
 
 assignmentPath :: SubmissionName -> FilePath
 assignmentPath (SubmissionName t) = T.unpack t
+
+-- ----------------------------------------------------------------------------
+-- Filepath utilities for accessing student directories
+-- ----------------------------------------------------------------------------
+
+-- | Filename of the submission file
+studentSourceFile :: Course -> StudentSubmission -> Student -> FilePath
+studentSourceFile course studentSubmission student =
+  studentDir course student </> getStudentSubmission studentSubmission
+
+reportPublishFile ::
+  SubmissionId ->
+  Course ->
+  StudentSubmission ->
+  Student ->
+  FilePath
+reportPublishFile sid course studentSubmission student =
+  studentDir course student
+    </> reportName sid studentSubmission
