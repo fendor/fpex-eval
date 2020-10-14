@@ -108,6 +108,7 @@ runTastyTestSuite = interpret $ \case
     -- case procRes of
     --   ExitSuccess -> return ()
     --   ExitFailure _ -> throw $ RunnerInternalError (T.pack $ show procConfig) serr
+    unlessM (embed $ doesFileExist (targetDir </> reportOutput)) $ throw (RunnerInternalError (studentId student) serr)
     decodeResult <- embed $ decodeFileTastyGradingReport (targetDir </> reportOutput)
     case decodeResult of
       Left msg -> throw $ FailedToDecodeJsonResult msg
