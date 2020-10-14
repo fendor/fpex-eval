@@ -9,6 +9,10 @@ import Fpex.Grade.Types
 import System.Directory
 import System.FilePath
 import System.IO
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Control.Monad (when)
+import System.IO.Error (isPermissionError)
 
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
@@ -42,8 +46,15 @@ collectSubmission course sid submissionName studentSubmission student = do
     Right r -> pure r
     Left err -> do
       putStrLn $ show err
+      when (isPermissionError err) $ do
+        T.writeFile (takeDirectory sourceFile </> collectFileError) (permissionErrorStudentMessage studentSubmission)
+
       pure $ Left $ IOErrorReason err
   where
+    collectFileError = getStudentSubmission studentSubmission ++ ".collect_error"
+
+    copySubmission :: FilePath
+                  -> FilePath -> IO (Either FailureReason FilePath)
     copySubmission sourceFile targetFile = do
       -- copy submission file if it exists
       fileExists <- doesFileExist sourceFile
@@ -68,3 +79,17 @@ createEmptyStudent sid suiteName = do
   let targetDir =
         assignmentCollectStudentDir' sid suiteName errorStudent
   createDirectoryIfMissing True targetDir
+
+-- ----------------------------------------------------------------------------
+-- Error Messages
+-- ----------------------------------------------------------------------------
+
+permissionErrorStudentMessage :: StudentSubmission -> T.Text
+permissionErrorStudentMessage s =
+  T.unlines
+  [ "Your submission \"" <> T.pack (getStudentSubmission s) <> "\" could not be collected because of insufficient permissions."
+  , "Please make sure that the permissions are set appropriately. The group \"fptutor\" needs at least read access to your submission."
+  , ""
+  , "You can set read file permissions via:"
+  , "> chmod +0044 " <> T.pack (getStudentSubmission s)
+  ]

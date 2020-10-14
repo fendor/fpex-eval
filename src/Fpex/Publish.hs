@@ -18,21 +18,20 @@ import System.FilePath
 data FeedbackState =
   WriteFeedback
   | PublishFeedback
+  deriving (Show, Eq, Ord, Bounded)
 
 data Publisher m a where
   WriteTestFeedback :: SubmissionInfo -> FeedbackState -> Publisher m ()
+
 writeTestFeedback :: Member Publisher r => SubmissionInfo -> FeedbackState -> Sem r ()
 writeTestFeedback sinfo s = send (WriteTestFeedback sinfo s)
 
 runPublisherService :: Members [Log.Log T.Text, Storage, Embed IO, Error T.Text, Reader Course] r => Sem (Publisher : r) a -> Sem r a
 runPublisherService = interpret $ \case
-  WriteTestFeedback sinfo s ->
-    case s of
-      WriteFeedback -> do
-        _resultPath <- writeTestResultFeedback sinfo
-        pure ()
-      PublishFeedback -> do
-        publishTestResult sinfo
+  WriteTestFeedback sinfo s -> do
+    _fp <- writeTestResultFeedback sinfo
+    when (PublishFeedback <= s) $ do
+      publishTestResult sinfo
 
 -- | Publish assignment of single student
 publishTestResult ::
