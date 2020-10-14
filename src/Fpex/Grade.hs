@@ -164,18 +164,20 @@ createEmptyStudent baseDefinitions sinfo@SubmissionInfo {..} = do
         assignmentCollectStudentFile subId subName studentSubmission subStudent
   embed $ copyFile baseDefinitions targetFile
   testSuiteResults <- runTestSuite sinfo
-  let modifyTestCaseResult report =
-        report {testCaseReportResult = Eval.TestCaseResultCompileFail}
-      modifyTestGroup Eval.TestGroupResults {..} =
-        Eval.TestGroupResults
-          { testGroupReports = map modifyTestCaseResult testGroupReports,
-            ..
-          }
-      modifyTestSuiteResults Eval.TestSuiteResults {..} =
-        Eval.TestSuiteResults
-          { testGroupResults = map modifyTestGroup testGroupResults,
-            ..
-          }
-  let notSubmitted = NotSubmittedReport testSuiteResults
-  let compileFail = CompileFailReport $ modifyTestSuiteResults testSuiteResults
+  let notSubmitted = NotSubmittedReport $ (setTestSuiteResults Eval.TestCaseResultNotSubmitted) testSuiteResults
+  let compileFail = CompileFailReport $ (setTestSuiteResults Eval.TestCaseResultCompileFail) testSuiteResults
   return $ newErrorReports compileFail notSubmitted
+  where
+    setTestCaseResult res report =
+      report {testCaseReportResult = res}
+    setTestGroupResult res Eval.TestGroupResults {..} =
+      Eval.TestGroupResults
+        { testGroupReports = map (setTestCaseResult res) testGroupReports,
+          ..
+        }
+
+    setTestSuiteResults res Eval.TestSuiteResults {..} =
+      Eval.TestSuiteResults
+        { testGroupResults = map (setTestGroupResult res) testGroupResults,
+          ..
+        }
