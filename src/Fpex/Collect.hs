@@ -8,9 +8,10 @@ import System.Directory
 import System.FilePath
 import System.IO
 import Fpex.Grade.ErrorStudent (errorStudent)
+import Control.Exception.Extra (try)
 
-data FailureReason = NoSubmission
-  deriving (Show, Eq, Read)
+data FailureReason = NoSubmission | IOErrorReason IOError
+  deriving (Show, Eq)
 
 setTestSuite :: SubmissionId -> SubmissionName -> TestSuitePath -> IO ()
 setTestSuite sid submissionName testSuite = do
@@ -45,8 +46,12 @@ collectSubmission course sid submissionName studentSubmission student = do
           "Warning: `unsafePerformIO` in submission "
             <> sourceFile
       putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
-      copyFile sourceFile targetFile
-      return (Right targetFile)
+      hasErr <- try $ copyFile sourceFile targetFile
+      case hasErr of
+        Left err -> do
+          putStrLn $ show err
+          pure (Left $ IOErrorReason err)
+        Right () -> pure (Right targetFile)
     else do
       return (Left NoSubmission)
 
