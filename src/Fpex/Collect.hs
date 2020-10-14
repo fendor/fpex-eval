@@ -1,14 +1,14 @@
 module Fpex.Collect where
 
+import Control.Exception.Safe
 import Control.Monad.Extra (whenM)
 import qualified Data.ByteString as BS
 import Fpex.Course.Types
+import Fpex.Grade.ErrorStudent (errorStudent)
 import Fpex.Grade.Types
 import System.Directory
 import System.FilePath
 import System.IO
-import Fpex.Grade.ErrorStudent (errorStudent)
-import Control.Exception.Safe
 
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
@@ -37,23 +37,27 @@ collectSubmission course sid submissionName studentSubmission student = do
   -- create submission dir even if there is no submission
   createDirectoryIfMissing True targetDir
 
-  -- copy submission file if it exists
-  fileExists <- doesFileExist sourceFile
-  if fileExists
-    then do
-      whenM (BS.isInfixOf "unsafePerformIO" <$> BS.readFile sourceFile) $
-        hPutStrLn stderr $
-          "Warning: `unsafePerformIO` in submission "
-            <> sourceFile
-      putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
-      hasErr <- tryDeep $ copyFile sourceFile targetFile
-      case hasErr of
-        Left err -> do
-          putStrLn $ show err
-          pure (Left $ IOErrorReason err)
-        Right () -> pure (Right targetFile)
-    else do
-      return (Left NoSubmission)
+  hasErr <- try $ copySubmission sourceFile targetFile
+  case hasErr of
+    Right r -> pure r
+    Left err -> do
+      putStrLn $ show err
+      pure $ Left $ IOErrorReason err
+  where
+    copySubmission sourceFile targetFile = do
+      -- copy submission file if it exists
+      fileExists <- doesFileExist sourceFile
+      if fileExists
+        then do
+          whenM (BS.isInfixOf "unsafePerformIO" <$> BS.readFile sourceFile) $
+            hPutStrLn stderr $
+              "Warning: `unsafePerformIO` in submission "
+                <> sourceFile
+          putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
+          copyFile sourceFile targetFile
+          pure (Right targetFile)
+        else do
+          return (Left NoSubmission)
 
 -- | Create a directory
 createEmptyStudent ::
