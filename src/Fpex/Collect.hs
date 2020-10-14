@@ -8,7 +8,7 @@ import System.Directory
 import System.FilePath
 import System.IO
 import Fpex.Grade.ErrorStudent (errorStudent)
-import Control.Exception.Extra (try)
+import Control.Exception.Safe
 
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
@@ -46,7 +46,7 @@ collectSubmission course sid submissionName studentSubmission student = do
           "Warning: `unsafePerformIO` in submission "
             <> sourceFile
       putStrLn $ "copy " <> sourceFile <> " to " <> targetFile
-      hasErr <- try $ copyFile sourceFile targetFile
+      hasErr <- tryDeep $ copyFile sourceFile targetFile
       case hasErr of
         Left err -> do
           putStrLn $ show err
