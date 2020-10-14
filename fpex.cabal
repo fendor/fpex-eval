@@ -45,6 +45,7 @@ library
     Fpex.Grade.ErrorStudent
     Fpex.Grade.Storage
     Fpex.Grade.Tasty
+    Fpex.Grade.Paths
     Fpex.Grade.Types
     Fpex.Main
     Fpex.Options

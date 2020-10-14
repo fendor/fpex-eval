@@ -5,7 +5,7 @@ import Control.Monad.Extra (whenM)
 import qualified Data.ByteString as BS
 import Fpex.Course.Types
 import Fpex.Grade.ErrorStudent (errorStudent)
-import Fpex.Grade.Types
+import Fpex.Grade.Paths
 import System.Directory
 import System.FilePath
 import System.IO
@@ -17,16 +17,15 @@ import System.IO.Error (isPermissionError)
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
 
-setTestSuite :: SubmissionId -> SubmissionName -> TestSuitePath -> IO ()
-setTestSuite sid submissionName testSuite = do
+setTestSuite :: Course -> SubmissionId -> SubmissionName -> TestSuitePath -> IO ()
+setTestSuite course sid submissionName testSuite = do
   let targetDir = assignmentCollectDir sid submissionName
   let testSuiteFp = getTestSuitePath testSuite
   createDirectoryIfMissing True targetDir
 
   -- copy assignment main
-  let testSuiteTarget = targetDir </> "Main.hs"
   putStrLn $ "copy " <> testSuiteFp <> " to " <> targetDir
-  copyFile testSuiteFp testSuiteTarget
+  copyFile testSuiteFp (testSuiteMain course)
 
 prepareSubmissionFolder :: SubmissionId -> SubmissionName -> IO ()
 prepareSubmissionFolder sid suiteName = do

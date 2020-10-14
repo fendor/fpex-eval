@@ -13,10 +13,12 @@ import qualified Data.Text.IO as T
 import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
 import Fpex.Course.Types
+import Fpex.Grade.Paths as Paths
 import qualified Fpex.Grade as Grade
 import Fpex.Grade.Analysis
 import qualified Fpex.Grade.ErrorStudent as ErrorStudent
 import qualified Fpex.Grade.Storage as Storage
+import qualified Fpex.Grade.Tasty as Grade
 import qualified Fpex.Grade.Types as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
@@ -91,7 +93,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
               runReader course $ do
                 -- Run Error Student, prepare failed submissions, etc...
                 let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId submissionName
-                whenJust gradeTestSuite $ setTestSuite optionSubmissionId submissionName
+                whenJust gradeTestSuite $ setTestSuite course optionSubmissionId submissionName
                 errorReports <- withReport "run errorStudent" $ do
                   Grade.runGradeError
                     ( Grade.runTastyTestSuite $
@@ -99,7 +101,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                     )
                     >>= \case
                       Right errorReport -> return errorReport
-                      Left err -> throw =<< Grade.prettyRunnerError errorStudent err
+                      Left err -> throw =<< ErrorStudent.prettyRunnerError errorStudent err
 
                 -- Run testsuite grading for all students.
                 forM_ students $ \student -> do
@@ -197,8 +199,8 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
       forM_ students $ \student -> do
         oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid submissionName
         newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid submissionName
-        let oldSubmission = Grade.assignmentCollectStudentFile oldSid submissionName studentSubmission student
-        let newSubmission = Grade.assignmentCollectStudentFile currentSid submissionName studentSubmission student
+        let oldSubmission = Paths.assignmentCollectStudentFile oldSid submissionName studentSubmission student
+        let newSubmission = Paths.assignmentCollectStudentFile currentSid submissionName studentSubmission student
         let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
         let failedTests = Grade.failedTests newReport - Grade.failedTests oldReport
         let notSubmittedTests = Grade.notSubmittedTests newReport - Grade.notSubmittedTests oldReport
@@ -233,13 +235,14 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 
 setTestSuite ::
   Members [Error Text, Embed IO] r =>
+  Course ->
   SubmissionId ->
   SubmissionName ->
   TestSuitePath ->
   Sem r ()
-setTestSuite submissionId submissionName testSuiteSpec = do
+setTestSuite course submissionId submissionName testSuiteSpec = do
   absoluteTestSuiteSpec <- checkTestSuiteExists testSuiteSpec
-  embed $ Collect.setTestSuite submissionId submissionName absoluteTestSuiteSpec
+  embed $ Collect.setTestSuite course submissionId submissionName absoluteTestSuiteSpec
 
 defaultRunnerInfo :: SubmissionName -> Grade.Timeout -> Grade.RunnerInfo
 defaultRunnerInfo submissionName t =

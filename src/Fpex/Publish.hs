@@ -6,7 +6,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Fpex.Course.Types
 import Fpex.Grade.Storage
-import Fpex.Grade.Types
+import Fpex.Grade.Paths
 import qualified Fpex.Publish.Plain as Publish
 import Polysemy
 import Polysemy.Error
@@ -42,6 +42,7 @@ publishTestResult SubmissionInfo {..} = do
   course <- ask
   let fp = reportFeedbackFile subId subName subStudent
   let targetFile = reportPublishFile subId course subName subStudent
+  Log.log $ "publish " <> T.pack targetFile
   embed $ copyFile fp targetFile
   copyHandwrittenFeedback course subId subName subStudent
 
@@ -51,7 +52,7 @@ writeTestResultFeedback ::
   Sem r FilePath
 writeTestResultFeedback sinfo@SubmissionInfo {..} = do
   let targetFile = reportFeedbackFile subId subName subStudent
-  Log.log $ "publish " <> T.pack targetFile
+  Log.log $ "write " <> T.pack targetFile
   testSuiteResults <- readTestSuiteResult sinfo
   let prettyTextReport = Publish.prettyTestReport testSuiteResults
   embed (T.writeFile targetFile prettyTextReport)
