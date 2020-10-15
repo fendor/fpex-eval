@@ -17,6 +17,7 @@ import Polysemy.Internal (send)
 import Polysemy.Reader
 import System.Directory
 import System.FilePath
+import qualified System.PosixCompat.Files as Posix
 import qualified Text.RE.TDFA.Text as Regex
 
 data Publisher m a where
@@ -64,6 +65,10 @@ writeTestResultFeedback sinfo@SubmissionInfo {..} = do
   embed (T.writeFile targetFile prettyTextReport)
   testSuiteContents <- embed $ T.readFile (testSuiteMain subId subName)
   embed (T.writeFile (reportTestSuiteFile subId subName studentSubmission subStudent) $ hackyPostProcessTestSuite testSuiteContents)
+  embed $
+    Posix.setFileMode
+      (reportTestSuiteFile subId subName studentSubmission subStudent)
+      Posix.stdFileMode
   pure targetFile
 
 hackyPostProcessTestSuite :: T.Text -> T.Text
