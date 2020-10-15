@@ -11,6 +11,7 @@ import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade ( RunTestSuite(..), RunnerError(..) )
+import Fpex.Grade.Result
 import Fpex.Grade.Types
 import Fpex.Grade.Paths
 import Polysemy

@@ -47,6 +47,7 @@ library
     Fpex.Grade.Tasty
     Fpex.Grade.Paths
     Fpex.Grade.Types
+    Fpex.Grade.Result
     Fpex.Main
     Fpex.Options
     Fpex.Publish

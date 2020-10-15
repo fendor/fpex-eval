@@ -6,7 +6,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade.Paths
-import Fpex.Grade.Types
+import Fpex.Grade.Result
 
 data StatsCsvLine = StatsCsvLine
   { statsStudent :: Student,

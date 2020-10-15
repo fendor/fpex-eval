@@ -5,7 +5,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade.Storage
-import Fpex.Grade.Types
+import Fpex.Grade.Result
 import Polysemy
 
 data PointsCalc

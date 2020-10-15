@@ -19,11 +19,6 @@ import System.Directory
 import System.FilePath
 import qualified Text.RE.TDFA.Text as Regex
 
-data FeedbackAction
-  = WriteFeedback
-  | PublishFeedback
-  deriving (Show, Eq, Ord, Bounded)
-
 data Publisher m a where
   WriteTestFeedback :: SubmissionInfo -> FeedbackAction -> Publisher m ()
 

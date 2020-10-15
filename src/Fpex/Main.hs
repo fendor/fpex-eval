@@ -20,6 +20,7 @@ import Fpex.Grade.Paths as Paths
 import qualified Fpex.Grade.Storage as Storage
 import qualified Fpex.Grade.Tasty as Grade
 import qualified Fpex.Grade.Types as Grade
+import qualified Fpex.Grade.Result as Grade
 import Fpex.Options
 import qualified Fpex.Publish as Publish
 import Fpex.Publish.Stats
@@ -242,7 +243,7 @@ setTestSuite submissionId submissionName testSuiteSpec = do
   absoluteTestSuiteSpec <- checkTestSuiteExists testSuiteSpec
   embed $ Collect.setTestSuite submissionId submissionName absoluteTestSuiteSpec
 
-defaultRunnerInfo :: SubmissionName -> Grade.Timeout -> Grade.RunnerInfo
+defaultRunnerInfo :: SubmissionName -> Timeout -> Grade.RunnerInfo
 defaultRunnerInfo submissionName t =
   Grade.RunnerInfo
     { Grade.runnerInfoTimeout = t,

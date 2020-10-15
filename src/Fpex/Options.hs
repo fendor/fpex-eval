@@ -1,8 +1,6 @@
 module Fpex.Options where
 
 import Fpex.Course.Types
-import Fpex.Grade.Types
-import Fpex.Publish (FeedbackAction (..))
 import Options.Applicative
 
 data Options = Options

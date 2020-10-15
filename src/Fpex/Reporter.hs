@@ -5,7 +5,7 @@ import Polysemy
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import System.Clock
-import Fpex.Grade.Types
+import Fpex.Grade.Result
 
 
 withReport :: Member (Embed IO) r => T.Text -> Sem r a -> Sem r a
