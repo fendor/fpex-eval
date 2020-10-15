@@ -19,8 +19,8 @@ assignmentCollectStudentDir =
 -- Pure functions for extracting filepath information
 -- ----------------------------------------------------------------------------
 
-testSuiteMain :: Course -> FilePath
-testSuiteMain Course {..} = courseRootDir </> "Main" <.> "hs"
+testSuiteMain :: SubmissionId -> SubmissionName -> FilePath
+testSuiteMain sid suiteName = assignmentCollectDir sid suiteName </> "Main" <.> "hs"
 
 studentDir :: Course -> Student -> FilePath
 studentDir Course {..} Student {..} =

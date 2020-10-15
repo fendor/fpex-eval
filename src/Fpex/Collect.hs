@@ -17,15 +17,15 @@ import System.IO.Error (isPermissionError)
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
 
-setTestSuite :: Course -> SubmissionId -> SubmissionName -> TestSuitePath -> IO ()
-setTestSuite course sid submissionName testSuite = do
+setTestSuite :: SubmissionId -> SubmissionName -> TestSuitePath -> IO ()
+setTestSuite sid submissionName testSuite = do
   let targetDir = assignmentCollectDir sid submissionName
-  let testSuiteFp = getTestSuitePath testSuite
+  testSuiteFp <- canonicalizePath $ getTestSuitePath testSuite
   createDirectoryIfMissing True targetDir
 
   -- copy assignment main
   putStrLn $ "copy " <> testSuiteFp <> " to " <> targetDir
-  copyFile testSuiteFp (testSuiteMain course)
+  copyFile testSuiteFp (testSuiteMain sid submissionName)
 
 prepareSubmissionFolder :: SubmissionId -> SubmissionName -> IO ()
 prepareSubmissionFolder sid suiteName = do

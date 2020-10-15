@@ -93,7 +93,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
               runReader course $ do
                 -- Run Error Student, prepare failed submissions, etc...
                 let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId submissionName
-                whenJust gradeTestSuite $ setTestSuite course optionSubmissionId submissionName
+                whenJust gradeTestSuite $ setTestSuite optionSubmissionId submissionName
                 errorReports <- withReport "run errorStudent" $ do
                   Grade.runGradeError
                     ( Grade.runTastyTestSuite $
@@ -234,14 +234,13 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 
 setTestSuite ::
   Members [Error Text, Embed IO] r =>
-  Course ->
   SubmissionId ->
   SubmissionName ->
   TestSuitePath ->
   Sem r ()
-setTestSuite course submissionId submissionName testSuiteSpec = do
+setTestSuite submissionId submissionName testSuiteSpec = do
   absoluteTestSuiteSpec <- checkTestSuiteExists testSuiteSpec
-  embed $ Collect.setTestSuite course submissionId submissionName absoluteTestSuiteSpec
+  embed $ Collect.setTestSuite submissionId submissionName absoluteTestSuiteSpec
 
 defaultRunnerInfo :: SubmissionName -> Grade.Timeout -> Grade.RunnerInfo
 defaultRunnerInfo submissionName t =

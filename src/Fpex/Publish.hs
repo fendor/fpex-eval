@@ -17,7 +17,6 @@ import Polysemy.Internal (send)
 import Polysemy.Reader
 import System.Directory
 import System.FilePath
-import qualified Text.RE.Replace as Regex
 import qualified Text.RE.TDFA.Text as Regex
 
 data FeedbackAction
@@ -58,18 +57,17 @@ publishTestResult SubmissionInfo {..} = do
   copyHandwrittenFeedback course subId subName subStudent
 
 writeTestResultFeedback ::
-  Members [Log.Log T.Text, Storage, Embed IO, Reader Course, Reader StudentSubmission] r =>
+  Members [Log.Log T.Text, Storage, Embed IO, Reader StudentSubmission] r =>
   SubmissionInfo ->
   Sem r FilePath
 writeTestResultFeedback sinfo@SubmissionInfo {..} = do
-  course <- ask
   studentSubmission <- ask
   let targetFile = reportFeedbackFile subId subName studentSubmission subStudent
   Log.log $ "write " <> T.pack targetFile
   testSuiteResults <- readTestSuiteResult sinfo
   let prettyTextReport = Publish.prettyTestReport testSuiteResults
   embed (T.writeFile targetFile prettyTextReport)
-  testSuiteContents <- embed $ T.readFile (testSuiteMain course)
+  testSuiteContents <- embed $ T.readFile (testSuiteMain subId subName)
   embed (T.writeFile (reportTestSuiteFile subId subName studentSubmission subStudent) $ hackyPostProcessTestSuite testSuiteContents)
   pure targetFile
 
