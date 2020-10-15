@@ -90,5 +90,5 @@ permissionErrorStudentMessage s =
   , "Please make sure that the permissions are set appropriately. The group \"fptutor\" needs at least read access to your submission."
   , ""
   , "You can set read file permissions via:"
-  , "> chmod +0044 " <> T.pack (getStudentSubmission s)
+  , "> chmod g+r " <> T.pack (getStudentSubmission s)
   ]
