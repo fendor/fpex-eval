@@ -50,6 +50,17 @@ publishTestResult SubmissionInfo {..} = do
         (reportTestSuiteFile subId subName studentSubmission subStudent)
         (studentTestSuiteFile subId course studentSubmission subStudent)
     )
+
+  embed $
+    Posix.setFileMode
+      (studentTestSuiteFile subId course studentSubmission subStudent)
+      Posix.stdFileMode
+
+  embed $
+    Posix.setFileMode
+      targetFile
+      Posix.stdFileMode
+
   copyHandwrittenFeedback course subId subName subStudent
 
 writeTestResultFeedback ::
@@ -65,10 +76,6 @@ writeTestResultFeedback sinfo@SubmissionInfo {..} = do
   embed (T.writeFile targetFile prettyTextReport)
   testSuiteContents <- embed $ T.readFile (testSuiteMain subId subName)
   embed (T.writeFile (reportTestSuiteFile subId subName studentSubmission subStudent) $ hackyPostProcessTestSuite testSuiteContents)
-  embed $
-    Posix.setFileMode
-      (reportTestSuiteFile subId subName studentSubmission subStudent)
-      Posix.stdFileMode
   pure targetFile
 
 hackyPostProcessTestSuite :: T.Text -> T.Text
