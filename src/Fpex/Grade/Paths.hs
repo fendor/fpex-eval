@@ -63,10 +63,14 @@ reportTestSuiteFile ::
   FilePath
 reportTestSuiteFile sid suiteName studentSubmission student =
   assignmentCollectStudentDir' sid suiteName student
-    </> ( dropExtension (getStudentSubmission studentSubmission)
-            ++ "_TestSuite"
-            ++ show (getSubmissionId sid) <.> "hs"
-        )
+    </> testSuiteName sid studentSubmission
+
+testSuiteName :: SubmissionId -> StudentSubmission -> FilePath
+testSuiteName sid studentSubmission =
+  ( dropExtension (getStudentSubmission studentSubmission)
+      ++ "_TestSuite"
+      ++ show (getSubmissionId sid) <.> "hs"
+  )
 
 reportFeedbackFile ::
   SubmissionId ->
@@ -104,3 +108,13 @@ reportPublishFile ::
 reportPublishFile sid course studentSubmission student =
   studentDir course student
     </> reportName sid studentSubmission
+
+studentTestSuiteFile ::
+  SubmissionId ->
+  Course ->
+  StudentSubmission ->
+  Student ->
+  FilePath
+studentTestSuiteFile sid course studentSubmission student =
+  studentDir course student
+    </> testSuiteName sid studentSubmission

@@ -83,6 +83,7 @@ library
     , polysemy
     , polysemy-plugin
     , regex-tdfa
+    , regex
     , safe-exceptions
     , semigroups
     , temporary
