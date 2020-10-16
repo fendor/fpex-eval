@@ -49,7 +49,7 @@ renderTestCaseResult TestCaseResultCompileFail = "FAILED TO COMPILE"
 renderTestCaseResult TestCaseResultNotSubmitted = "NOT SUBMITTED"
 renderTestCaseResult (TestCaseResultExpectedButGot (ExpectedButGot expectedOutput actualOutput))
     =  "FAILED\n"
-    <> "Expected:  " <> T.pack actualOutput <> ", but got: " <> T.pack expectedOutput
+    <> "Expected:  " <> T.pack expectedOutput <> ", but got: " <> T.pack actualOutput
 renderTestCaseResult TestCaseResultTimeout =
     "TIMED OUT"
 renderTestCaseResult (TestCaseResultException exception) =
