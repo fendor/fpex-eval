@@ -85,12 +85,13 @@ dispatchLifeCycle ::
   Sem r ()
 dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
   let submissionName = optionSubmissionName
+  let studentSubmission = buildStudentSubmissionWithDefault submissionName optionStudentSubmission
   case lifecycle of
     Grade GradeCommand {..} ->
       Storage.runStorageFileSystem $
         evalState (mempty :: AnalysisState) $
           runStatefulAnalyser $
-            runReader (defaultRunnerInfo submissionName testTimeout) $
+            runReader (defaultRunnerInfo studentSubmission testTimeout) $
               runReader course $ do
                 -- Run Error Student, prepare failed submissions, etc...
                 let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId submissionName
@@ -123,8 +124,7 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
 
                 analysisReport <- finalAnalysisReport
                 runReader errorReports $ printFinalAnalysisReport analysisReport
-    Collect CollectCommand {..} -> do
-      let studentSubmission = buildStudentSubmissionWithDefault submissionName collectStudentSubmission
+    Collect CollectCommand -> do
       embed $
         Collect.prepareSubmissionFolder
           optionSubmissionId
@@ -152,7 +152,6 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
             <> T.pack (show (length students))
             <> " submissions."
     Feedback FeedbackCommand {..} -> do
-      let studentSubmission = buildStudentSubmissionWithDefault submissionName feedbackStudentSubmission
       Storage.runStorageFileSystem $
         runReader course $
           runReader studentSubmission $
@@ -188,7 +187,6 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
           let newTs = Grade.recalculateTestPoints ts
           Storage.writeTestSuiteResult sinfo newTs
     DiffResults DiffResultsCommand {..} -> Storage.runStorageFileSystem $ do
-      let studentSubmission = buildStudentSubmissionWithDefault submissionName Nothing
       let oldSid = diffResultSid
       let currentSid = optionSubmissionId
       embed $
@@ -243,12 +241,12 @@ setTestSuite submissionId submissionName testSuiteSpec = do
   absoluteTestSuiteSpec <- checkTestSuiteExists testSuiteSpec
   embed $ Collect.setTestSuite submissionId submissionName absoluteTestSuiteSpec
 
-defaultRunnerInfo :: SubmissionName -> Timeout -> Grade.RunnerInfo
-defaultRunnerInfo submissionName t =
+defaultRunnerInfo :: StudentSubmission -> Timeout -> Grade.RunnerInfo
+defaultRunnerInfo studentSubmission t =
   Grade.RunnerInfo
     { Grade.runnerInfoTimeout = t,
       Grade.runnerInfoReportOutput = "testsuite-result.json",
-      Grade.runnerInfoStudentSubmission = buildStudentSubmissionWithDefault submissionName Nothing
+      Grade.runnerInfoStudentSubmission = studentSubmission
     }
 
 buildStudentSubmissionWithDefault :: SubmissionName -> Maybe StudentSubmission -> StudentSubmission
