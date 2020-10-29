@@ -5,7 +5,7 @@ import qualified Data.Aeson.Encode.Pretty as Pretty
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Grade.Types
+import Fpex.Grade.Result
 import Fpex.Grade.Paths
 import Polysemy
 import Polysemy.Error

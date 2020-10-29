@@ -10,7 +10,7 @@ import Data.Semigroup.Generic
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade.Storage
-import Fpex.Grade.Types
+import Fpex.Grade.Result
 import GHC.Generics (Generic)
 import Polysemy
 import Polysemy.Internal (send)

@@ -47,6 +47,7 @@ library
     Fpex.Grade.Tasty
     Fpex.Grade.Paths
     Fpex.Grade.Types
+    Fpex.Grade.Result
     Fpex.Main
     Fpex.Options
     Fpex.Publish
@@ -83,11 +84,13 @@ library
     , polysemy
     , polysemy-plugin
     , regex-tdfa
+    , regex
     , safe-exceptions
     , semigroups
     , temporary
     , text
     , typed-process
+    , unix-compat
     , unordered-containers
 
   default-language: Haskell2010

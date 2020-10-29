@@ -39,6 +39,11 @@ newtype Student = Student
 ghciEnvironmentLocation :: Course -> FilePath
 ghciEnvironmentLocation Course {courseGhciEnvironment} = courseGhciEnvironment
 
+data FeedbackAction
+  = WriteFeedback
+  | PublishFeedback
+  deriving (Show, Eq, Ord, Bounded)
+
 newtype SubmissionId = SubmissionId {getSubmissionId :: Int}
   deriving (Show, Generic)
   deriving newtype (Eq, Num, Ord)
@@ -70,3 +75,8 @@ data AppCtx = AppCtx
     appSubmissionId :: SubmissionId
   }
   deriving (Show, Eq, Ord)
+
+
+newtype Timeout = Timeout {getTimeout :: Float}
+  deriving (Show, Generic)
+  deriving newtype (Eq, Num, Ord)

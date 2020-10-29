@@ -9,7 +9,8 @@ import qualified Data.Text.Lazy.Encoding as T
 import Fpex.Course.Types
 import Fpex.Grade.Paths
 import Fpex.Grade.Storage
-import Fpex.Grade.Types as Eval
+import Fpex.Grade.Types
+import Fpex.Grade.Result as Eval
 import Polysemy
 import Polysemy.Error (Error, catch, runError, throw)
 import Polysemy.Internal

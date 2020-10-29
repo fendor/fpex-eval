@@ -7,7 +7,7 @@ import Data.Function ((&))
 import Data.List (transpose)
 import Fpex.Course.Types
 import Fpex.Grade.Paths
-import Fpex.Grade.Types
+import Fpex.Grade.Result
 import Text.Printf (printf)
 
 compute :: SubmissionId -> Course -> SubmissionName -> IO [(Int, Double)]

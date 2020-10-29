@@ -1,8 +1,6 @@
 module Fpex.Options where
 
 import Fpex.Course.Types
-import Fpex.Grade.Types
-import Fpex.Publish (FeedbackAction (..))
 import Options.Applicative
 
 data Options = Options
@@ -37,7 +35,8 @@ data LifeCycle
 
 data TestSuiteOptions = TestSuiteOptions
   { optionSubmissionId :: SubmissionId,
-    optionSubmissionName :: SubmissionName
+    optionSubmissionName :: SubmissionName,
+    optionStudentSubmission :: Maybe StudentSubmission
   }
   deriving (Show, Eq)
 
@@ -62,13 +61,10 @@ data GradeCommand = GradeCommand
   deriving (Show, Eq)
 
 data CollectCommand = CollectCommand
-  { collectStudentSubmission :: Maybe StudentSubmission
-  }
   deriving (Show, Eq)
 
 data FeedbackCommand = FeedbackCommand
-  { feedbackPublish :: FeedbackAction,
-    feedbackStudentSubmission :: Maybe StudentSubmission
+  { feedbackPublish :: FeedbackAction
   }
   deriving (Show, Eq)
 
@@ -124,7 +120,7 @@ options =
                 <> help "Old Submission Id to compare the current submission to."
             )
       testSuiteOptionParser =
-        TestSuiteOptions <$> submissionIdParser <*> submissionNameParser
+        TestSuiteOptions <$> submissionIdParser <*> submissionNameParser <*> optional studentSubmissionParser
       gradeParser =
         Grade
           <$> ( GradeCommand
@@ -170,7 +166,7 @@ options =
                         <> value "f[0-9]{8}"
                     )
               )
-      collectParser = Collect <$> (CollectCommand <$> optional studentSubmissionParser)
+      collectParser = Collect <$> pure CollectCommand
       publishParser =
         Feedback
           <$> ( FeedbackCommand
@@ -178,7 +174,6 @@ options =
                     WriteFeedback
                     PublishFeedback
                     (long "publish" <> help "Publish the feedback")
-                  <*> optional studentSubmissionParser
               )
       statParser =
         Stats
