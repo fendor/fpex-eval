@@ -1,4 +1,5 @@
 import Fpex.Main (defaultMain)
+import Main.Utf8
 
 main :: IO ()
-main = defaultMain
+main = withUtf8 defaultMain
