@@ -56,7 +56,8 @@ courseSetup SetupCommand {..} = do
             courseParticipants = students,
             courseGhciOptions = ["+RTS", "-M500M", "-K10M", "-RTS"],
             courseGhciDependencies = ["base", "array"],
-            courseGhciEnvironment = ".ghc.environment.fpex"
+            courseGhciEnvironment = ".ghc.environment.fpex",
+            courseStudentSubDir = Nothing
           }
   embed $ BL.writeFile "course.json" $ Aeson.encodePretty course
 

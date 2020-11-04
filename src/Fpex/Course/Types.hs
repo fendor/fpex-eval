@@ -12,7 +12,11 @@ data Course = Course
     courseParticipants :: [Student],
     courseGhciOptions :: [String],
     courseGhciDependencies :: [Text],
-    courseGhciEnvironment :: FilePath
+    courseGhciEnvironment :: FilePath,
+    -- | Subdirectory within the student home directories for delivering feedback.
+    --
+    -- If 'Nothing', defaults to the root of the student home directory.
+    courseStudentSubDir :: Maybe FilePath
   }
   deriving (Ord, Eq, Show, Generic)
 

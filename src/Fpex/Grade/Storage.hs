@@ -5,8 +5,8 @@ import qualified Data.Aeson.Encode.Pretty as Pretty
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Grade.Result
 import Fpex.Grade.Paths
+import Fpex.Grade.Result
 import Polysemy
 import Polysemy.Error
 import Polysemy.Internal
@@ -29,7 +29,7 @@ doesTestSuiteResultExist info = send $ DoesTestSuiteResultExist info
 runStorageFileSystem ::
   Members [Embed IO, Error T.Text] r =>
   Sem (Storage : r) a ->
-  Sem (r) a
+  Sem r a
 runStorageFileSystem = interpret $ \case
   WriteTestSuiteResult SubmissionInfo {..} results ->
     embed $ writeTestSuiteResultIO subId subName subStudent results
@@ -68,7 +68,6 @@ writeTestSuiteResultIO sid suiteName student testSuiteResults =
   LBS.writeFile
     (reportSourceJsonFile sid suiteName student)
     (Pretty.encodePretty testSuiteResults)
-
 
 -- ----------------------------------------------------------------------------
 -- Helpers

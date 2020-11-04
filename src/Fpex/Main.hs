@@ -12,17 +12,18 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Fpex.Collect as Collect
 import qualified Fpex.Course.CourseSetup as Setup
+import qualified Fpex.Course.Student as Student
 import Fpex.Course.Types
+import qualified Fpex.Feedback as Feedback
 import qualified Fpex.Grade as Grade
 import Fpex.Grade.Analysis
 import qualified Fpex.Grade.ErrorStudent as ErrorStudent
 import Fpex.Grade.Paths as Paths
+import qualified Fpex.Grade.Result as Grade
 import qualified Fpex.Grade.Storage as Storage
 import qualified Fpex.Grade.Tasty as Grade
 import qualified Fpex.Grade.Types as Grade
-import qualified Fpex.Grade.Result as Grade
 import Fpex.Options
-import qualified Fpex.Publish as Publish
 import Fpex.Publish.Stats
 import Fpex.Reporter
 import qualified Fpex.Stats.Csv as Stats
@@ -154,13 +155,18 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
     Feedback FeedbackCommand {..} -> do
       Storage.runStorageFileSystem $
         runReader course $
-          runReader studentSubmission $
-            Publish.runPublisherService $ do
-              forM_ students $ \student -> do
-                let sinfo = SubmissionInfo student optionSubmissionId submissionName
-                Publish.writeTestFeedback
-                  sinfo
-                  feedbackPublish
+          runReader studentSubmission $ do
+            forM_ students $ \student -> do
+              let sinfo = SubmissionInfo student optionSubmissionId submissionName
+              runReader sinfo $
+                Student.runFileSystemStudentDirectory $
+                  Feedback.runFeedbackService $ do
+                    Feedback.generateTestFeedback
+                    when (PublishFeedback <= feedbackPublish) $ do
+                      Student.publishTestSuiteResult
+                      testSuiteLocation <- reportTestSuiteFile
+                      Student.publishTestSuite testSuiteLocation
+                      Student.publishSubmissionFeedback
     Stats StatCommand {..} -> do
       stats <-
         embed

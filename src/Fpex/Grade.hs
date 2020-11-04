@@ -8,9 +8,9 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as T
 import Fpex.Course.Types
 import Fpex.Grade.Paths
+import Fpex.Grade.Result as Eval
 import Fpex.Grade.Storage
 import Fpex.Grade.Types
-import Fpex.Grade.Result as Eval
 import Polysemy
 import Polysemy.Error (Error, catch, runError, throw)
 import Polysemy.Internal
@@ -57,8 +57,12 @@ runSubmission = do
           CompileFailReport compileFailTestSuite <- asks compileFailReport
           pure compileFailTestSuite
         NoSubmission -> do
-          NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
-          pure noSubmissionTestSuite
+          let prevSubInfo = submissionInfo {subId = subId submissionInfo - 1}
+          doesTestSuiteResultExist prevSubInfo >>= \case
+            False -> do
+              NotSubmittedReport noSubmissionTestSuite <- asks notSubmittedReport
+              pure noSubmissionTestSuite
+            True -> readTestSuiteResult prevSubInfo
         FailedToDecodeJsonResult msg ->
           throw $ T.pack msg
   writeTestSuiteResult submissionInfo testSuiteResult
