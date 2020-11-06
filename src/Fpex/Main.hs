@@ -6,7 +6,7 @@ import qualified Colog.Polysemy as Log
 import Colourista
 import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
-import Data.Either
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -64,7 +64,8 @@ defaultMain' = do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
       embed $ setCurrentDirectory courseDir
-      dispatchLifeCycle Course {..} students gradeTestSuiteOptions lifecycle
+
+      runReader Course {..} $ dispatchLifeCycle students gradeTestSuiteOptions lifecycle
 
 buildApp :: Members [Embed IO, Error T.Text] r => Course -> TestSuiteOptions -> Maybe StudentSubmission -> Sem r AppCtx
 buildApp course TestSuiteOptions {..} studentSubmission = do
@@ -78,84 +79,82 @@ buildApp course TestSuiteOptions {..} studentSubmission = do
       }
 
 dispatchLifeCycle ::
-  Members [Log.Log T.Text, Error Text, Embed IO] r =>
-  Course ->
+  Members [Log.Log T.Text, Error Text, Embed IO, Reader Course] r =>
   [Student] ->
   TestSuiteOptions ->
   LifeCycle ->
   Sem r ()
-dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
+dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
   let submissionName = optionSubmissionName
   let studentSubmission = buildStudentSubmissionWithDefault submissionName optionStudentSubmission
-  case lifecycle of
-    Grade GradeCommand {..} ->
-      Storage.runStorageFileSystem $
-        evalState (mempty :: AnalysisState) $
-          runStatefulAnalyser $
-            runReader (defaultRunnerInfo studentSubmission testTimeout) $
-              runReader course $ do
-                -- Run Error Student, prepare failed submissions, etc...
-                let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId submissionName
-                whenJust gradeTestSuite $ setTestSuite optionSubmissionId submissionName
-                errorReports <- withReport "run errorStudent" $ do
-                  Grade.runGradeError
-                    ( Grade.runTastyTestSuite $
-                        Grade.createEmptyStudent gradeBaseDefinitions errorStudent
-                    )
-                    >>= \case
-                      Right errorReport -> return errorReport
-                      Left err -> throw =<< ErrorStudent.prettyRunnerError errorStudent err
+  runReader studentSubmission $
+    case lifecycle of
+      Grade GradeCommand {..} ->
+        Storage.runStorageFileSystem $
+          evalState (mempty :: AnalysisState) $
+            runStatefulAnalyser $
+              runReader (defaultRunnerInfo studentSubmission testTimeout) $
+                do
+                  -- Run Error Student, prepare failed submissions, etc...
+                  let errorStudent = ErrorStudent.errorStudentSubmissionInfo optionSubmissionId submissionName
+                  whenJust gradeTestSuite $ setTestSuite optionSubmissionId submissionName
+                  errorReports <- withReport "run errorStudent" $ do
+                    Grade.runGradeError
+                      ( Grade.runTastyTestSuite $
+                          Grade.createEmptyStudent gradeBaseDefinitions errorStudent
+                      )
+                      >>= \case
+                        Right errorReport -> return errorReport
+                        Left err -> throw =<< ErrorStudent.prettyRunnerError errorStudent err
 
-                -- Run testsuite grading for all students.
-                forM_ students $ \student -> do
-                  withReport ("run testsuite for student " <> studentId student) $ do
-                    let subInfo =
-                          SubmissionInfo
-                            { subStudent = student,
-                              subId = optionSubmissionId,
-                              subName = submissionName
-                            }
-                    runReader subInfo $
-                      runReader errorReports $
-                        Grade.runGradeError $
-                          Grade.runTastyTestSuite $ do
-                            submissionResult <- Grade.runSubmission
-                            _warnings <- analyseTestSuite subInfo submissionResult
-                            prettyTestReport submissionResult
+                  -- Run testsuite grading for all students.
+                  forM_ students $ \student -> do
+                    withReport ("run testsuite for student " <> studentId student) $ do
+                      let subInfo =
+                            SubmissionInfo
+                              { subStudent = student,
+                                subId = optionSubmissionId,
+                                subName = submissionName
+                              }
+                      runReader subInfo $
+                        runReader errorReports $
+                          Grade.runGradeError $
+                            Grade.runTastyTestSuite $ do
+                              submissionResult <- Grade.runSubmission
+                              _warnings <- analyseTestSuite subInfo submissionResult
+                              prettyTestReport submissionResult
 
-                analysisReport <- finalAnalysisReport
-                runReader errorReports $ printFinalAnalysisReport analysisReport
-    Collect CollectCommand -> do
-      embed $
-        Collect.prepareSubmissionFolder
-          optionSubmissionId
-          submissionName
-
-      embed $
-        Collect.createEmptyStudent
-          optionSubmissionId
-          submissionName
-
-      collectResults <- forM students $ \student -> do
+                  analysisReport <- finalAnalysisReport
+                  runReader errorReports $ printFinalAnalysisReport analysisReport
+      Collect CollectCommand -> do
         embed $
-          Collect.collectSubmission
-            course
+          Collect.prepareSubmissionFolder
             optionSubmissionId
             submissionName
-            studentSubmission
-            student
-      let (_errs, collected) = partitionEithers collectResults
-      embed $
-        successMessage $
-          "Collected "
-            <> T.pack (show (length collected))
-            <> "/"
-            <> T.pack (show (length students))
-            <> " submissions."
-    Feedback FeedbackCommand {..} -> do
-      Storage.runStorageFileSystem $
-        runReader course $
-          runReader studentSubmission $ do
+
+        embed $
+          Collect.createEmptyStudent
+            optionSubmissionId
+            submissionName
+
+        collectResults <- forM students $ \student -> do
+          let sinfo = SubmissionInfo student optionSubmissionId optionSubmissionName
+          runReader sinfo $
+            runReader studentSubmission $
+              Storage.runStorageFileSystem $
+                Student.runFileSystemStudentDirectory
+                  Student.collectStudentSubmission
+
+        let collected = filter isNothing collectResults
+        embed $
+          successMessage $
+            "Collected "
+              <> T.pack (show (length collected))
+              <> "/"
+              <> T.pack (show (length students))
+              <> " submissions."
+      Feedback FeedbackCommand {..} -> do
+        Storage.runStorageFileSystem $
             forM_ students $ \student -> do
               let sinfo = SubmissionInfo student optionSubmissionId submissionName
               runReader sinfo $
@@ -167,71 +166,71 @@ dispatchLifeCycle course students TestSuiteOptions {..} lifecycle = do
                       testSuiteLocation <- reportTestSuiteFile
                       Student.publishTestSuite testSuiteLocation
                       Student.publishSubmissionFeedback
-    Stats StatCommand {..} -> do
-      stats <-
-        embed
-          ( Stats.collectData
-              students
-              optionSubmissionId
-              submissionName
-          )
-      case statOutputKind of
-        StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
-        StatsOutputGrades ->
-          embed (T.putStrLn $ Stats.statsGrade stats)
-    RecalculatePoints -> Storage.runStorageFileSystem $
-      forM_ students $ \student -> do
-        withReport ("Calculate points for: " <> studentId student) $ do
-          let sinfo =
-                SubmissionInfo
-                  { subStudent = student,
-                    subId = optionSubmissionId,
-                    subName = submissionName
-                  }
+      Stats StatCommand {..} -> do
+        stats <-
+          embed
+            ( Stats.collectData
+                students
+                optionSubmissionId
+                submissionName
+            )
+        case statOutputKind of
+          StatsOutputCsv -> embed (T.putStrLn $ Stats.statsCsv stats)
+          StatsOutputGrades ->
+            embed (T.putStrLn $ Stats.statsGrade stats)
+      RecalculatePoints -> Storage.runStorageFileSystem $
+        forM_ students $ \student -> do
+          withReport ("Calculate points for: " <> studentId student) $ do
+            let sinfo =
+                  SubmissionInfo
+                    { subStudent = student,
+                      subId = optionSubmissionId,
+                      subName = submissionName
+                    }
 
-          ts <- Storage.readTestSuiteResult sinfo
-          let newTs = Grade.recalculateTestPoints ts
-          Storage.writeTestSuiteResult sinfo newTs
-    DiffResults DiffResultsCommand {..} -> Storage.runStorageFileSystem $ do
-      let oldSid = diffResultSid
-      let currentSid = optionSubmissionId
-      embed $
-        T.putStrLn $
-          "Show Difference between " <> T.pack (show $ getSubmissionId currentSid)
-            <> " and "
-            <> T.pack (show $ getSubmissionId oldSid)
-      forM_ students $ \student -> do
-        oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid submissionName
-        newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid submissionName
-        let oldSubmission = Paths.assignmentCollectStudentFile oldSid submissionName studentSubmission student
-        let newSubmission = Paths.assignmentCollectStudentFile currentSid submissionName studentSubmission student
-        let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
-        let failedTests = Grade.failedTests newReport - Grade.failedTests oldReport
-        let notSubmittedTests = Grade.notSubmittedTests newReport - Grade.notSubmittedTests oldReport
-        let timeoutTests = Grade.timeoutTests newReport - Grade.timeoutTests oldReport
-        let oldScore = Grade.testSuitePoints oldReport
-        let newScore = Grade.testSuitePoints newReport
-        if oldScore /= newScore || any (/= 0) [correctTests, failedTests, notSubmittedTests, timeoutTests]
-          then embed $ do
-            T.putStrLn $ "Difference for " <> studentId student
-            T.putStrLn $ "  Old: " <> T.pack oldSubmission <> " -- Points: " <> T.pack (show oldScore)
-            T.putStrLn $ "  New: " <> T.pack newSubmission <> " -- Points: " <> T.pack (show newScore)
-            T.putStrLn $ "  ---"
-            T.putStrLn $
-              "  "
-                <> T.concat
-                  [ "Correct: ",
-                    T.pack $ show correctTests,
-                    ", Incorrect: ",
-                    T.pack $ show failedTests,
-                    ", Not submitted: ",
-                    T.pack $ show notSubmittedTests,
-                    ", Timeout: ",
-                    T.pack $ show timeoutTests
-                  ]
-          else embed $ T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
+            ts <- Storage.readTestSuiteResult sinfo
+            let newTs = Grade.recalculateTestPoints ts
+            Storage.writeTestSuiteResult sinfo newTs
+      DiffResults DiffResultsCommand {..} -> Storage.runStorageFileSystem $ do
+        let oldSid = diffResultSid
+        let currentSid = optionSubmissionId
+        embed $
+          T.putStrLn $
+            "Show Difference between " <> T.pack (show $ getSubmissionId currentSid)
+              <> " and "
+              <> T.pack (show $ getSubmissionId oldSid)
+        forM_ students $ \student -> do
+          oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid submissionName
+          newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid submissionName
+          let oldSubmission = Paths.assignmentCollectStudentFile oldSid submissionName studentSubmission student
+          let newSubmission = Paths.assignmentCollectStudentFile currentSid submissionName studentSubmission student
+          let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
+          let failedTests = Grade.failedTests newReport - Grade.failedTests oldReport
+          let notSubmittedTests = Grade.notSubmittedTests newReport - Grade.notSubmittedTests oldReport
+          let timeoutTests = Grade.timeoutTests newReport - Grade.timeoutTests oldReport
+          let oldScore = Grade.testSuitePoints oldReport
+          let newScore = Grade.testSuitePoints newReport
+          if oldScore /= newScore || any (/= 0) [correctTests, failedTests, notSubmittedTests, timeoutTests]
+            then embed $ do
+              T.putStrLn $ "Difference for " <> studentId student
+              T.putStrLn $ "  Old: " <> T.pack oldSubmission <> " -- Points: " <> T.pack (show oldScore)
+              T.putStrLn $ "  New: " <> T.pack newSubmission <> " -- Points: " <> T.pack (show newScore)
+              T.putStrLn $ "  ---"
+              T.putStrLn $
+                "  "
+                  <> T.concat
+                    [ "Correct: ",
+                      T.pack $ show correctTests,
+                      ", Incorrect: ",
+                      T.pack $ show failedTests,
+                      ", Not submitted: ",
+                      T.pack $ show notSubmittedTests,
+                      ", Timeout: ",
+                      T.pack $ show timeoutTests
+                    ]
+            else embed $ T.putStrLn $ "No Difference (" <> T.pack (show newScore) <> " Points)"
+          return ()
         return ()
-      return ()
 
 -- ----------------------------------------------------------------------------
 -- Helpers

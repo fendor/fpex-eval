@@ -57,7 +57,6 @@ library
     Fpex.Reporter
     Fpex.Stats.Csv
     Fpex.Stats.Grade
-    Fpex.Stats.Histogram
 
   other-modules:    Paths_fpex
   hs-source-dirs:   src

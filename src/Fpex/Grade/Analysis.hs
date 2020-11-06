@@ -9,8 +9,8 @@ import Data.Monoid
 import Data.Semigroup.Generic
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Grade.Storage
 import Fpex.Grade.Result
+import Fpex.Grade.Storage
 import GHC.Generics (Generic)
 import Polysemy
 import Polysemy.Internal (send)
@@ -111,7 +111,10 @@ printFinalAnalysisReport (AnalysisReport AnalysisState {..}) = do
       ReasonFewerPoints oldPoints newPoints ->
         embed $
           infoMessage $
-            " Previously " <> formatWith [red] (T.pack $ show oldPoints) <> " Points, now "
+            formatSubmissionInfo sinfo
+              <> " Previously "
+              <> formatWith [red] (T.pack $ show oldPoints)
+              <> " Points, now "
               <> formatWith [yellow] (T.pack $ show newPoints)
               <> " Points"
 

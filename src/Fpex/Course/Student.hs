@@ -1,10 +1,19 @@
-module Fpex.Course.Student where
+module Fpex.Course.Student
+  ( StudentDirectory,
+    runFileSystemStudentDirectory,
+    collectStudentSubmission,
+    publishSubmissionFeedback,
+    publishTestSuite,
+    publishTestSuiteResult,
+  )
+where
 
 import qualified Colog.Polysemy as Log
 import Control.Exception
 import Control.Monad (when)
 import Control.Monad.Extra (whenM)
 import qualified Data.ByteString as BS
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Fpex.Course.Types
@@ -20,7 +29,7 @@ import System.IO.Error (isPermissionError)
 import qualified System.PosixCompat.Files as Posix
 
 data StudentDirectory m a where
-  CollectStudentSubmission :: StudentDirectory m (Either FailureReason FilePath)
+  CollectStudentSubmission :: StudentDirectory m (Maybe FailureReason)
   PublishTestSuiteResult :: StudentDirectory m ()
   PublishTestSuite :: FilePath -> StudentDirectory m ()
   PublishSubmissionFeedback :: StudentDirectory m ()
@@ -28,7 +37,7 @@ data StudentDirectory m a where
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
 
-collectStudentSubmission :: Member StudentDirectory r => Sem r (Either FailureReason FilePath)
+collectStudentSubmission :: Member StudentDirectory r => Sem r (Maybe FailureReason)
 collectStudentSubmission = send CollectStudentSubmission
 
 publishTestSuiteResult :: Member StudentDirectory r => Sem r ()
@@ -79,7 +88,7 @@ runFileSystemStudentDirectory = interpret $ \case
     SubmissionInfo {..} <- ask
     copyHandwrittenFeedback course subId subName subStudent
 
-collectSubmission :: Members [Storage, Embed IO] r => Course -> SubmissionId -> SubmissionName -> StudentSubmission -> Student -> Sem r (Either FailureReason FilePath)
+collectSubmission :: Members [Storage, Embed IO] r => Course -> SubmissionId -> SubmissionName -> StudentSubmission -> Student -> Sem r (Maybe FailureReason)
 collectSubmission course sid submissionName studentSubmission student = do
   let sourceFile = studentSourceFile course studentSubmission student
   let targetDir = assignmentCollectStudentDir' sid submissionName student
@@ -89,13 +98,13 @@ collectSubmission course sid submissionName studentSubmission student = do
 
   hasErr <- embed $ try $ copySubmission sourceFile targetFile
   case hasErr of
-    Right r -> pure r
+    Right _r -> pure Nothing
     Left err -> embed $ do
       putStrLn $ show err
       when (isPermissionError err) $ do
         T.writeFile (takeDirectory sourceFile </> collectFileError) (permissionErrorStudentMessage studentSubmission)
 
-      pure $ Left $ IOErrorReason err
+      pure $ Just $ IOErrorReason err
   where
     collectFileError = getStudentSubmission studentSubmission ++ ".collect_error"
 
@@ -159,3 +168,50 @@ permissionErrorStudentMessage s =
       "You can set read file permissions via:",
       "> chmod g+r " <> T.pack (getStudentSubmission s)
     ]
+
+-- ----------------------------------------------------------------------------
+-- Filepath utilities for accessing student directories
+-- ----------------------------------------------------------------------------
+
+-- | Root directory of the real student
+studentDir :: Course -> Student -> FilePath
+studentDir Course {..} Student {..} =
+  courseRootDir </> T.unpack studentId
+
+-- | Absolute path to the real student's sub-directory to which feedback can be delivered.
+studentSubDir :: Course -> Student -> FilePath
+studentSubDir Course {..} Student {..} =
+  normalise $
+    studentDir Course {..} Student {..}
+      </> fromMaybe "." courseStudentSubDir
+
+-- | Filename of the submission file
+studentSourceFile :: Course -> StudentSubmission -> Student -> FilePath
+studentSourceFile course studentSubmission student =
+  studentDir course student </> getStudentSubmission studentSubmission
+
+-- | Location of the grading result.
+reportPublishFile ::
+  SubmissionId ->
+  Course ->
+  StudentSubmission ->
+  Student ->
+  FilePath
+reportPublishFile sid course studentSubmission student =
+  studentSubDir course student
+    </> reportName sid studentSubmission
+
+studentTestSuiteFile :: Members [Reader Course, Reader SubmissionInfo, Reader StudentSubmission] r => Sem r FilePath
+studentTestSuiteFile =
+  studentTestSuiteFile' <$> ask <*> asks subId <*> ask <*> asks subStudent
+
+-- | Location of the test-suite delivered to the student.
+studentTestSuiteFile' ::
+  Course ->
+  SubmissionId ->
+  StudentSubmission ->
+  Student ->
+  FilePath
+studentTestSuiteFile' course sid studentSubmission student =
+  studentSubDir course student
+    </> testSuiteName sid studentSubmission

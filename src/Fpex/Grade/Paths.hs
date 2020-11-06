@@ -1,6 +1,5 @@
 module Fpex.Grade.Paths where
 
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Polysemy
@@ -92,49 +91,3 @@ reportName sid studentSubmission =
 assignmentPath :: SubmissionName -> FilePath
 assignmentPath (SubmissionName t) = T.unpack t
 
--- ----------------------------------------------------------------------------
--- Filepath utilities for accessing student directories
--- ----------------------------------------------------------------------------
-
--- | Root directory of the real student
-studentDir :: Course -> Student -> FilePath
-studentDir Course {..} Student {..} =
-  courseRootDir </> T.unpack studentId
-
--- | Absolute path to the real student's sub-directory to which feedback can be delivered.
-studentSubDir :: Course -> Student -> FilePath
-studentSubDir Course {..} Student {..} =
-  normalise $
-    studentDir Course {..} Student {..}
-      </> fromMaybe "." courseStudentSubDir
-
--- | Filename of the submission file
-studentSourceFile :: Course -> StudentSubmission -> Student -> FilePath
-studentSourceFile course studentSubmission student =
-  studentDir course student </> getStudentSubmission studentSubmission
-
--- | Location of the grading result.
-reportPublishFile ::
-  SubmissionId ->
-  Course ->
-  StudentSubmission ->
-  Student ->
-  FilePath
-reportPublishFile sid course studentSubmission student =
-  studentSubDir course student
-    </> reportName sid studentSubmission
-
-studentTestSuiteFile :: Members [Reader Course, Reader SubmissionInfo, Reader StudentSubmission] r => Sem r FilePath
-studentTestSuiteFile =
-  studentTestSuiteFile' <$> ask <*> asks subId <*> ask <*> asks subStudent
-
--- | Location of the test-suite delivered to the student.
-studentTestSuiteFile' ::
-  Course ->
-  SubmissionId ->
-  StudentSubmission ->
-  Student ->
-  FilePath
-studentTestSuiteFile' course sid studentSubmission student =
-  studentSubDir course student
-    </> testSuiteName sid studentSubmission

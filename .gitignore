@@ -32,6 +32,7 @@ report.json
 *out_*
 course.json
 
-testdata/course4/admin/Assignment*-1/
 
+testdata/course*/admin/Assignment*-*/
+testdata/course*/*/Assignment1.hs
 .envrc
