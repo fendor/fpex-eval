@@ -168,7 +168,7 @@ dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
                       Student.publishSubmissionFeedback
       Stats StatCommand {..} -> do
         stats <-
-          embed
+          Storage.runStorageFileSystem
             ( Stats.collectData
                 students
                 optionSubmissionId

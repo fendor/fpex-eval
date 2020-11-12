@@ -1,26 +1,25 @@
 module Fpex.Stats.Csv where
 
 import Control.Monad (forM)
-import qualified Data.Aeson as Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Grade.Paths
 import Fpex.Grade.Result
+import Fpex.Grade.Storage
+import Polysemy
 
 data StatsCsvLine = StatsCsvLine
   { statsStudent :: Student,
-    statsPoints :: Points,
+    statsPoints :: Maybe Points,
     statsMaxPoints :: Points
   }
 
-collectData :: [Student] -> SubmissionId -> SubmissionName -> IO [StatsCsvLine]
+collectData :: Member Storage r => [Student] -> SubmissionId -> SubmissionName -> Sem r [StatsCsvLine]
 collectData students sid suiteName = forM students $ \student -> do
-  let reportJson = reportSourceJsonFile sid suiteName student
-  Just results@TestSuiteResults {..} <- Aeson.decodeFileStrict reportJson
+  result <- readTestSuiteResult (SubmissionInfo student sid suiteName)
   let statsStudent = student
-  let statsPoints = testSuitePoints
-  let statsMaxPoints = maxScore results
+  let statsPoints = if isNotSubmittedReport result then Nothing else Just (testSuitePoints result)
+  let statsMaxPoints = maxScore result
   return $ StatsCsvLine {..}
 
 csvLineString :: StatsCsvLine -> Text
