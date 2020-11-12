@@ -98,7 +98,8 @@ collectSubmission course sid submissionName studentSubmission student = do
 
   hasErr <- embed $ try $ copySubmission sourceFile targetFile
   case hasErr of
-    Right _r -> pure Nothing
+    Right (Right _s) -> pure Nothing
+    Right (Left err) -> pure $ Just err
     Left err -> embed $ do
       putStrLn $ show err
       when (isPermissionError err) $ do
