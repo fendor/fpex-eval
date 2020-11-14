@@ -55,15 +55,16 @@ runTastyTestSuite = interpret $ \case
           ]
             ++ ghciOptions
             ++ [ "-e",
-                 unwords
-                   [ ":main",
-                     "-j",
-                     "1",
-                     "-t",
-                     show (getTimeout testTimeout),
-                     "--grading-json",
-                     reportOutput
-                   ]
+                 show $
+                   unwords
+                     [ ":main",
+                       "-j",
+                       "1",
+                       "-t",
+                       show (getTimeout testTimeout),
+                       "--grading-json",
+                       reportOutput
+                     ]
                ]
         procConfig =
           Proc.proc "ghci" procArgs
