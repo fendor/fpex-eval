@@ -10,10 +10,10 @@ import Data.Function
 import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Grade ( RunTestSuite(..), RunnerError(..) )
+import Fpex.Grade (RunTestSuite (..), RunnerError (..))
+import Fpex.Grade.Paths
 import Fpex.Grade.Result
 import Fpex.Grade.Types
-import Fpex.Grade.Paths
 import Polysemy
 import Polysemy.Error
 import Polysemy.Reader
@@ -51,19 +51,20 @@ runTastyTestSuite = interpret $ \case
             ghciEnv,
             "-i",
             "-i.",
-            "-i..",
-            "-e",
-            unwords
-              [ ":main",
-                "-j",
-                "1",
-                "-t",
-                show (getTimeout testTimeout),
-                "--grading-json",
-                reportOutput
-              ]
+            "-i.."
           ]
             ++ ghciOptions
+            ++ [ "-e",
+                 unwords
+                   [ ":main",
+                     "-j",
+                     "1",
+                     "-t",
+                     show (getTimeout testTimeout),
+                     "--grading-json",
+                     reportOutput
+                   ]
+               ]
         procConfig =
           Proc.proc "ghci" procArgs
             & Proc.setWorkingDir targetDir
