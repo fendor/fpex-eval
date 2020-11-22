@@ -131,4 +131,3 @@ printFinalAnalysisReport (AnalysisReport AnalysisState {..}) = do
 
   when (getAny (reachedFullPoints <> passedAllTests) && null pointRegression && null testsNoOnePassed) $ do
     embed $ successMessage "Report has no warnings"
-  pure ()

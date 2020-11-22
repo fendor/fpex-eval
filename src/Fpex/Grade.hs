@@ -97,11 +97,13 @@ createEmptyStudent baseDefinitions sinfo@SubmissionInfo {..} = do
     setTestGroupResult res Eval.TestGroupResults {..} =
       Eval.TestGroupResults
         { testGroupReports = map (setTestCaseResult res) testGroupReports,
+          testGroupPoints = 0,
           ..
         }
 
     setTestSuiteResults res Eval.TestSuiteResults {..} =
       Eval.TestSuiteResults
         { testGroupResults = map (setTestGroupResult res) testGroupResults,
+          testSuitePoints = 0,
           ..
         }
