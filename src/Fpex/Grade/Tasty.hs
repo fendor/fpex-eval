@@ -21,6 +21,7 @@ import System.Directory
 import System.FilePath
 import qualified System.Process.Typed as Proc
 import Text.ParserCombinators.ReadP
+import System.IO (withFile, IOMode(WriteMode))
 
 runTastyTestSuite ::
   Members
@@ -65,18 +66,26 @@ runTastyTestSuite = interpret $ \case
                      reportOutput
                    ]
                ]
-        procConfig =
+        procConfig soutHandle serrHandle =
           Proc.proc "ghci" procArgs
             & Proc.setWorkingDir targetDir
-    (_procRes, sout, serr) <- Proc.readProcess procConfig
-    -- Write logs to files
-    embed $ do
-      LBS.writeFile (targetDir </> "stderr.log") serr
-      LBS.writeFile (targetDir </> "stdout.log") sout
+            & Proc.setStdout (Proc.useHandleClose soutHandle)
+            & Proc.setStderr (Proc.useHandleClose serrHandle)
+
+    let stderrFilepath = targetDir </> "stderr.log"
+    let stdoutFilepath = targetDir </> "stdout.log"
+
+    _procRes <- embed $
+      withFile stderrFilepath WriteMode $ \serr ->
+        withFile stdoutFilepath WriteMode $ \sout ->
+          Proc.runProcess $ procConfig sout serr
+
     -- case procRes of
     --   ExitSuccess -> return ()
     --   ExitFailure _ -> throw $ RunnerInternalError (T.pack $ show procConfig) serr
-    unlessM (embed $ doesFileExist (targetDir </> reportOutput)) $ throw (RunnerInternalError (studentId student) serr)
+    unlessM (embed $ doesFileExist (targetDir </> reportOutput)) $ do
+      serr <- embed $ LBS.readFile stderrFilepath
+      throw (RunnerInternalError (studentId student) serr)
     decodeResult <- embed $ decodeFileTastyGradingReport (targetDir </> reportOutput)
     case decodeResult of
       Left msg -> throw $ FailedToDecodeJsonResult msg
