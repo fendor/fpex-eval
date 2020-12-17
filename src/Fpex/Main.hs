@@ -53,13 +53,18 @@ defaultMain' = do
     FinalPoints FinalPointsCommand {..} -> Storage.runStorageFileSystem $ do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
-      outputDir <- embed $ canonicalizePath finalPointsOutput
       embed $ setCurrentDirectory courseDir
+
+      outputDir <- embed $ canonicalizePath finalPointsOutput
       embed $ createDirectoryIfMissing True outputDir
-      forM_ students $ \student -> do
-        report <- studentPointReport finalPointsSubmissions finalPointsSubmissionIds student
-        let prettyReport = renderPoints finalPointsSubmissions finalPointsSubmissionIds Mean student report
-        embed $ T.writeFile (outputDir </> T.unpack (studentId student) <.> "md") prettyReport
+      forM_ students $ \student -> runReader Course {..} $
+        runReader student $
+          Student.runFileSystemStudentDirectory $ do
+            report <- studentPointReport finalPointsSubmissions finalPointsSubmissionIds student
+            let prettyReport = renderPoints finalPointsSubmissions finalPointsSubmissionIds Mean student report
+            embed $ T.writeFile (outputDir </> T.unpack (studentId student) <.> "md") prettyReport
+            when (PublishFeedback <= finalPointsFeedback) $ do
+              Student.publishFile prettyReport "finalPoints.md"
     Lc gradeTestSuiteOptions lifecycle -> do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
       let students = maybe courseParticipants pure (optionStudent opts)
@@ -139,11 +144,12 @@ dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
 
         collectResults <- forM students $ \student -> do
           let sinfo = SubmissionInfo student optionSubmissionId optionSubmissionName
-          runReader sinfo $
-            runReader studentSubmission $
-              Storage.runStorageFileSystem $
-                Student.runFileSystemStudentDirectory
-                  Student.collectStudentSubmission
+          Storage.runStorageFileSystem $
+            runReader student $
+              Student.runFileSystemStudentDirectory $
+                Student.collectStudentSubmission
+                  sinfo
+                  studentSubmission
 
         let collected = filter isNothing collectResults
         embed $
@@ -155,17 +161,18 @@ dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
               <> " submissions."
       Feedback FeedbackCommand {..} -> do
         Storage.runStorageFileSystem $
-            forM_ students $ \student -> do
-              let sinfo = SubmissionInfo student optionSubmissionId submissionName
-              runReader sinfo $
+          forM_ students $ \student -> do
+            let sinfo = SubmissionInfo student optionSubmissionId submissionName
+            runReader sinfo $
+              runReader student $
                 Student.runFileSystemStudentDirectory $
                   Feedback.runFeedbackService $ do
                     Feedback.generateTestFeedback
                     when (PublishFeedback <= feedbackPublish) $ do
-                      Student.publishTestSuiteResult
+                      Student.publishTestSuiteResult sinfo studentSubmission
                       testSuiteLocation <- reportTestSuiteFile
-                      Student.publishTestSuite testSuiteLocation
-                      Student.publishSubmissionFeedback
+                      Student.publishTestSuite sinfo studentSubmission testSuiteLocation
+                      Student.publishSubmissionFeedback sinfo studentSubmission
       Stats StatCommand {..} -> do
         stats <-
           Storage.runStorageFileSystem

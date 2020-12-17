@@ -20,7 +20,8 @@ data OptionCommand
 data FinalPointsCommand = FinalPointsCommand
   { finalPointsSubmissionIds :: [SubmissionId],
     finalPointsSubmissions :: [SubmissionName],
-    finalPointsOutput :: FilePath
+    finalPointsOutput :: FilePath,
+    finalPointsFeedback :: FeedbackAction
   }
   deriving (Show, Eq, Ord)
 
@@ -192,6 +193,10 @@ options =
                         <> help
                           "Output directory for point results"
                     )
+                  <*> flag
+                    WriteFeedback
+                    PublishFeedback
+                    (long "publish" <> help "Publish the feedback")
               )
       withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
       commandParser =

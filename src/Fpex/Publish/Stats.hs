@@ -17,7 +17,7 @@ allPoints students suites sids = do
   r <- forM students $ \student -> studentPointReport suites sids student >>= pure . (student,)
   pure $ Map.fromList r
 
-studentPointReport :: Members [Embed IO, Storage] r => [SubmissionName] -> [SubmissionId] -> Student -> Sem r (Map.Map (SubmissionName, SubmissionId) (Points, Points))
+studentPointReport :: Member Storage r => [SubmissionName] -> [SubmissionId] -> Student -> Sem r (Map.Map (SubmissionName, SubmissionId) (Points, Points))
 studentPointReport suites sids student = do
   let tuples = (,) <$> suites <*> sids
   r <- forM tuples $ \(suite, sid) -> do

@@ -5,6 +5,7 @@ module Fpex.Course.Student
     publishSubmissionFeedback,
     publishTestSuite,
     publishTestSuiteResult,
+    publishFile,
   )
 where
 
@@ -29,25 +30,29 @@ import System.IO.Error (isPermissionError)
 import qualified System.PosixCompat.Files as Posix
 
 data StudentDirectory m a where
-  CollectStudentSubmission :: StudentDirectory m (Maybe FailureReason)
-  PublishTestSuiteResult :: StudentDirectory m ()
-  PublishTestSuite :: FilePath -> StudentDirectory m ()
-  PublishSubmissionFeedback :: StudentDirectory m ()
+  CollectStudentSubmission :: SubmissionInfo -> StudentSubmission -> StudentDirectory m (Maybe FailureReason)
+  PublishTestSuiteResult :: SubmissionInfo -> StudentSubmission -> StudentDirectory m ()
+  PublishTestSuite :: SubmissionInfo -> StudentSubmission -> FilePath -> StudentDirectory m ()
+  PublishSubmissionFeedback :: SubmissionInfo -> StudentSubmission -> StudentDirectory m ()
+  PublishFile :: T.Text -> FilePath -> StudentDirectory m ()
 
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
 
-collectStudentSubmission :: Member StudentDirectory r => Sem r (Maybe FailureReason)
-collectStudentSubmission = send CollectStudentSubmission
+collectStudentSubmission :: Member StudentDirectory r => SubmissionInfo -> StudentSubmission -> Sem r (Maybe FailureReason)
+collectStudentSubmission sinfo studentSubmission = send (CollectStudentSubmission sinfo studentSubmission)
 
-publishTestSuiteResult :: Member StudentDirectory r => Sem r ()
-publishTestSuiteResult = send PublishTestSuiteResult
+publishTestSuiteResult :: Member StudentDirectory r => SubmissionInfo -> StudentSubmission -> Sem r ()
+publishTestSuiteResult sinfo studentSubmission = send (PublishTestSuiteResult sinfo studentSubmission)
 
-publishTestSuite :: Member StudentDirectory r => FilePath -> Sem r ()
-publishTestSuite fp = send (PublishTestSuite fp)
+publishTestSuite :: Member StudentDirectory r => SubmissionInfo -> StudentSubmission -> FilePath -> Sem r ()
+publishTestSuite sinfo studentSubmission fp = send (PublishTestSuite sinfo studentSubmission fp)
 
-publishSubmissionFeedback :: Member StudentDirectory r => Sem r ()
-publishSubmissionFeedback = send PublishSubmissionFeedback
+publishSubmissionFeedback :: Member StudentDirectory r => SubmissionInfo -> StudentSubmission -> Sem r ()
+publishSubmissionFeedback sinfo studentSubmission = send (PublishSubmissionFeedback sinfo studentSubmission)
+
+publishFile :: Member StudentDirectory r => T.Text -> FilePath -> Sem r ()
+publishFile contents fp = send (PublishFile contents fp)
 
 runFileSystemStudentDirectory ::
   Members
@@ -55,38 +60,40 @@ runFileSystemStudentDirectory ::
       Log.Log T.Text,
       Storage,
       Reader Course,
-      Reader StudentSubmission,
-      Reader SubmissionInfo
+      Reader Student
     ]
     r =>
   Sem (StudentDirectory : r) a ->
   Sem r a
 runFileSystemStudentDirectory = interpret $ \case
-  CollectStudentSubmission -> do
+  CollectStudentSubmission SubmissionInfo {..} studentSubmission -> do
     course <- ask
-    SubmissionInfo {..} <- ask
-    studentSubmission <- ask
     collectSubmission course subId subName studentSubmission subStudent
-  PublishTestSuiteResult -> do
-    submissionInfo <- ask
+  PublishTestSuiteResult submissionInfo studentSubmission -> runReader studentSubmission $ do
     publishTestResult submissionInfo
-  PublishTestSuite fp -> do
-    SubmissionInfo {..} <- ask
-    testSuiteLocation <- studentTestSuiteFile
-    embed
-      ( copyFile
-          fp
-          testSuiteLocation
-      )
+  PublishTestSuite sinfo studentSubmission fp -> runReader sinfo $
+    runReader studentSubmission $ do
+      SubmissionInfo {..} <- ask
+      testSuiteLocation <- studentTestSuiteFile
+      embed
+        ( copyFile
+            fp
+            testSuiteLocation
+        )
 
-    embed $
-      Posix.setFileMode
-        testSuiteLocation
-        Posix.stdFileMode
-  PublishSubmissionFeedback -> do
+      embed $
+        Posix.setFileMode
+          testSuiteLocation
+          Posix.stdFileMode
+  PublishSubmissionFeedback SubmissionInfo {..} _ -> do
     course <- ask
-    SubmissionInfo {..} <- ask
     copyHandwrittenFeedback course subId subName subStudent
+  PublishFile contents fp -> do
+    course <- ask
+    student <- ask
+    let targetDir = studentSubDir course student
+    embed $ T.putStrLn $ "Publish file: " <> T.pack fp <> " to " <> T.pack targetDir
+    embed $ T.writeFile (targetDir </> fp) contents
 
 collectSubmission :: Members [Storage, Embed IO] r => Course -> SubmissionId -> SubmissionName -> StudentSubmission -> Student -> Sem r (Maybe FailureReason)
 collectSubmission course sid submissionName studentSubmission student = do
