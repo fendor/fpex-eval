@@ -39,19 +39,19 @@ library
   exposed-modules:
     Fpex.Collect
     Fpex.Course.CourseSetup
-    Fpex.Course.Types
     Fpex.Course.Student
+    Fpex.Course.Types
+    Fpex.Feedback
     Fpex.Grade
     Fpex.Grade.Analysis
     Fpex.Grade.ErrorStudent
+    Fpex.Grade.Paths
+    Fpex.Grade.Result
     Fpex.Grade.Storage
     Fpex.Grade.Tasty
-    Fpex.Grade.Paths
     Fpex.Grade.Types
-    Fpex.Grade.Result
     Fpex.Main
     Fpex.Options
-    Fpex.Feedback
     Fpex.Publish.Plain
     Fpex.Publish.Stats
     Fpex.Reporter
@@ -83,8 +83,8 @@ library
     , optparse-applicative
     , polysemy
     , polysemy-plugin
-    , regex-tdfa
     , regex
+    , regex-tdfa
     , safe-exceptions
     , semigroups
     , temporary
@@ -118,14 +118,12 @@ test-suite fpex-test
     -Wall -rtsopts -threaded -with-rtsopts=-N -fplugin=Polysemy.Plugin
 
   build-depends:
-    , aeson
     , base
     , fpex
-    , HUnit
     , polysemy
     , polysemy-plugin
     , tasty
-    , tasty-hspec
+    , tasty-hunit
     , text
 
   default-language: Haskell2010
