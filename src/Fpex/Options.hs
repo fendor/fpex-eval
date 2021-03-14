@@ -201,8 +201,12 @@ options =
       withOptions lcParser = Lc <$> testSuiteOptionParser <*> lcParser
       commandParser =
         hsubparser
-          ( command "setup" (info setupParser fullDesc)
-              <> command "collect" (info (withOptions collectParser) fullDesc)
+          ( ( command "setup" (info setupParser fullDesc)
+                <> help "Setup a directory for grading student assignments"
+            )
+              <> ( command "collect" (info (withOptions collectParser) fullDesc)
+                     <> help "Collect student assignments"
+                 )
               <> command "grade" (info (withOptions gradeParser) fullDesc)
               <> command "feedback" (info (withOptions publishParser) fullDesc)
               <> command "stats" (info (withOptions statParser) fullDesc)
