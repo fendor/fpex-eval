@@ -4,7 +4,7 @@ cradle:
       config:
         cradle:
           cabal:
-    - path: ./testdata/course1
+    - path: ./testdata/
       config:
         cradle:
           none:
