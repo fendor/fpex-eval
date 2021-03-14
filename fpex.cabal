@@ -114,6 +114,7 @@ test-suite fpex-unit-test
   main-is:          Main.hs
   other-modules:
     GradeResultParser
+    Report
     Paths_fpex
 
   hs-source-dirs:   tests
@@ -121,6 +122,7 @@ test-suite fpex-unit-test
     -Wall -rtsopts -threaded -with-rtsopts=-N -fplugin=Polysemy.Plugin
 
   build-depends:
+    , aeson
     , aeson-pretty
     , base
     , bytestring

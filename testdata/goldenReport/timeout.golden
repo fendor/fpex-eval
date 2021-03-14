@@ -1,0 +1,21 @@
+Fib tests
+Points per test case: 5; penalty per failed test case: 0; maximum: 14
+
+Test case: Basic Fib Test 1 ; test OK
+Test case: Basic Fib Test 2 ; test OK
+Test case: Basic Fib Test 3 ; test TIMED OUT
+
+OK tests: 2; FAILED tests: 1
+Score: 10
+
+Bar tests
+Points per test case: 5; penalty per failed test case: 0; maximum: 5
+
+Test case: Basic Bar Test 1 ; test FAILED
+Expected:  2, but got: 1
+
+OK tests: 0; FAILED tests: 1
+Score: 0
+
+
+Total Score: 10

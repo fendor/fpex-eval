@@ -1,0 +1,61 @@
+{
+    "testGroupResults": [
+        {
+            "testGroupReports": [
+                {
+                    "testCaseReportTimeNs": 164359,
+                    "testCaseReportLabel": "Basic Fib Test 1",
+                    "testCaseReportResult": {
+                        "tag": "TestCaseResultOk"
+                    }
+                },
+                {
+                    "testCaseReportTimeNs": 68670,
+                    "testCaseReportLabel": "Basic Fib Test 2",
+                    "testCaseReportResult": {
+                        "tag": "TestCaseResultOk"
+                    }
+                },
+                {
+                    "testCaseReportTimeNs": 0,
+                    "testCaseReportLabel": "Basic Fib Test 3",
+                    "testCaseReportResult": {
+                        "tag": "TestCaseResultException",
+                        "contents": "stack overflow"
+                    }
+                }
+            ],
+            "testGroupPoints": 10,
+            "testGroupResultProps": {
+                "upperBound": 14,
+                "penalty": 0,
+                "pointsPerTest": 5,
+                "label": "Fib tests"
+            }
+        },
+        {
+            "testGroupReports": [
+                {
+                    "testCaseReportTimeNs": 95529,
+                    "testCaseReportLabel": "Basic Bar Test 1",
+                    "testCaseReportResult": {
+                        "tag": "TestCaseResultExpectedButGot",
+                        "contents": [
+                            "2",
+                            "1"
+                        ]
+                    }
+                }
+            ],
+            "testGroupPoints": 0,
+            "testGroupResultProps": {
+                "upperBound": 5,
+                "penalty": 0,
+                "pointsPerTest": 5,
+                "label": "Bar tests"
+            }
+        }
+    ],
+    "testSuitePoints": 10,
+    "testSuiteTimeNs": 105567152
+}
