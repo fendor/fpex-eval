@@ -1,15 +1,10 @@
 module Main where
 
+import GradeResultParser (goldenParserTests)
 import Test.Tasty
-import Test.Tasty.HUnit
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Fpex Unit Tests" [unitTests]
-
-unitTests :: TestTree
-unitTests = testGroup "Unit Tests"
-    [ testCase "" $ pure ()
-    ]
+tests = testGroup "Fpex Tests" [goldenParserTests]

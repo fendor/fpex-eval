@@ -112,19 +112,26 @@ test-suite fpex-unit-test
   import:           exts
   type:             exitcode-stdio-1.0
   main-is:          Main.hs
-  other-modules:    Paths_fpex
+  other-modules:
+    GradeResultParser
+    Paths_fpex
+
   hs-source-dirs:   tests
   ghc-options:
     -Wall -rtsopts -threaded -with-rtsopts=-N -fplugin=Polysemy.Plugin
 
   build-depends:
+    , aeson-pretty
     , base
+    , bytestring
+    , directory
+    , filepath
     , fpex
     , polysemy
     , polysemy-plugin
     , tasty
-    , tasty-hunit
     , tasty-golden
+    , tasty-hunit
     , tasty-program
     , text
 

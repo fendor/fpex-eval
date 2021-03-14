@@ -1,0 +1,64 @@
+{
+    "testSuitePoints": 5,
+    "testGroupResults": [
+        {
+            "testGroupReports": [
+                {
+                    "testCaseReportResult": {
+                        "contents": [
+                            "1",
+                            "0"
+                        ],
+                        "tag": "TestCaseResultExpectedButGot"
+                    },
+                    "testCaseReportLabel": "Basic Fib Test 1",
+                    "testCaseReportTimeNs": 37840
+                },
+                {
+                    "testCaseReportResult": {
+                        "tag": "TestCaseResultOk"
+                    },
+                    "testCaseReportLabel": "Basic Fib Test 2",
+                    "testCaseReportTimeNs": 114470
+                },
+                {
+                    "testCaseReportResult": {
+                        "contents": [
+                            "1346269",
+                            "832040"
+                        ],
+                        "tag": "TestCaseResultExpectedButGot"
+                    },
+                    "testCaseReportLabel": "Basic Fib Test 3",
+                    "testCaseReportTimeNs": 17350
+                }
+            ],
+            "testGroupPoints": 5,
+            "testGroupResultProps": {
+                "pointsPerTest": 5,
+                "upperBound": 14,
+                "label": "Fib tests",
+                "penalty": 0
+            }
+        },
+        {
+            "testGroupReports": [
+                {
+                    "testCaseReportResult": {
+                        "tag": "TestCaseResultNotSubmitted"
+                    },
+                    "testCaseReportLabel": "Basic Bar Test 1",
+                    "testCaseReportTimeNs": 0
+                }
+            ],
+            "testGroupPoints": 0,
+            "testGroupResultProps": {
+                "pointsPerTest": 5,
+                "upperBound": 5,
+                "label": "Bar tests",
+                "penalty": 0
+            }
+        }
+    ],
+    "testSuiteTimeNs": 6682377
+}
