@@ -1,0 +1,13 @@
+cabal-version:      2.4
+name:               environment
+version:            0.1.0.0
+extra-source-files: CHANGELOG.md
+
+library
+  build-depends:
+    , array
+    , base
+    , QuickCheck
+    , tasty
+    , tasty-grading-system
+    , tasty-hunit

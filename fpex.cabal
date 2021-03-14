@@ -108,7 +108,7 @@ executable fpex
 
   default-language: Haskell2010
 
-test-suite fpex-test
+test-suite fpex-unit-test
   import:           exts
   type:             exitcode-stdio-1.0
   main-is:          Main.hs
@@ -124,6 +124,8 @@ test-suite fpex-test
     , polysemy-plugin
     , tasty
     , tasty-hunit
+    , tasty-golden
+    , tasty-program
     , text
 
   default-language: Haskell2010

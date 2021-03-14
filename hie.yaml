@@ -4,23 +4,8 @@ cradle:
       config:
         cradle:
           cabal:
-            - path: ./src
-              component: lib:fpex
-            - path: ./app
-              component: exe:fpex
-            - path: ./tests
-              component: test:fpex-test
-            - path: ./tests
-              component: test:fpex-test
-            - path: ./fpex-test-spec
-              component: lib:fpex-test-spec
-            - path: ./test-nursery
-              component: lib:test-nursery
-    - path: ./testdata
+    - path: ./testdata/course1
       config:
         cradle:
           none:
-    - path: Setup.hs
-      config:
-        cradle:
-          none:
+
