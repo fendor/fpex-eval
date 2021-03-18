@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Main where
 
 import Control.Monad
@@ -194,7 +195,7 @@ generateEnvironmentFile = do
     let cabalProc = proc "cabal" ["build"]
     _ <- readCreateProcess cabalProc ""
     files <- listDirectory "."
-    case find (isPrefixOf ".ghc.environment." . takeFileName) files of
+    case find isGhcEnvironmentFile files of
       Nothing -> fail "Could not generate the ghc environment"
       Just f -> do
         contents <- Text.readFile f
@@ -206,3 +207,14 @@ generateEnvironmentFile = do
   where
     illegalLines :: [Text.Text]
     illegalLines = ["dist-newstyle", "environment"]
+
+isGhcEnvironmentFile :: FilePath -> Bool
+#if __GLASGOW_HASKELL__ >= 810
+isGhcEnvironmentFile = (isInfixOf "8.10") . takeFileName
+#elif __GLASGOW_HASKELL__ >= 808
+isGhcEnvironmentFile = (isInfixOf "8.8") . takeFileName
+#elif __GLASGOW_HASKELL__ >= 806
+isGhcEnvironmentFile = (isInfixOf "8.6") . takeFileName
+#else
+isGhcEnvironmentFile = isPrefixOf ".ghc.environment." . takeFileName
+#endif

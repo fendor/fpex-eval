@@ -141,6 +141,7 @@ test-suite fpex-unit-test
 test-suite fpex-integration-test
   import:           exts
   type:             exitcode-stdio-1.0
+  build-tool-depends: fpex:fpex
   main-is:          Main.hs
 
   hs-source-dirs:   tests-integration
