@@ -4,7 +4,7 @@ import Control.Monad (when)
 import Control.Monad.Extra (unlessM)
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as BL
-import Data.List (inits)
+import Data.List (inits, sort)
 import Data.Maybe
   ( mapMaybe,
   )
@@ -51,9 +51,9 @@ courseSetup SetupCommand {..} = do
 
   let course =
         Course
-          { courseName = T.pack $ courseName,
+          { courseName = T.pack courseName,
             courseRootDir = courseDir,
-            courseParticipants = students,
+            courseParticipants = sort students,
             courseGhciOptions = ["+RTS", "-M500M", "-K10M", "-RTS"],
             courseGhciDependencies = ["base", "array"],
             courseGhciEnvironment = ".ghc.environment.fpex",
