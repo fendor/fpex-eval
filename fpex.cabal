@@ -87,7 +87,6 @@ library
     , regex-tdfa
     , safe-exceptions
     , semigroups
-    , temporary
     , text
     , typed-process
     , unix-compat
