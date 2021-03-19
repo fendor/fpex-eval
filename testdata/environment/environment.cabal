@@ -11,3 +11,4 @@ library
     , tasty
     , tasty-grading-system
     , tasty-hunit
+  default-language: Haskell2010
