@@ -61,7 +61,7 @@ library
   other-modules:    Paths_fpex
   hs-source-dirs:   src
   ghc-options:
-    -Wall
+    -Wall -O2
     -fplugin=Polysemy.Plugin
 
   build-depends:
@@ -81,8 +81,8 @@ library
     , extra
     , filepath
     , optparse-applicative
-    , polysemy
-    , polysemy-plugin
+    , polysemy ^>= 1.5.0.0
+    , polysemy-plugin  ^>= 0.3
     , regex
     , regex-tdfa
     , safe-exceptions

@@ -1,2 +1,6 @@
 packages:
     ./
+
+
+allow-newer:
+    co-log-polysemy:polysemy
