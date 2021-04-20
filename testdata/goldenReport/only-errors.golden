@@ -1,0 +1,126 @@
+Matrix tests with list implementation
+Points per test case: 4; penalty per failed test case: 0; maximum: 24
+
+Test case: Not wellformed ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:22:17 in main:Assignment3
+Test case: Wellformed ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:22:17 in main:Assignment3
+Test case: Add two matrices with the same dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3
+Test case: Add two matrices with the different dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3
+Test case: Multiply two matrices with the fitting dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3
+Test case: Multiply two matrices with the wrong dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3
+
+OK tests: 0; FAILED tests: 6
+Score: 0
+
+Matrix tests with array implementation
+Points per test case: 4; penalty per failed test case: 0; maximum: 16
+
+Test case: Add two matrices with the same dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:36:8 in main:Assignment3
+Test case: Add two matrices with the different dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:36:8 in main:Assignment3
+Test case: Multiply two matrices with the fitting dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:39:9 in main:Assignment3
+Test case: Multiply two matrices with the wrong dimensions ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:39:9 in main:Assignment3
+
+OK tests: 0; FAILED tests: 4
+Score: 0
+
+Binoxxo List Tests
+Points per test case: 7; penalty per failed test case: 0; maximum: 30
+
+Test case: Well formed tests ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:55:19 in main:Assignment3
+Test case: Test for completeness ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:58:17 in main:Assignment3
+Test case: Naive, complete almost complete binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:61:19 in main:Assignment3
+Test case: Naive, fails to solve impossible binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:61:19 in main:Assignment3
+Test case: Smart, complete almost complete binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3
+Test case: Smart, fails to solve impossible binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3
+Test case: Performance stress test ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3
+
+OK tests: 0; FAILED tests: 7
+Score: 0
+
+Binoxxo Array Tests
+Points per test case: 7; penalty per failed test case: 0; maximum: 30
+
+Test case: Well formed tests ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:81:19 in main:Assignment3
+Test case: Test for completeness ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:84:17 in main:Assignment3
+Test case: Naive, complete almost complete binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:87:19 in main:Assignment3
+Test case: Naive, fails to solve impossible binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:87:19 in main:Assignment3
+Test case: Smart, complete almost complete binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3
+Test case: Smart, fails to solve impossible binoxxo ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3
+Test case: Performance stress test ; test RUN-TIME EXCEPTION: Prelude.undefined
+CallStack (from HasCallStack):
+  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err
+  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3
+
+OK tests: 0; FAILED tests: 7
+Score: 0
+
+
+Total Score: 0

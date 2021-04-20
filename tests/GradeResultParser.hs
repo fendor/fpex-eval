@@ -17,7 +17,7 @@ goldenParserTests = testGroup "Parse reporter results" $
         Right res -> pure $ Pretty.encodePretty res
 
 resultParserTests :: [FilePath]
-resultParserTests = ["basic.json", "not-submitted.json", "overflow.json"]
+resultParserTests = ["basic.json", "not-submitted.json", "overflow.json", "only-errors.json"]
 
 goldenParserTestsRoot :: FilePath
 goldenParserTestsRoot = "testdata/goldenResultParser"

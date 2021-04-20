@@ -18,7 +18,7 @@ goldenReportTests = testGroup "Generate Report" $
         Right res -> pure $ LBS.fromStrict $ Text.encodeUtf8 $ prettyTestReport res
 
 reportTestNames :: [FilePath]
-reportTestNames = ["basic.json", "timeout.json", "overflow.json"]
+reportTestNames = ["basic.json", "timeout.json", "overflow.json", "only-errors.json"]
 
 goldenReportRoot :: FilePath
 goldenReportRoot = "testdata/goldenReport"
