@@ -36,7 +36,7 @@ data TestCaseResult
 data TestCaseReport = TestCaseReport
   { testCaseReportLabel :: T.Text,
     testCaseReportResult :: TestCaseResult,
-    testCaseReportTimeNs :: Integer
+    testCaseReportTimeNs :: Maybe Integer
   }
   deriving (Eq, Show, Ord, Generic)
   deriving anyclass (FromJSON, ToJSON)

@@ -185,7 +185,10 @@ decodeTastyGradingReport' = do
       TestCaseReport
         <$> ACD.key "name" ACD.text
         <*> decodeTestResult
-        <*> ACD.key "time" ACD.integer
+        <*> pure Nothing
+    -- Ignore this value as it changes in every test-run
+    -- making it harder to read whether TestSuite results changed.
+    -- ACD.key "time" ACD.integer
 
     decodeGroup = do
       tests <- ACD.key "groups" (ACD.list decodeSingleTest)
