@@ -11,6 +11,7 @@ import Data.List (isInfixOf)
 import Data.Maybe
 import qualified Data.Text as T
 import Fpex.Course.Types
+import Fpex.Course.Types (SubmissionInfo (SubmissionInfo))
 import Fpex.Grade (RunTestSuite (..), RunnerError (..))
 import Fpex.Grade.Paths
 import Fpex.Grade.Result
@@ -47,14 +48,17 @@ runTastyTestSuite = interpret $ \case
     studentSubmission <- asks runnerInfoStudentSubmission
     target <- submissionLocation sinfo studentSubmission
     when (isNothing target) $ throw NoSubmission
-    procArgs <- ghciProcessArguments
+    procArgs <- ghciProcessArguments sinfo
     let procConfig soutHandle serrHandle =
-          ghciProcessConfig targetDir procArgs
+          ghciProcessConfig procArgs
             & Proc.setStdout (Proc.useHandleClose soutHandle)
             & Proc.setStderr (Proc.useHandleClose serrHandle)
 
     let stderrFilepath = targetDir </> "stderr.log"
     let stdoutFilepath = targetDir </> "stdout.log"
+
+    -- write .ghci file
+    embed $ writeFile (targetDir </> ".ghci") (renderGhciFile procArgs)
 
     _procRes <- embed $
       withFile stderrFilepath WriteMode $ \serr ->
@@ -69,37 +73,61 @@ runTastyTestSuite = interpret $ \case
       Left msg -> throw $ FailedToDecodeJsonResult msg
       Right s -> pure s
 
-ghciProcessConfig :: FilePath -> [String] -> ProcessConfig () () ()
-ghciProcessConfig targetDir procArgs =
-  Proc.proc "ghci" procArgs
-    & Proc.setWorkingDir targetDir
+-- writeGhciFile :: FilePath -> [String] -> IO ()
+-- writeGhciFile
 
-ghciProcessArguments :: Members [Reader RunnerInfo, Reader Course] r => Sem r [String]
-ghciProcessArguments = do
+ghciProcessConfig :: GhciArguments -> ProcessConfig () () ()
+ghciProcessConfig procArgs =
+  Proc.proc "ghci" (renderGhciInvocationAndRun procArgs)
+    & Proc.setWorkingDir (ghciRoot procArgs)
+
+ghciProcessArguments :: Members [Reader RunnerInfo, Reader Course, Storage] r => SubmissionInfo -> Sem r GhciArguments
+ghciProcessArguments sinfo@SubmissionInfo {..} = do
   ghciOptions <- asks courseGhciOptions
   ghciEnv <- asks ghciEnvironmentLocation
   testTimeout <- asks runnerInfoTimeout
   reportOutput <- asks runnerInfoReportOutput
+  studentSubmission <- asks runnerInfoStudentSubmission
+  let targetDir = assignmentCollectStudentDir' subId subName subStudent
+  target <- submissionLocation sinfo studentSubmission
   pure $
-    [ "../Main.hs",
-      "-package-env",
-      ghciEnv,
-      "-i",
-      "-i.",
-      "-i.."
+    GhciArguments
+      { ghciRoot = targetDir,
+        ghciFileTargets = ["../Main.hs"] ++ maybeToList target,
+        ghciConfigArgs =
+          ["-package-env", ghciEnv, "-i", "-i.", "-i.."] ++ ghciOptions,
+        ghciTastyArgs =
+          [ ":main",
+            "-j",
+            "1",
+            "-t",
+            show (getTimeout testTimeout),
+            "--grading-json",
+            reportOutput
+          ]
+      }
+
+renderGhciInvocationAndRun :: GhciArguments -> [String]
+renderGhciInvocationAndRun GhciArguments {..} =
+  ["-e"] ++ ghciTastyArgs
+
+renderGhciFile :: GhciArguments -> String
+renderGhciFile GhciArguments {..} =
+  unlines
+    [ unwords $ [":seti"] ++ ghciConfigArgs,
+      unwords $ [":l"] ++ ghciFileTargets
     ]
-      ++ ghciOptions
-      ++ [ "-e",
-           unwords
-             [ ":main",
-               "-j",
-               "1",
-               "-t",
-               show (getTimeout testTimeout),
-               "--grading-json",
-               reportOutput
-             ]
-         ]
+
+data GhciArguments = GhciArguments
+  { -- | Absolute root of the student's submission
+    ghciRoot :: FilePath,
+    -- | FileTargets relative to 'ghciRoot'
+    ghciFileTargets :: [FilePath],
+    -- | Arguments to be used for every ghci invocation
+    ghciConfigArgs :: [String],
+    -- | Arguments for tasty testsuite runner
+    ghciTastyArgs :: [String]
+  }
 
 -- ----------------------------------------------------------------------------
 -- Custom decoder to read results from 'tasty-grading-system'
