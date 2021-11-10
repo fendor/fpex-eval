@@ -16,6 +16,7 @@ data Storage m a where
   WriteTestSuiteResult :: SubmissionInfo -> TestSuiteResults -> Storage m ()
   ReadTestSuiteResult :: SubmissionInfo -> Storage m TestSuiteResults
   DoesTestSuiteResultExist :: SubmissionInfo -> Storage m Bool
+  SubmissionLocation :: SubmissionInfo -> StudentSubmission -> Storage m (Maybe FilePath)
 
 writeTestSuiteResult :: Member Storage r => SubmissionInfo -> TestSuiteResults -> Sem r ()
 writeTestSuiteResult info s = send $ WriteTestSuiteResult info s
@@ -25,6 +26,9 @@ readTestSuiteResult info = send $ ReadTestSuiteResult info
 
 doesTestSuiteResultExist :: Member Storage r => SubmissionInfo -> Sem r Bool
 doesTestSuiteResultExist info = send $ DoesTestSuiteResultExist info
+
+submissionLocation :: Member Storage r => SubmissionInfo -> StudentSubmission -> Sem r (Maybe FilePath)
+submissionLocation info submission = send $ SubmissionLocation info submission
 
 runStorageFileSystem ::
   Members [Embed IO, Error T.Text] r =>
@@ -37,6 +41,12 @@ runStorageFileSystem = interpret $ \case
     readTestSuiteResultIO subId subName subStudent
   DoesTestSuiteResultExist sinfo ->
     doesSubmissionInfoExist sinfo
+  SubmissionLocation SubmissionInfo {..} studentSubmission -> do
+    let targetFile = assignmentCollectStudentFile subId subName subStudent studentSubmission
+    embed (doesFileExist targetFile) >>= \case
+      False -> pure Nothing
+      True -> pure $ Just targetFile
+
 
 readTestSuiteResultIO ::
   Members [Embed IO, Error T.Text] r =>

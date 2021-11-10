@@ -73,7 +73,6 @@ runFileSystemStudentDirectory = interpret $ \case
     publishTestResult submissionInfo
   PublishTestSuite sinfo studentSubmission fp -> runReader sinfo $
     runReader studentSubmission $ do
-      SubmissionInfo {..} <- ask
       testSuiteLocation <- studentTestSuiteFile
       embed
         ( copyFile
@@ -99,7 +98,7 @@ collectSubmission :: Members [Storage, Embed IO] r => Course -> SubmissionId -> 
 collectSubmission course sid submissionName studentSubmission student = do
   let sourceFile = studentSourceFile course studentSubmission student
   let targetDir = assignmentCollectStudentDir' sid submissionName student
-  let targetFile = assignmentCollectStudentFile sid submissionName studentSubmission student
+  let targetFile = assignmentCollectStudentFile sid submissionName student studentSubmission
   -- create submission dir even if there is no submission
   embed $ createDirectoryIfMissing True targetDir
 

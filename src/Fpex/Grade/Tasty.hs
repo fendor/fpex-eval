@@ -1,74 +1,55 @@
 module Fpex.Grade.Tasty where
 
 import Control.Applicative
-import Control.Monad.Extra (unlessM)
+import Control.Monad.Extra (unlessM, when)
 import qualified Data.Aeson.Combinators.Decode as ACD
 import Data.Aeson.Internal as AesonInternal
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char
 import Data.Function
 import Data.List (isInfixOf)
+import Data.Maybe
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade (RunTestSuite (..), RunnerError (..))
 import Fpex.Grade.Paths
 import Fpex.Grade.Result
+import Fpex.Grade.Storage
 import Fpex.Grade.Types
 import Polysemy
 import Polysemy.Error
 import Polysemy.Reader
 import System.Directory
 import System.FilePath
+import System.IO (IOMode (WriteMode), withFile)
+import System.Process.Typed (ProcessConfig)
 import qualified System.Process.Typed as Proc
 import Text.ParserCombinators.ReadP
-import System.IO (withFile, IOMode(WriteMode))
 
 runTastyTestSuite ::
   Members
     [ Error RunnerError,
       Embed IO,
       Reader Course,
-      Reader RunnerInfo
+      Reader RunnerInfo,
+      Storage
     ]
     r =>
   Sem (RunTestSuite : r) a ->
   Sem r a
 runTastyTestSuite = interpret $ \case
-  RunTestSuite SubmissionInfo {..} -> do
-    let sid = subId
-    let suiteName = subName
-    let student = subStudent
+  RunTestSuite sinfo -> do
+    let sid = subId sinfo
+    let suiteName = subName sinfo
+    let student = subStudent sinfo
     let targetDir = assignmentCollectStudentDir' sid suiteName student
-    studentSubmission <- asks runnerInfoStudentSubmission
-    let targetFile = assignmentCollectStudentFile sid suiteName studentSubmission student
-    ghciOptions <- asks courseGhciOptions
-    ghciEnv <- asks ghciEnvironmentLocation
     reportOutput <- asks runnerInfoReportOutput
-    testTimeout <- asks runnerInfoTimeout
-    unlessM (embed $ doesFileExist targetFile) $ throw NoSubmission
-    let procArgs =
-          [ "../Main.hs",
-            "-package-env",
-            ghciEnv,
-            "-i",
-            "-i.",
-            "-i.."
-          ]
-            ++ ghciOptions
-            ++ [ "-e",
-                 unwords
-                   [ ":main",
-                     "-j",
-                     "1",
-                     "-t",
-                     show (getTimeout testTimeout),
-                     "--grading-json",
-                     reportOutput
-                   ]
-               ]
-        procConfig soutHandle serrHandle =
-          Proc.proc "ghci" procArgs
-            & Proc.setWorkingDir targetDir
+    studentSubmission <- asks runnerInfoStudentSubmission
+    target <- submissionLocation sinfo studentSubmission
+    when (isNothing target) $ throw NoSubmission
+    procArgs <- ghciProcessArguments
+    let procConfig soutHandle serrHandle =
+          ghciProcessConfig targetDir procArgs
             & Proc.setStdout (Proc.useHandleClose soutHandle)
             & Proc.setStderr (Proc.useHandleClose serrHandle)
 
@@ -80,9 +61,6 @@ runTastyTestSuite = interpret $ \case
         withFile stdoutFilepath WriteMode $ \sout ->
           Proc.runProcess $ procConfig sout serr
 
-    -- case procRes of
-    --   ExitSuccess -> return ()
-    --   ExitFailure _ -> throw $ RunnerInternalError (T.pack $ show procConfig) serr
     unlessM (embed $ doesFileExist (targetDir </> reportOutput)) $ do
       serr <- embed $ LBS.readFile stderrFilepath
       throw (RunnerInternalError (studentId student) serr)
@@ -90,6 +68,38 @@ runTastyTestSuite = interpret $ \case
     case decodeResult of
       Left msg -> throw $ FailedToDecodeJsonResult msg
       Right s -> pure s
+
+ghciProcessConfig :: FilePath -> [String] -> ProcessConfig () () ()
+ghciProcessConfig targetDir procArgs =
+  Proc.proc "ghci" procArgs
+    & Proc.setWorkingDir targetDir
+
+ghciProcessArguments :: Members [Reader RunnerInfo, Reader Course] r => Sem r [String]
+ghciProcessArguments = do
+  ghciOptions <- asks courseGhciOptions
+  ghciEnv <- asks ghciEnvironmentLocation
+  testTimeout <- asks runnerInfoTimeout
+  reportOutput <- asks runnerInfoReportOutput
+  pure $
+    [ "../Main.hs",
+      "-package-env",
+      ghciEnv,
+      "-i",
+      "-i.",
+      "-i.."
+    ]
+      ++ ghciOptions
+      ++ [ "-e",
+           unwords
+             [ ":main",
+               "-j",
+               "1",
+               "-t",
+               show (getTimeout testTimeout),
+               "--grading-json",
+               reportOutput
+             ]
+         ]
 
 -- ----------------------------------------------------------------------------
 -- Custom decoder to read results from 'tasty-grading-system'

@@ -209,8 +209,8 @@ dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
         forM_ students $ \student -> do
           oldReport <- Storage.readTestSuiteResult $ SubmissionInfo student oldSid submissionName
           newReport <- Storage.readTestSuiteResult $ SubmissionInfo student currentSid submissionName
-          let oldSubmission = Paths.assignmentCollectStudentFile oldSid submissionName studentSubmission student
-          let newSubmission = Paths.assignmentCollectStudentFile currentSid submissionName studentSubmission student
+          let oldSubmission = Paths.assignmentCollectStudentFile oldSid submissionName student studentSubmission
+          let newSubmission = Paths.assignmentCollectStudentFile currentSid submissionName student studentSubmission
           let correctTests = Grade.correctTests newReport - Grade.correctTests oldReport
           let failedTests = Grade.failedTests newReport - Grade.failedTests oldReport
           let notSubmittedTests = Grade.notSubmittedTests newReport - Grade.notSubmittedTests oldReport

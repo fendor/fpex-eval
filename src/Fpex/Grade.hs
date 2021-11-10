@@ -84,7 +84,7 @@ createEmptyStudent ::
 createEmptyStudent baseDefinitions sinfo@SubmissionInfo {..} = do
   studentSubmission <- asks runnerInfoStudentSubmission
   let targetFile =
-        assignmentCollectStudentFile subId subName studentSubmission subStudent
+        assignmentCollectStudentFile subId subName subStudent studentSubmission
   embed $ copyFile baseDefinitions targetFile
   testSuiteResults <- runTestSuite sinfo
   let notSubmitted = NotSubmittedReport $ setTestSuiteResults Eval.TestCaseResultNotSubmitted testSuiteResults

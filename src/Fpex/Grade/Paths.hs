@@ -41,10 +41,10 @@ assignmentCollectStudentDir' sid suiteName student =
 assignmentCollectStudentFile ::
   SubmissionId ->
   SubmissionName ->
-  StudentSubmission ->
   Student ->
+  StudentSubmission ->
   FilePath
-assignmentCollectStudentFile sid suiteName studentSubmission student =
+assignmentCollectStudentFile sid suiteName student studentSubmission =
   assignmentCollectStudentDir' sid suiteName student
     </> getStudentSubmission studentSubmission
 
