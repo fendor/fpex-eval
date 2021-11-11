@@ -155,13 +155,14 @@ test-suite fpex-integration-test
     , bytestring
     , directory
     , filepath
-    , process
+    , typed-process
     , fpex
     , polysemy
     , polysemy-plugin
     , hspec
     , temporary
     , text
+    , strip-ansi-escape
 
   default-language: Haskell2010
 

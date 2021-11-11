@@ -11,7 +11,6 @@ import Data.List (isInfixOf)
 import Data.Maybe
 import qualified Data.Text as T
 import Fpex.Course.Types
-import Fpex.Course.Types (SubmissionInfo (SubmissionInfo))
 import Fpex.Grade (RunTestSuite (..), RunnerError (..))
 import Fpex.Grade.Paths
 import Fpex.Grade.Result
@@ -57,9 +56,6 @@ runTastyTestSuite = interpret $ \case
     let stderrFilepath = targetDir </> "stderr.log"
     let stdoutFilepath = targetDir </> "stdout.log"
 
-    -- write .ghci file
-    embed $ writeFile (targetDir </> ".ghci") (renderGhciFile procArgs)
-
     _procRes <- embed $
       withFile stderrFilepath WriteMode $ \serr ->
         withFile stdoutFilepath WriteMode $ \sout ->
@@ -82,18 +78,19 @@ ghciProcessConfig procArgs =
     & Proc.setWorkingDir (ghciRoot procArgs)
 
 ghciProcessArguments :: Members [Reader RunnerInfo, Reader Course, Storage] r => SubmissionInfo -> Sem r GhciArguments
-ghciProcessArguments sinfo@SubmissionInfo {..} = do
+ghciProcessArguments SubmissionInfo {..} = do
   ghciOptions <- asks courseGhciOptions
+  ghciStartupOptions <- asks courseGhciStartupOptions
   ghciEnv <- asks ghciEnvironmentLocation
   testTimeout <- asks runnerInfoTimeout
   reportOutput <- asks runnerInfoReportOutput
   studentSubmission <- asks runnerInfoStudentSubmission
   let targetDir = assignmentCollectStudentDir' subId subName subStudent
-  target <- submissionLocation sinfo studentSubmission
   pure $
     GhciArguments
       { ghciRoot = targetDir,
-        ghciFileTargets = ["../Main.hs"] ++ maybeToList target,
+        ghciStartupArgs = ghciStartupOptions,
+        ghciFileTargets = ["../Main.hs", getStudentSubmission studentSubmission],
         ghciConfigArgs =
           ["-package-env", ghciEnv, "-i", "-i.", "-i.."] ++ ghciOptions,
         ghciTastyArgs =
@@ -109,7 +106,7 @@ ghciProcessArguments sinfo@SubmissionInfo {..} = do
 
 renderGhciInvocationAndRun :: GhciArguments -> [String]
 renderGhciInvocationAndRun GhciArguments {..} =
-  ["-e"] ++ ghciTastyArgs
+  ghciConfigArgs ++ ghciFileTargets ++ ["-e"] ++ [unwords ghciTastyArgs] ++ ghciStartupArgs
 
 renderGhciFile :: GhciArguments -> String
 renderGhciFile GhciArguments {..} =
@@ -121,6 +118,8 @@ renderGhciFile GhciArguments {..} =
 data GhciArguments = GhciArguments
   { -- | Absolute root of the student's submission
     ghciRoot :: FilePath,
+    -- | Arguments that must be passed to 'ghci' on startup.
+    ghciStartupArgs :: [String],
     -- | FileTargets relative to 'ghciRoot'
     ghciFileTargets :: [FilePath],
     -- | Arguments to be used for every ghci invocation

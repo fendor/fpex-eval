@@ -7,6 +7,8 @@ import Data.Bool (bool)
 import Data.Function
 import Data.List
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import Data.String.AnsiEscapeCodes.Strip.Text as Ansi
 import qualified Data.Text.IO as Text
 import Fpex.Course.Types
 import System.Directory
@@ -14,8 +16,9 @@ import System.Exit
 import System.FilePath
 import System.IO
 import System.IO.Temp
-import System.Process
+import System.Process.Typed
 import Test.Hspec
+import qualified Data.ByteString.Lazy as LBS
 
 integrationRoot :: FilePath
 integrationRoot = "." </> ".integration"
@@ -158,18 +161,20 @@ feedbackTests = do
             doesFileExist ("Assignment1-1" </> dir </> "Assignment1.hs.out_1") `shouldReturn` bool False True (dir == "1234567")
             doesFileExist ("Assignment1-1" </> dir </> "Assignment1_TestSuite1.hs") `shouldReturn` bool False True (dir == "1234567")
 
-fpex :: [String] -> IO String
+fpex :: [String] -> IO Text.Text
 fpex args = do
-  (exitCode, sout, serr) <- readCreateProcessWithExitCode fpexProc ""
+  (exitCode, bsOut, bsErr) <- readProcess fpexProc
+  let sout = Ansi.stripAnsiEscapeCodes $ Text.decodeUtf8 $ LBS.toStrict bsOut
+  let serr = Ansi.stripAnsiEscapeCodes $ Text.decodeUtf8 $ LBS.toStrict bsErr
   case exitCode of
     ExitSuccess -> pure sout
     ExitFailure n -> do
       hPutStrLn stdout $ "Failed to execute fpex command (" ++ show n ++ "): " ++ show fpexProc
-      hPutStrLn stdout "-- Stdout ----------------------------------------------------"
-      hPutStrLn stdout sout
-      hPutStrLn stdout "-- Stderr ----------------------------------------------------"
-      hPutStrLn stdout serr
-      hPutStrLn stdout "--------------------------------------------------------------"
+      Text.hPutStrLn stdout "-- Stdout ----------------------------------------------------"
+      Text.hPutStrLn stdout sout
+      Text.hPutStrLn stdout "-- Stderr ----------------------------------------------------"
+      Text.hPutStrLn stdout serr
+      Text.hPutStrLn stdout "--------------------------------------------------------------"
       fail "Could not execute 'fpex' command."
   where
     fpexProc =
@@ -193,7 +198,7 @@ generateEnvironmentFile :: IO Text.Text
 generateEnvironmentFile = do
   withCurrentDirectory environmentRoot $ do
     let cabalProc = proc "cabal" ["build"]
-    _ <- readCreateProcess cabalProc ""
+    _ <- runProcess cabalProc
     files <- listDirectory "."
     case find isGhcEnvironmentFile files of
       Nothing -> fail "Could not generate the ghc environment"

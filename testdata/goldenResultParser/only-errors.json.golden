@@ -1,242 +1,242 @@
 {
-    "testSuitePoints": 0,
+    "testSuiteTimeNs": 50223197,
     "testGroupResults": [
         {
+            "testGroupPoints": 0,
             "testGroupReports": [
                 {
-                    "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:22:17 in main:Assignment3",
-                        "tag": "TestCaseResultException"
-                    },
                     "testCaseReportLabel": "Not wellformed",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:22:17 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Wellformed",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3",
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:22:17 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Add two matrices with the same dimensions",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Add two matrices with the different dimensions",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Multiply two matrices with the fitting dimensions",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Multiply two matrices with the wrong dimensions",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportResult": {
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:25:7 in main:Assignment3",
+                        "tag": "TestCaseResultException"
+                    },
+                    "testCaseReportTimeNs": null
                 }
             ],
-            "testGroupPoints": 0,
             "testGroupResultProps": {
-                "pointsPerTest": 4,
                 "upperBound": 24,
                 "label": "Matrix tests with list implementation",
+                "pointsPerTest": 4,
                 "penalty": 0
             }
         },
         {
+            "testGroupPoints": 0,
             "testGroupReports": [
                 {
-                    "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:36:8 in main:Assignment3",
-                        "tag": "TestCaseResultException"
-                    },
                     "testCaseReportLabel": "Add two matrices with the same dimensions",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:36:8 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Add two matrices with the different dimensions",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:39:9 in main:Assignment3",
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:36:8 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Multiply two matrices with the fitting dimensions",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:39:9 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Multiply two matrices with the wrong dimensions",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportResult": {
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:39:9 in main:Assignment3",
+                        "tag": "TestCaseResultException"
+                    },
+                    "testCaseReportTimeNs": null
                 }
             ],
-            "testGroupPoints": 0,
             "testGroupResultProps": {
-                "pointsPerTest": 4,
                 "upperBound": 16,
                 "label": "Matrix tests with array implementation",
+                "pointsPerTest": 4,
                 "penalty": 0
             }
         },
         {
+            "testGroupPoints": 0,
             "testGroupReports": [
                 {
+                    "testCaseReportLabel": "Well formed tests",
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:55:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
-                    "testCaseReportLabel": "Well formed tests",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportTimeNs": null
                 },
                 {
+                    "testCaseReportLabel": "Test for completeness",
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:58:17 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
-                    "testCaseReportLabel": "Test for completeness",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportTimeNs": null
                 },
                 {
-                    "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:61:19 in main:Assignment3",
-                        "tag": "TestCaseResultException"
-                    },
                     "testCaseReportLabel": "Naive, complete almost complete binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:61:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Naive, fails to solve impossible binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3",
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:61:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Smart, complete almost complete binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Smart, fails to solve impossible binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Performance stress test",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportResult": {
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:64:19 in main:Assignment3",
+                        "tag": "TestCaseResultException"
+                    },
+                    "testCaseReportTimeNs": null
                 }
             ],
-            "testGroupPoints": 0,
             "testGroupResultProps": {
-                "pointsPerTest": 7,
                 "upperBound": 30,
                 "label": "Binoxxo List Tests",
+                "pointsPerTest": 7,
                 "penalty": 0
             }
         },
         {
+            "testGroupPoints": 0,
             "testGroupReports": [
                 {
+                    "testCaseReportLabel": "Well formed tests",
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:81:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
-                    "testCaseReportLabel": "Well formed tests",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportTimeNs": null
                 },
                 {
+                    "testCaseReportLabel": "Test for completeness",
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:84:17 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
-                    "testCaseReportLabel": "Test for completeness",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportTimeNs": null
                 },
                 {
-                    "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:87:19 in main:Assignment3",
-                        "tag": "TestCaseResultException"
-                    },
                     "testCaseReportLabel": "Naive, complete almost complete binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:87:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Naive, fails to solve impossible binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
-                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3",
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:87:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Smart, complete almost complete binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Smart, fails to solve impossible binoxxo",
-                    "testCaseReportTimeNs": 0
-                },
-                {
                     "testCaseReportResult": {
                         "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3",
                         "tag": "TestCaseResultException"
                     },
+                    "testCaseReportTimeNs": null
+                },
+                {
                     "testCaseReportLabel": "Performance stress test",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportResult": {
+                        "contents": "Prelude.undefined\nCallStack (from HasCallStack):\n  error, called at libraries/base/GHC/Err.hs:78:14 in base:GHC.Err\n  undefined, called at ./Assignment3.hs:90:19 in main:Assignment3",
+                        "tag": "TestCaseResultException"
+                    },
+                    "testCaseReportTimeNs": null
                 }
             ],
-            "testGroupPoints": 0,
             "testGroupResultProps": {
-                "pointsPerTest": 7,
                 "upperBound": 30,
                 "label": "Binoxxo Array Tests",
+                "pointsPerTest": 7,
                 "penalty": 0
             }
         }
     ],
-    "testSuiteTimeNs": 50223197
+    "testSuitePoints": 0
 }

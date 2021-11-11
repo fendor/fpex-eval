@@ -11,6 +11,7 @@ data Course = Course
     courseRootDir :: FilePath,
     courseParticipants :: [Student],
     courseGhciOptions :: [String],
+    courseGhciStartupOptions :: [String],
     courseGhciDependencies :: [Text],
     courseGhciEnvironment :: FilePath,
     -- | Subdirectory within the student home directories for delivering feedback.

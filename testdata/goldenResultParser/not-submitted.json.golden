@@ -1,9 +1,11 @@
 {
-    "testSuitePoints": 5,
+    "testSuiteTimeNs": 6682377,
     "testGroupResults": [
         {
+            "testGroupPoints": 5,
             "testGroupReports": [
                 {
+                    "testCaseReportLabel": "Basic Fib Test 1",
                     "testCaseReportResult": {
                         "contents": [
                             "1",
@@ -11,17 +13,17 @@
                         ],
                         "tag": "TestCaseResultExpectedButGot"
                     },
-                    "testCaseReportLabel": "Basic Fib Test 1",
-                    "testCaseReportTimeNs": 37840
+                    "testCaseReportTimeNs": null
                 },
                 {
+                    "testCaseReportLabel": "Basic Fib Test 2",
                     "testCaseReportResult": {
                         "tag": "TestCaseResultOk"
                     },
-                    "testCaseReportLabel": "Basic Fib Test 2",
-                    "testCaseReportTimeNs": 114470
+                    "testCaseReportTimeNs": null
                 },
                 {
+                    "testCaseReportLabel": "Basic Fib Test 3",
                     "testCaseReportResult": {
                         "contents": [
                             "1346269",
@@ -29,36 +31,34 @@
                         ],
                         "tag": "TestCaseResultExpectedButGot"
                     },
-                    "testCaseReportLabel": "Basic Fib Test 3",
-                    "testCaseReportTimeNs": 17350
+                    "testCaseReportTimeNs": null
                 }
             ],
-            "testGroupPoints": 5,
             "testGroupResultProps": {
-                "pointsPerTest": 5,
                 "upperBound": 14,
                 "label": "Fib tests",
+                "pointsPerTest": 5,
                 "penalty": 0
             }
         },
         {
+            "testGroupPoints": 0,
             "testGroupReports": [
                 {
+                    "testCaseReportLabel": "Basic Bar Test 1",
                     "testCaseReportResult": {
                         "tag": "TestCaseResultNotSubmitted"
                     },
-                    "testCaseReportLabel": "Basic Bar Test 1",
-                    "testCaseReportTimeNs": 0
+                    "testCaseReportTimeNs": null
                 }
             ],
-            "testGroupPoints": 0,
             "testGroupResultProps": {
-                "pointsPerTest": 5,
                 "upperBound": 5,
                 "label": "Bar tests",
+                "pointsPerTest": 5,
                 "penalty": 0
             }
         }
     ],
-    "testSuiteTimeNs": 6682377
+    "testSuitePoints": 5
 }
