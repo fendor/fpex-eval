@@ -77,7 +77,6 @@ library
     , directory
     , extra
     , filepath
-    , monoidal-containers
     , optparse-applicative
     , polysemy              ^>=1.6.0.0
     , polysemy-plugin       ^>=0.4
