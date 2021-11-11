@@ -143,6 +143,30 @@ timeoutTests :: TestSuiteResults -> Int
 timeoutTests =
   length . getTestsSatisfying (== TestCaseResultTimeout)
 
+-- | For each test-case, make sure its name is the full path within
+-- the 'TestSuiteResults' tree. Helpful for identifying tests that have the
+-- same name.
+canonicaliseTestSuiteResults :: TestSuiteResults -> TestSuiteResults
+canonicaliseTestSuiteResults testSuiteResults =
+  testSuiteResults {testGroupResults = map canonicaliseTestGroupNames (testGroupResults testSuiteResults)}
+
+canonicaliseTestGroupNames :: TestGroupResults -> TestGroupResults
+canonicaliseTestGroupNames testGroup =
+  testGroup
+    { testGroupReports =
+        map
+          updateName
+          (testGroupReports testGroup)
+    }
+  where
+    updateName t =
+      t
+        { testCaseReportLabel =
+            label (testGroupResultProps testGroup)
+              <> "/"
+              <> testCaseReportLabel t
+        }
+
 getTestsSatisfying ::
   (TestCaseResult -> Bool) ->
   TestSuiteResults ->

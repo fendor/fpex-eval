@@ -129,8 +129,8 @@ dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
                               _warnings <- analyseTestSuite subInfo submissionResult
                               prettyTestReport submissionResult
 
-                  analysisReport <- finalAnalysisReport
-                  runReader errorReports $ printFinalAnalysisReport analysisReport
+                  analysisReport <- get
+                  runReader errorReports $ printCurrentAnalysisReport analysisReport
       Collect CollectCommand -> do
         embed $
           Collect.prepareSubmissionFolder

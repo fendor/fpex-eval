@@ -3,10 +3,12 @@ module Fpex.Grade.Analysis where
 import Colourista.IO
 import Colourista.Pure
 import Control.Monad
-import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Monoid
 import Data.Semigroup.Generic
+import Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import Fpex.Course.Types
 import Fpex.Grade.Result
@@ -20,22 +22,16 @@ import qualified Polysemy.State as State
 
 type Warning = T.Text
 
-newtype AnalysisReport = AnalysisReport AnalysisState
-
 data Analyser m a where
   AnalyseTestSuiteResult :: SubmissionInfo -> TestSuiteResults -> Analyser m (Maybe Warning)
-  FinalAnalysisReport :: Analyser m AnalysisReport
 
 analyseTestSuite :: Member Analyser r => SubmissionInfo -> TestSuiteResults -> Sem r (Maybe Warning)
 analyseTestSuite sinfo t = send (AnalyseTestSuiteResult sinfo t)
 
-finalAnalysisReport :: Member Analyser r => Sem r AnalysisReport
-finalAnalysisReport = send FinalAnalysisReport
-
 data AnalysisState = AnalysisState
   { reachedFullPoints :: !Any,
     passedAllTests :: !Any,
-    testsPassed :: Map Int TestCaseReport,
+    testsPassed :: Set Int,
     pointRegression :: ![(SubmissionInfo, Reason)]
   }
   deriving (Show, Eq, Generic)
@@ -57,39 +53,48 @@ runStatefulAnalyser ::
   Sem r a
 runStatefulAnalyser = interpret $ \case
   AnalyseTestSuiteResult sinfo t -> do
-    let reachedFullPoints = Any $ maxScore t <= testSuitePoints t
-        passedAllTests = Any $ numberOfTests t == correctTests t
-        oldSubmission = previousSubmission sinfo
-    let testsPassed = Map.fromList $ zip [1 ..] $ getTestsSatisfying isPassedTestCaseResult t
-    pointRegression <-
-      doesTestSuiteResultExist oldSubmission >>= \case
-        False -> pure []
-        True ->
-          readTestSuiteResult oldSubmission >>= \case
-            oldResult
-              | testSuitePoints t < testSuitePoints oldResult ->
-                case () of
-                  _
-                    | isNotSubmittedReport t ->
-                      pure [(sinfo, ReasonNotSubmitted)]
-                    | isCompileFailReport t ->
-                      pure [(sinfo, ReasonCompileFail)]
-                    | otherwise ->
-                      pure [(sinfo, ReasonFewerPoints (testSuitePoints oldResult) (testSuitePoints t))]
-              | otherwise -> pure []
-
-    State.modify (<> AnalysisState {..})
+    oldResultReport <- readTestSuiteResultM sinfo
+    let analysisReport = analyseTestResultPure sinfo t oldResultReport
+    State.modify (<> analysisReport)
     pure Nothing
-  FinalAnalysisReport -> AnalysisReport <$> State.get
+
+analyseTestResultPure ::
+  SubmissionInfo ->
+  TestSuiteResults ->
+  Maybe TestSuiteResults ->
+  AnalysisState
+analyseTestResultPure sinfo t mOldTestSuite =
+  let reachedFullPoints = Any $ maxScore t <= testSuitePoints t
+      passedAllTests = Any $ numberOfTests t == correctTests t
+      testsPassed =
+        Set.fromList $
+          mapMaybe
+            ( \(tid, tc) ->
+                case isPassedTestCaseResult $ testCaseReportResult tc of
+                  False -> Nothing
+                  True -> Just tid
+            )
+            $ zip [1 ..] (allTests t)
+      pointRegression = case mOldTestSuite of
+        Just oldResult
+          | testSuitePoints t < testSuitePoints oldResult ->
+            case () of
+              _
+                | isNotSubmittedReport t -> [(sinfo, ReasonNotSubmitted)]
+                | isCompileFailReport t -> [(sinfo, ReasonCompileFail)]
+                | otherwise -> [(sinfo, ReasonFewerPoints (testSuitePoints oldResult) (testSuitePoints t))]
+          | otherwise -> []
+        Nothing -> []
+   in AnalysisState {..}
 
 previousSubmission :: SubmissionInfo -> SubmissionInfo
 previousSubmission s = s {subId = subId s - 1}
 
-printFinalAnalysisReport :: Members [Embed IO, Reader ErrorReports] r => AnalysisReport -> Sem r ()
-printFinalAnalysisReport (AnalysisReport AnalysisState {..}) = do
+printCurrentAnalysisReport :: Members [Embed IO, Reader ErrorReports] r => AnalysisState -> Sem r ()
+printCurrentAnalysisReport AnalysisState {..} = do
   NotSubmittedReport someErrorReport <- asks notSubmittedReport
-  let numberedTests = Map.fromList $ zip [1 ..] $ allTests someErrorReport
-      testsNoOnePassed = Map.difference numberedTests testsPassed
+  let numberedTests = Map.fromList $ zip [1 ..] $ allTests (canonicaliseTestSuiteResults someErrorReport)
+      testsNoOnePassed = numberedTests `Map.withoutKeys` testsPassed
 
       formatSubmissionInfo SubmissionInfo {..} =
         "Student " <> formatWith [bold] (studentId subStudent) <> ":"
@@ -120,7 +125,7 @@ printFinalAnalysisReport (AnalysisReport AnalysisState {..}) = do
 
   when (not . null $ testsNoOnePassed) $ do
     embed $ warningMessage "There are test cases that not a single student passed!"
-  forM_ (Map.assocs testsNoOnePassed) $ \(num, testCase) ->
+  forM_ (Map.toAscList testsNoOnePassed) $ \(num, testCase) ->
     embed $
       skipMessage $
         "Test case " <> formatWith [magenta] (T.pack $ show num)

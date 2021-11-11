@@ -30,6 +30,12 @@ doesTestSuiteResultExist info = send $ DoesTestSuiteResultExist info
 submissionLocation :: Member Storage r => SubmissionInfo -> StudentSubmission -> Sem r (Maybe FilePath)
 submissionLocation info submission = send $ SubmissionLocation info submission
 
+readTestSuiteResultM :: Member Storage r => SubmissionInfo -> Sem r (Maybe TestSuiteResults)
+readTestSuiteResultM info =
+  doesTestSuiteResultExist info >>= \case
+    True -> Just <$> readTestSuiteResult info
+    False -> pure Nothing
+
 runStorageFileSystem ::
   Members [Embed IO, Error T.Text] r =>
   Sem (Storage : r) a ->
@@ -46,7 +52,6 @@ runStorageFileSystem = interpret $ \case
     embed (doesFileExist targetFile) >>= \case
       False -> pure Nothing
       True -> pure $ Just targetFile
-
 
 readTestSuiteResultIO ::
   Members [Embed IO, Error T.Text] r =>

@@ -35,3 +35,4 @@ course.json
 testdata/course*/admin/Assignment*-*/
 testdata/course*/*/Assignment1.hs
 .envrc
+.integration
