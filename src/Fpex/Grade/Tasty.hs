@@ -196,11 +196,14 @@ decodeTastyGradingReport' = do
         AesonInternal.Key "groups"
       ]
       (ACD.list decodeGroup)
-  time <- ACD.key "time" ACD.integer
+
+  -- Ignore this value as it changes in every test-run
+  -- making it harder to read whether TestSuite results changed.
+  -- time <- ACD.key "time" ACD.integer
   pure
     TestSuiteResults
       { testGroupResults = groups,
-        testSuiteTimeNs = time,
+        testSuiteTimeNs = Nothing,
         testSuitePoints = sum $ map testGroupPoints groups
       }
   where

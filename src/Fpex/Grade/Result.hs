@@ -52,7 +52,7 @@ data TestGroupResults = TestGroupResults
 data TestSuiteResults = TestSuiteResults
   { testGroupResults :: [TestGroupResults],
     testSuitePoints :: Points,
-    testSuiteTimeNs :: Integer
+    testSuiteTimeNs :: Maybe Integer
   }
   deriving (Eq, Show, Generic)
   deriving anyclass (FromJSON, ToJSON)
