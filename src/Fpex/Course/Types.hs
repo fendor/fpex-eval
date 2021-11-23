@@ -1,6 +1,7 @@
 module Fpex.Course.Types where
 
 import Data.Aeson
+import Data.Set (Set)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -9,7 +10,7 @@ data Course = Course
   { courseName :: Text,
     -- | The root-directory of the course. Contains home-dirs of the users and the `admin` directory
     courseRootDir :: FilePath,
-    courseParticipants :: [Student],
+    courseParticipants :: Set Student,
     courseGhciOptions :: [String],
     courseGhciStartupOptions :: [String],
     courseGhciDependencies :: [Text],
@@ -80,7 +81,6 @@ data AppCtx = AppCtx
     appSubmissionId :: SubmissionId
   }
   deriving (Show, Eq, Ord)
-
 
 newtype Timeout = Timeout {getTimeout :: Float}
   deriving (Show, Generic)

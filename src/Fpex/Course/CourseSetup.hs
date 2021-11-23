@@ -8,6 +8,7 @@ import Data.List (inits, sort)
 import Data.Maybe
   ( mapMaybe,
   )
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
 import Fpex.Course.Types
@@ -53,7 +54,7 @@ courseSetup SetupCommand {..} = do
         Course
           { courseName = T.pack courseName,
             courseRootDir = courseDir,
-            courseParticipants = sort students,
+            courseParticipants = Set.fromAscList $ sort students,
             courseGhciOptions = [],
             courseGhciStartupOptions = ["+RTS", "-M500M", "-K10M", "-RTS"],
             courseGhciDependencies = ["base", "array"],

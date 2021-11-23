@@ -1,13 +1,15 @@
 module Fpex.Options where
 
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Fpex.Course.Types
 import Options.Applicative
 
 data Options = Options
   { optionCommand :: OptionCommand,
     optionCourseFile :: Maybe FilePath,
-    optionStudent :: Maybe Student
-    -- , optionSubmissionId :: SubmissionId
+    optionStudent :: Set Student,
+    optionSkipStudent :: Set Student
   }
   deriving (Show)
 
@@ -215,6 +217,12 @@ options =
               <> command "final-points" (info finalPointsParser fullDesc)
           )
       courseOption = optional $ option str (long "course")
-      studentOption = optional $ Student <$> option str (long "student")
-      parser = Options <$> commandParser <*> courseOption <*> studentOption
+      studentOption = Student <$> option str (long "student" <> help "Execute the command only for the given student")
+      skipStudentOption = Student <$> option str (long "skip-student" <> help "Skip the given student")
+      parser =
+        Options
+          <$> commandParser
+            <*> courseOption
+            <*> (fmap Set.fromList $ many studentOption)
+            <*> (fmap Set.fromList $ many skipStudentOption)
    in info (helper <*> parser) fullDesc

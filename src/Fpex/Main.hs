@@ -7,6 +7,7 @@ import Colourista
 import Control.Monad.Extra
 import qualified Data.Aeson as Aeson
 import Data.Maybe
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -52,7 +53,7 @@ defaultMain' = do
     Setup setupCommand -> Setup.courseSetup setupCommand
     FinalPoints FinalPointsCommand {..} -> Storage.runStorageFileSystem $ do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
-      let students = maybe courseParticipants pure (optionStudent opts)
+      let students = studentsForRun Course {..} opts
       embed $ setCurrentDirectory courseDir
 
       outputDir <- embed $ canonicalizePath finalPointsOutput
@@ -67,7 +68,7 @@ defaultMain' = do
               Student.publishFile prettyReport "finalPoints.md"
     Lc gradeTestSuiteOptions lifecycle -> do
       (Course {..}, courseDir) <- getCourseConfig (optionCourseFile opts)
-      let students = maybe courseParticipants pure (optionStudent opts)
+      let students = studentsForRun Course {..} opts
       embed $ setCurrentDirectory courseDir
 
       runReader Course {..} $ dispatchLifeCycle students gradeTestSuiteOptions lifecycle
@@ -82,6 +83,14 @@ buildApp course TestSuiteOptions {..} studentSubmission = do
         appSubmissionName = optionSubmissionName,
         appStudentSubmission = submission
       }
+
+studentsForRun :: Course -> Options -> [Student]
+studentsForRun course opts =
+  let students' =
+        if not $ null (optionStudent opts)
+          then optionStudent opts
+          else courseParticipants course
+   in Set.toList $ students' `Set.difference` optionSkipStudent opts
 
 dispatchLifeCycle ::
   Members [Log.Log T.Text, Error Text, Embed IO, Reader Course] r =>
