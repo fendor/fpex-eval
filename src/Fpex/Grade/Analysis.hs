@@ -53,7 +53,7 @@ runStatefulAnalyser ::
   Sem r a
 runStatefulAnalyser = interpret $ \case
   AnalyseTestSuiteResult sinfo t -> do
-    oldResultReport <- readTestSuiteResultM sinfo
+    oldResultReport <- readTestSuiteResultM (previousSubmission sinfo)
     let analysisReport = analyseTestResultPure sinfo t oldResultReport
     State.modify (<> analysisReport)
     pure Nothing
