@@ -62,11 +62,11 @@ library
   hs-source-dirs:   src
   ghc-options:      -Wall -fplugin=Polysemy.Plugin
   build-depends:
-    , aeson
-    , aeson-combinators
-    , aeson-pretty
+    , aeson                 <2
+    , aeson-combinators     ^>=0.0.5.0
+    , aeson-pretty          ^>=0.8.9
     , array
-    , base
+    , base                  >=4.14.0.0 && <4.17.0.0
     , bytestring
     , clock
     , co-log
@@ -78,7 +78,7 @@ library
     , extra
     , filepath
     , optparse-applicative
-    , polysemy              ^>=1.6.0.0
+    , polysemy              ^>=1.7.0.1
     , polysemy-plugin       ^>=0.4
     , regex
     , regex-tdfa
