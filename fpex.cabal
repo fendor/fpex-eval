@@ -62,8 +62,8 @@ library
   hs-source-dirs:   src
   ghc-options:      -Wall -fplugin=Polysemy.Plugin
   build-depends:
-    , aeson                 <2
-    , aeson-combinators     ^>=0.0.5.0
+    , aeson                 ^>=2.0.3.0
+    , aeson-combinators     ^>=0.1.0.0
     , aeson-pretty          ^>=0.8.9
     , array
     , base                  >=4.14.0.0 && <4.17.0.0
