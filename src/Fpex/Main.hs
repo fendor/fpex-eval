@@ -37,6 +37,7 @@ import Polysemy.State
 import System.Directory
 import System.Exit (exitFailure)
 import System.FilePath
+import qualified Polysemy.Reader as Reader
 
 defaultMain :: IO ()
 defaultMain =
@@ -114,8 +115,9 @@ dispatchLifeCycle students TestSuiteOptions {..} lifecycle = do
                   whenJust gradeTestSuite $ setTestSuite optionSubmissionId submissionName
                   errorReports <- withReport "run errorStudent" $ do
                     Grade.runGradeError
-                      ( Grade.runTastyTestSuite $
-                          Grade.createEmptyStudent gradeBaseDefinitions errorStudent
+                      ( Reader.local (\ri -> ri { Grade.runnerInfoStudentSubmission = StudentSubmission gradeBaseDefinitions }) $
+                          Grade.runTastyTestSuite $
+                            Grade.createEmptyStudent gradeBaseDefinitions errorStudent
                       )
                       >>= \case
                         Right errorReport -> return errorReport
