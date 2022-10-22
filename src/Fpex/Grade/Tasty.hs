@@ -52,14 +52,16 @@ runTastyTestSuite = interpret $ \case
           ghciProcessConfig procArgs
             & Proc.setStdout (Proc.useHandleClose soutHandle)
             & Proc.setStderr (Proc.useHandleClose serrHandle)
-
-    let stderrFilepath = targetDir </> "stderr.log"
-    let stdoutFilepath = targetDir </> "stdout.log"
+        stderrFilepath = targetDir </> "stderr.log"
+        stdoutFilepath = targetDir </> "stdout.log"
+        runnerCmdFilepath = targetDir </> "ghci.cmd"
 
     _procRes <- embed $
       withFile stderrFilepath WriteMode $ \serr ->
-        withFile stdoutFilepath WriteMode $ \sout ->
-          Proc.runProcess $ procConfig sout serr
+        withFile stdoutFilepath WriteMode $ \sout -> do
+            let process = procConfig sout serr
+            writeFile runnerCmdFilepath (show process)
+            Proc.runProcess $ procConfig sout serr
 
     unlessM (embed $ doesFileExist (targetDir </> reportOutput)) $ do
       serr <- embed $ LBS.readFile stderrFilepath
@@ -68,9 +70,6 @@ runTastyTestSuite = interpret $ \case
     case decodeResult of
       Left msg -> throw $ FailedToDecodeJsonResult msg
       Right s -> pure s
-
--- writeGhciFile :: FilePath -> [String] -> IO ()
--- writeGhciFile
 
 ghciProcessConfig :: GhciArguments -> ProcessConfig () () ()
 ghciProcessConfig procArgs =
