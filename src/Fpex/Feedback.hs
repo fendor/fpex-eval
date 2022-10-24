@@ -56,11 +56,23 @@ generateTestResultFeedback = do
   testSuiteResults <- readTestSuiteResult sinfo
   let prettyTextReport = Publish.prettyTestReport testSuiteResults
   embed (T.writeFile targetFile prettyTextReport)
+  -- Prepare to give back the test-suite to each student
   testSuiteContents <- embed $ T.readFile (testSuiteMain subId subName)
   testSuiteLoc <- reportTestSuiteFile
   embed (T.writeFile testSuiteLoc $ hackyPostProcessTestSuite testSuiteContents)
   pure targetFile
 
+-- | Post-processing step of the test-suite.
+--
+-- Historically, we couldn't give students the test-suite with the dependency
+-- on tasty-grading-system because the library wasn't published.
+-- Remove the imports, the tasty-grading-system runner and remove the line:
+--
+-- @
+--   testGroupPoints 5 0 15
+-- @
+--
+-- for arbitrary numeric parameters to 'testGroupPoints'.
 hackyPostProcessTestSuite :: T.Text -> T.Text
 hackyPostProcessTestSuite t =
   t

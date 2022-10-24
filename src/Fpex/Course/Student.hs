@@ -154,7 +154,7 @@ publishTestResult SubmissionInfo {..} = do
 copyHandwrittenFeedback :: Members [Log.Log T.Text, Embed IO] r => Course -> SubmissionId -> SubmissionName -> Student -> Sem r ()
 copyHandwrittenFeedback course sid suiteName student = do
   let sourceDir = assignmentCollectStudentDir' sid suiteName student
-  let targetDir = studentDir course student
+  let targetDir = studentSubDir course student
   let feedbackFile = sourceDir </> "Feedback.md"
   let feedbackTarget = targetDir </> (T.unpack (getSubmissionName suiteName <> "_Feedback")) <.> "md"
   exists <- embed $ doesFileExist feedbackFile
