@@ -7,6 +7,7 @@ stdenv.mkDerivation {
     ncurses
 
     haskellPackages.cabal-install
+    haskell.compiler.ghc8107
   ];
   src = null;
   shellHook = ''
