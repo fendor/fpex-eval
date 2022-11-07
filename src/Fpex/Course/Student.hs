@@ -109,7 +109,7 @@ collectSubmission course sid submissionName studentSubmission student = do
     Left err -> embed $ do
       putStrLn $ show err
       when (isPermissionError err) $ do
-        T.writeFile (takeDirectory sourceFile </> collectFileError) (permissionErrorStudentMessage studentSubmission)
+        T.writeFile (studentSubDir course student </> collectFileError) (permissionErrorStudentMessage studentSubmission)
 
       pure $ Just $ IOErrorReason err
   where

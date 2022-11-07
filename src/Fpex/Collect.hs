@@ -1,10 +1,9 @@
-module Fpex.Collect where
+module Fpex.Collect (setTestSuite, prepareSubmissionFolder, createEmptyStudent) where
 
 import Fpex.Course.Types
 import Fpex.Grade.ErrorStudent (errorStudent)
 import Fpex.Grade.Paths
 import System.Directory
-import qualified Data.Text as T
 
 data FailureReason = NoSubmission | IOErrorReason IOError
   deriving (Show, Eq)
@@ -33,17 +32,3 @@ createEmptyStudent sid suiteName = do
   let targetDir =
         assignmentCollectStudentDir' sid suiteName errorStudent
   createDirectoryIfMissing True targetDir
-
--- ----------------------------------------------------------------------------
--- Error Messages
--- ----------------------------------------------------------------------------
-
-permissionErrorStudentMessage :: StudentSubmission -> T.Text
-permissionErrorStudentMessage s =
-  T.unlines
-  [ "Your submission \"" <> T.pack (getStudentSubmission s) <> "\" could not be collected because of insufficient permissions."
-  , "Please make sure that the permissions are set appropriately. The group \"fptutor\" needs at least read access to your submission."
-  , ""
-  , "You can set read file permissions via:"
-  , "> chmod g+r " <> T.pack (getStudentSubmission s)
-  ]
