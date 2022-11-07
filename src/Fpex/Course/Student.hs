@@ -90,7 +90,7 @@ runFileSystemStudentDirectory = interpret $ \case
   PublishFile contents fp -> do
     course <- ask
     student <- ask
-    let targetDir = studentSubDir course student
+    let targetDir = studentSubmissionDir course student
     embed $ T.putStrLn $ "Publish file: " <> T.pack fp <> " to " <> T.pack targetDir
     embed $ T.writeFile (targetDir </> fp) contents
 
@@ -109,7 +109,7 @@ collectSubmission course sid submissionName studentSubmission student = do
     Left err -> embed $ do
       putStrLn $ show err
       when (isPermissionError err) $ do
-        T.writeFile (studentSubDir course student </> collectFileError) (permissionErrorStudentMessage studentSubmission)
+        T.writeFile (studentSubmissionDir course student </> collectFileError) (permissionErrorStudentMessage studentSubmission)
 
       pure $ Just $ IOErrorReason err
   where
@@ -154,7 +154,7 @@ publishTestResult SubmissionInfo {..} = do
 copyHandwrittenFeedback :: Members [Log.Log T.Text, Embed IO] r => Course -> SubmissionId -> SubmissionName -> Student -> Sem r ()
 copyHandwrittenFeedback course sid suiteName student = do
   let sourceDir = assignmentCollectStudentDir' sid suiteName student
-  let targetDir = studentSubDir course student
+  let targetDir = studentSubmissionDir course student
   let feedbackFile = sourceDir </> "Feedback.md"
   let feedbackTarget = targetDir </> (T.unpack (getSubmissionName suiteName <> "_Feedback")) <.> "md"
   exists <- embed $ doesFileExist feedbackFile
@@ -181,21 +181,21 @@ permissionErrorStudentMessage s =
 -- ----------------------------------------------------------------------------
 
 -- | Root directory of the real student
-studentDir :: Course -> Student -> FilePath
-studentDir Course {..} Student {..} =
+studentHomeDir :: Course -> Student -> FilePath
+studentHomeDir Course {..} Student {..} =
   courseRootDir </> T.unpack studentId
 
 -- | Absolute path to the real student's sub-directory to which feedback can be delivered.
-studentSubDir :: Course -> Student -> FilePath
-studentSubDir Course {..} Student {..} =
+studentSubmissionDir :: Course -> Student -> FilePath
+studentSubmissionDir Course {..} Student {..} =
   normalise $
-    studentDir Course {..} Student {..}
+    studentHomeDir Course {..} Student {..}
       </> fromMaybe "." courseStudentSubDir
 
 -- | Filename of the submission file
 studentSourceFile :: Course -> StudentSubmission -> Student -> FilePath
 studentSourceFile course studentSubmission student =
-  studentDir course student </> getStudentSubmission studentSubmission
+  studentHomeDir course student </> getStudentSubmission studentSubmission
 
 -- | Location of the grading result.
 reportPublishFile ::
@@ -205,7 +205,7 @@ reportPublishFile ::
   Student ->
   FilePath
 reportPublishFile sid course studentSubmission student =
-  studentSubDir course student
+  studentSubmissionDir course student
     </> reportName sid studentSubmission
 
 studentTestSuiteFile :: Members [Reader Course, Reader SubmissionInfo, Reader StudentSubmission] r => Sem r FilePath
@@ -220,5 +220,5 @@ studentTestSuiteFile' ::
   Student ->
   FilePath
 studentTestSuiteFile' course sid studentSubmission student =
-  studentSubDir course student
+  studentSubmissionDir course student
     </> testSuiteName sid studentSubmission
